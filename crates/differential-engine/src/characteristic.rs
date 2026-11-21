@@ -82,6 +82,29 @@ pub struct Trail {
     pub round_cost: Vec<u32>,
     /// Same with the naive sequential per-addition estimator.
     pub round_cost_sequential: Vec<u32>,
+    /// Same with the signed-difference estimator (see [`modular_cost`]).
+    pub round_cost_modular: Vec<u32>,
+}
+
+/// Signed-difference cost of a modular sum that must output the XOR of its
+/// operands' differences.
+///
+/// When the nonzero operand differences sit on disjoint bits, the sum's
+/// modular difference is a sum of ±2^i over exactly those bits, with each
+/// sign set by the operand's bit value. The output then carries exactly those
+/// XOR bits if and only if each output bit i equals its source operand's
+/// bit i: one condition per non-MSB bit, whatever happens to intermediate
+/// XOR differences inside the sum. Overlapping differences fall back to the
+/// grouped estimate.
+pub fn modular_cost(diffs: &[u32]) -> (u32, u32) {
+    let mut seen = 0u32;
+    for &d in diffs {
+        if seen & d != 0 {
+            return sum_cost(diffs, true);
+        }
+        seen |= d;
+    }
+    (seen, (seen & NO_MSB).count_ones())
 }
 
 fn cumulative(costs: &[u32]) -> Vec<f64> {
@@ -102,40 +125,50 @@ impl Trail {
     pub fn cumulative_log2_sequential(&self) -> Vec<f64> {
         cumulative(&self.round_cost_sequential)
     }
+
+    pub fn cumulative_log2_modular(&self) -> Vec<f64> {
+        cumulative(&self.round_cost_modular)
+    }
 }
 
 pub fn xor_trail(delta: &[u32; 16], rounds: usize) -> Trail {
     assert!(rounds <= 64);
     let mut dw = [0u32; 64];
-    let mut sched = [[0u32; 64]; 2];
+    // Schedule cost per estimator: grouped, sequential, modular.
+    let mut sched = [[0u32; 64]; 3];
     dw[..16].copy_from_slice(delta);
     for t in 16..64 {
         let terms = [small_sigma1(dw[t - 2]), dw[t - 7], small_sigma0(dw[t - 15]), dw[t - 16]];
         let (d, cg) = sum_cost(&terms, true);
         sched[0][t] = cg;
         sched[1][t] = sum_cost(&terms, false).1;
+        sched[2][t] = modular_cost(&terms).1;
         dw[t] = d;
     }
     let mut states = vec![[0u32; 8]];
-    let mut costs = [Vec::with_capacity(rounds), Vec::with_capacity(rounds)];
+    let mut costs = [Vec::with_capacity(rounds), Vec::with_capacity(rounds), Vec::with_capacity(rounds)];
     for t in 0..rounds {
         let [a, b, c, d, e, f, g, h] = *states.last().expect("non-empty");
         let (chd, chc) = ch_diff(e, f, g);
         let (mj, mjc) = maj_diff(a, b, c);
-        let mut next = [0u32; 8];
+        let (s1, s0) = (big_sigma1(e), big_sigma0(a));
+        // T1 = h + Σ1(e) + Ch + K_t + W_t ; T2 = Σ0(a) + Maj ; a' = T1 + T2 ; e' = d + T1
+        let t1_ops = [h, s1, chd, 0, dw[t]];
         for (k, grouped) in [true, false].into_iter().enumerate() {
-            // T1 = h + Σ1(e) + Ch + K_t + W_t ; T2 = Σ0(a) + Maj
-            let (t1, c1) = sum_cost(&[h, big_sigma1(e), chd, 0, dw[t]], grouped);
-            let (t2, c2) = sum_cost(&[big_sigma0(a), mj], grouped);
-            let (na, c3) = sum_cost(&[t1, t2], grouped);
-            let (ne, c4) = sum_cost(&[d, t1], grouped);
+            let (t1, c1) = sum_cost(&t1_ops, grouped);
+            let (t2, c2) = sum_cost(&[s0, mj], grouped);
+            let c3 = sum_cost(&[t1, t2], grouped).1;
+            let c4 = sum_cost(&[d, t1], grouped).1;
             costs[k].push(sched[k][t] + chc + mjc + c1 + c2 + c3 + c4);
-            next = [na, a, b, c, ne, e, f, g];
         }
-        states.push(next);
+        // Signed differences: only the round's outputs a' and e' must show their XOR difference.
+        let (na, ca) = modular_cost(&[h, s1, chd, 0, dw[t], s0, mj]);
+        let (ne, ce) = modular_cost(&[d, h, s1, chd, 0, dw[t]]);
+        costs[2].push(sched[2][t] + chc + mjc + ca + ce);
+        states.push([na, a, b, c, ne, e, f, g]);
     }
-    let [round_cost, round_cost_sequential] = costs;
-    Trail { delta_w: dw, states, round_cost, round_cost_sequential }
+    let [round_cost, round_cost_sequential, round_cost_modular] = costs;
+    Trail { delta_w: dw, states, round_cost, round_cost_sequential, round_cost_modular }
 }
 
 /// Empirical propagation of a message difference.
@@ -228,6 +261,19 @@ mod tests {
         assert_eq!(sum_cost(&[0, 0, 0], true), (0, 0));
         // MSB differences are free in both.
         assert_eq!(sum_cost(&[0x8000_0000, 0, 0], true).1, 0);
+    }
+
+    #[test]
+    fn round_17_costs_of_the_w15_msb_trail() {
+        // ΔW15[31] enters at round 15 for free; round 16 (index 17) costs
+        // 26 bits sequential, 17 grouped, 11 signed (measured: 2^-11.03).
+        let mut delta = [0u32; 16];
+        delta[15] = 0x8000_0000;
+        let t = xor_trail(&delta, 17);
+        assert_eq!((t.round_cost_sequential[16], t.round_cost[16], t.round_cost_modular[16]), (26, 17, 11));
+        assert_eq!(modular_cost(&[0, 0b101, 0, 0b010]), (0b111, 3));
+        // Overlapping differences fall back to the grouped estimate.
+        assert_eq!(modular_cost(&[0b11, 0b01]), sum_cost(&[0b11, 0b01], true));
     }
 
     #[test]

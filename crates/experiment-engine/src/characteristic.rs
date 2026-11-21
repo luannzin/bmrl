@@ -15,13 +15,14 @@ pub fn definition() -> Definition {
         hypothesis_id: "H-CHAR-01",
         primitive: crate::primitive::COMPRESSION,
         name: "XOR differential characteristics of SHA-256 compression through 64 rounds",
-        // v2: adds the grouped multi-operand estimator next to the sequential one (v1 overcharged ~15 bits).
-        version: 2,
+        // v2: grouped multi-operand estimator (v1 overcharged ~15 bits).
+        // v3: signed-difference estimator (only a', e' and W_t must show their XOR difference).
+        version: 3,
         hypothesis: "For a single-bit message difference, the carry-free XOR characteristic is followed by real pairs with probability measurably above 2^-256 through some number of rounds, and the Lipmaa–Moriai independence estimate predicts that probability within 1 bit wherever it is measurable.",
         null_hypothesis: "No pair follows the characteristic beyond a few rounds after the difference enters, and per-bit state differences are unbiased once diffusion completes.",
         assumptions: &[
             "Chaining value and block uniform (SplitMix64 streams).",
-            "Estimated cost: modular additions via Lipmaa–Moriai with uniform independent operands, Ch/Maj one bit per undetermined position, rounds independent. Two variants: grouped (zero-difference operands of a multi-operand sum, including K_t, are combined first and the difference is charged once) and sequential (every addition charged).",
+            "Estimated cost, three variants, Ch/Maj one bit per undetermined position, rounds independent: sequential (Lipmaa–Moriai on every addition), grouped (zero-difference operands of a multi-operand sum combined first, difference charged once), signed (when operand differences sit on disjoint bits, only the round outputs a', e' and each W_t must show their XOR difference: one bit condition per non-MSB difference bit; overlapping differences fall back to grouped).",
             "Empirical following requires both the schedule difference and the full 256-bit state difference to match the trail at every round.",
             "When no pair follows, the 95% upper bound is the rule of three (3/n).",
             "Per-bit bias tests: two-sided z, Bonferroni over 256 bits x 65 state indices x differences.",
@@ -70,8 +71,10 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
         let p = propagate(delta, FULL_ROUNDS, n, nb, seed);
         let predicted = p.trail.cumulative_log2();
         let predicted_seq = p.trail.cumulative_log2_sequential();
+        let predicted_mod = p.trail.cumulative_log2_modular();
         let mut rounds = Vec::new();
-        let (mut last_measurable, mut last_biased, mut errors, mut errors_seq) = (None, None, Vec::new(), Vec::new());
+        let (mut last_measurable, mut last_biased) = (None, None);
+        let (mut errors, mut errors_seq, mut errors_mod) = (Vec::new(), Vec::new(), Vec::new());
         for t in 0..=FULL_ROUNDS {
             let k = p.follow[t];
             let emp = k as f64 / n as f64;
@@ -91,11 +94,13 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
             if k >= 30 && t > 0 {
                 errors.push(emp.log2() - predicted[t]);
                 errors_seq.push(emp.log2() - predicted_seq[t]);
+                errors_mod.push(emp.log2() - predicted_mod[t]);
             }
             rounds.push(json!({
                 "rounds": t,
                 "predicted_log2": predicted[t],
                 "predicted_log2_sequential": predicted_seq[t],
+                "predicted_log2_modular": predicted_mod[t],
                 "followers": k,
                 "empirical_probability": emp,
                 "empirical_log2": if k > 0 { Some(emp.log2()) } else { None },
@@ -124,6 +129,13 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
         }
         flags.push((last_measurable.unwrap_or(0).max(1), last_measurable.is_some()));
         flags.push((FULL_ROUNDS, p.follow[FULL_ROUNDS] >= 2 || p.bit_ones[FULL_ROUNDS * 256..].iter().any(|&c| two_sided_p((c as f64 - nb as f64 / 2.0) / (nb as f64 / 4.0).sqrt()) < bit_threshold)));
+        // Estimates are kept only one round past the last measured one: no extrapolation.
+        let horizon = last_measurable.unwrap_or(0) + 1;
+        for row in rounds.iter_mut().filter(|r| r["rounds"].as_u64().is_some_and(|t| t as usize > horizon)) {
+            for key in ["predicted_log2", "predicted_log2_sequential", "predicted_log2_modular"] {
+                row[key] = Value::Null;
+            }
+        }
         let stats = |errs: &[f64]| -> (Option<f64>, Option<f64>) {
             if errs.is_empty() {
                 (None, None)
@@ -133,13 +145,14 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
         };
         let (mean_err, max_err) = stats(&errors);
         let (mean_seq, max_seq) = stats(&errors_seq);
+        let (mean_mod, max_mod) = stats(&errors_mod);
         let fmt = |e: Option<f64>| e.map_or("n/a".to_string(), |e| format!("{e:+.2}"));
         summary.push(format!(
-            "Delta W{word}[{bit}]: trail followed by >= 2 of {n} pairs through round {}; per-bit bias last seen at round {}; estimate at 64 rounds 2^{:.0} (grouped) / 2^{:.0} (sequential); empirical minus estimate where measurable: grouped mean {} max|.| {} bits, sequential mean {} max|.| {} bits.",
+            "Delta W{word}[{bit}]: trail followed by >= 2 of {n} pairs through round {}; per-bit bias last seen at round {}; empirical minus estimate where measurable (mean, max |.|): signed {} {}, grouped {} {}, sequential {} {} bits.",
             last_measurable.map_or("none".into(), |r| r.to_string()),
             last_biased.map_or("none".into(), |r| r.to_string()),
-            predicted[FULL_ROUNDS],
-            predicted_seq[FULL_ROUNDS],
+            fmt(mean_mod),
+            fmt(max_mod),
             fmt(mean_err),
             fmt(max_err),
             fmt(mean_seq),
@@ -151,16 +164,18 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
             "samples": n,
             "bit_samples": nb,
             "trail_schedule_difference_weights": p.trail.delta_w.iter().map(|w| w.count_ones()).collect::<Vec<_>>(),
-            "trail_round_costs": p.trail.round_cost,
-            "trail_round_costs_sequential": p.trail.round_cost_sequential,
+            "trail_round_costs": p.trail.round_cost[..horizon.min(FULL_ROUNDS)],
+            "trail_round_costs_sequential": p.trail.round_cost_sequential[..horizon.min(FULL_ROUNDS)],
             "last_round_followed_by_two_or_more": last_measurable,
             "last_round_with_biased_state_bit": last_biased,
             "estimator_error_bits": { "mean": mean_err, "max_abs": max_err, "rounds_compared": errors.len() },
             "estimator_error_bits_sequential": { "mean": mean_seq, "max_abs": max_seq, "rounds_compared": errors_seq.len() },
+            "estimator_error_bits_modular": { "mean": mean_mod, "max_abs": max_mod, "rounds_compared": errors_mod.len() },
+            "trail_round_costs_modular": p.trail.round_cost_modular[..horizon.min(FULL_ROUNDS)],
             "per_round": rounds,
         }));
     }
-    summary.push("Estimated probabilities beyond the measurable range are heuristic extrapolations, not evidence.".into());
+    summary.push("Only rounds where pairs were observed are compared; estimates beyond them are not used for any claim, and nothing here is extrapolated to 64 rounds.".into());
     let mut out = Outcome::new(json!(obs), json!(det), flags, summary);
     out.counterexamples = cx;
     Ok(out)

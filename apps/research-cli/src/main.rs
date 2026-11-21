@@ -121,6 +121,10 @@ enum ResearchCmd {
     Hardware(ResearchOpts),
     /// SHA-256 Structural Exploration: run all six structural experiments.
     Structural(ResearchOpts),
+    /// Audit of the measurable XOR characteristics: estimates, exact conditions, seeds, independent code.
+    CharacteristicAudit(ResearchOpts),
+    /// Trail-to-search conversion: trail search, neighbour and condition strategies for SHA256d <= target.
+    TrailSearch(ResearchOpts),
     /// Hypothesis registry with evidence-derived status.
     Hypotheses,
     /// One hypothesis with all evidence and counterexamples.
@@ -136,6 +140,8 @@ enum ResearchCmd {
     Show { id: String },
     /// Rerun a stored experiment from its seed and parameters and compare digests.
     Reproduce { id: String },
+    /// Check that every experiment and benchmark kind has a result from this exact, committed code.
+    Audit,
     /// Append an erratum to a stored experiment (records are otherwise immutable).
     Erratum {
         id: String,
@@ -551,6 +557,8 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
         ResearchCmd::SmtScaling(o) => single(Kind::SmtScaling, &o),
         ResearchCmd::Multiseed(o) => single(Kind::Multiseed, &o),
         ResearchCmd::Hardware(o) => single(Kind::Hardware, &o),
+        ResearchCmd::CharacteristicAudit(o) => single(Kind::CharacteristicAudit, &o),
+        ResearchCmd::TrailSearch(o) => single(Kind::TrailSearch, &o),
         ResearchCmd::Hypotheses => {
             let rows = store.list_hypotheses()?;
             for h in &rows {
@@ -595,6 +603,18 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
             let rec = store.get_experiment(&id)?.with_context(|| format!("no experiment {id}"))?;
             say!(human, "{}", serde_json::to_string_pretty(&rec)?);
             Ok((rec, true))
+        }
+        ResearchCmd::Audit => {
+            let a = experiment_engine::audit(&store)?;
+            say!(human, "code        {} (commit {}, binary matches commit: {})", &a["source_fingerprint"].as_str().unwrap_or("")[..16], a["git_commit"].as_str().unwrap_or("none"), a["binary_matches_commit"]);
+            for k in a["experiments"].as_array().into_iter().flatten().chain(a["benchmarks"].as_array().into_iter().flatten()) {
+                let hist = k["history"].as_array().map_or(0, Vec::len);
+                say!(human, "{:<16} current {:<22} history {hist}", k["kind"].as_str().unwrap_or(""), k["current"].as_str().unwrap_or("MISSING"));
+            }
+            say!(human, "records     {} experiments, {} benchmarks, {} with errata", a["total_experiment_records"], a["total_benchmark_records"], a["records_with_errata"].as_array().map_or(0, Vec::len));
+            say!(human, "{}", if a["passed"] == true { "audit: every kind has a current result from this committed code" } else { "audit: FAILED (see missing_current / binary_matches_commit)" });
+            let ok = a["passed"] == true;
+            Ok((a, ok))
         }
         ResearchCmd::Erratum { id, note } => {
             let rec = store.add_erratum(&id, &note)?;

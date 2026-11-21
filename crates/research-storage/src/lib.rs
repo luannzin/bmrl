@@ -194,9 +194,32 @@ impl Store {
         rows.collect::<Result<_, _>>().map_err(Into::into)
     }
 
+    /// Every experiment record, oldest first.
+    pub fn all_experiments(&self) -> Result<Vec<Value>> {
+        let mut stmt = self.conn.prepare("SELECT record FROM experiments ORDER BY started_at, id")?;
+        let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+        rows.map(|t| Ok(serde_json::from_str(&t?)?)).collect()
+    }
+
+    /// Every benchmark record with its kind, oldest first.
+    pub fn all_benchmarks(&self) -> Result<Vec<(String, Value)>> {
+        let mut stmt = self.conn.prepare("SELECT kind, record FROM benchmarks ORDER BY created_at, id")?;
+        let rows = stmt.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?;
+        rows.map(|row| {
+            let (kind, text) = row?;
+            Ok((kind, serde_json::from_str(&text)?))
+        })
+        .collect()
+    }
+
+    /// Store a benchmark in SQLite and as `<data>/benchmarks/<id>.json`.
     pub fn save_benchmark(&self, kind: &str, record: &mut Value) -> Result<String> {
         let id = self.next_id("benchmarks", &format!("bench-{kind}"))?;
         record["id"] = Value::String(id.clone());
+        record["kind"] = Value::String(kind.to_string());
+        let dir = self.dir.join("benchmarks");
+        std::fs::create_dir_all(&dir)?;
+        std::fs::write(dir.join(format!("{id}.json")), serde_json::to_string_pretty(record)?)?;
         self.conn.execute(
             "INSERT INTO benchmarks (id, kind, created_at, record) VALUES (?1, ?2, ?3, ?4)",
             params![id, kind, now_iso(), serde_json::to_string(record)?],

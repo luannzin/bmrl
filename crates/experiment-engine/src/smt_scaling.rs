@@ -124,7 +124,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
                         "midstate": mid.state, "tail": mid.tail, "rounds": r, "zero_bits": k, "timeout_ms": timeout,
                         "seed": seed.wrapping_add(i), "encoding": enc, "cnf_stats": want_cnf,
                     });
-                    let s = run_script("smt_scaling.py", &inst)?;
+                    let s = run_script("algebraic-models/smt_scaling.py", &inst)?;
                     if want_cnf && !s["cnf"].is_null() {
                         cnf_by_round.insert(r, s["cnf"].clone());
                     }

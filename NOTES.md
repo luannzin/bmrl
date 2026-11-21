@@ -42,3 +42,28 @@ Plan:
 4. Mining path benchmark: real template, coinbase, merkle root, headers,
    target comparison, every hit verified, a block submitted per backend.
 5. Report in `research/README.md`, status in `research/STATUS.md`.
+
+## 2026-11-21: Round-17 characteristic explained
+
+Done:
+- `bmr research audit` (provenance): fingerprint now covers kernels,
+  backends and the CLI; records store `binary_matches_commit`.
+- The 503 / 1,048,576 round-17 followers are real, not an artifact. Rust
+  (SplitMix64) and an independent Python/numpy port (PCG64) agree.
+  Injecting the difference straight into a uniform state gives 2^-16.8 only
+  because that check also fixed intermediate XOR differences.
+- New signed-difference estimator (characteristic v3): only a', e' and W_t
+  must show their XOR difference. Round 17 of the W15[31] trail costs 26 bits
+  (sequential), 17 (grouped) or 11 (signed); measured 2^-11.03.
+- New kind `characteristic-audit`: 11 exact bit conditions derived per
+  trail, 0 counterexamples either way, marginals 0.4996 to 0.5003, no
+  pairwise dependence, none implied, joint matches independence. W8[31] and
+  W0[31] share W15[31]'s template; W15[0] is it rotated by one bit (+2 entry
+  bits, 2^-13).
+- New kind `trail-search` (Bitcoin objective, header words W0/W1/W3 only).
+  Smoke run: positive control at 4 rounds (neighbour strategy 0.045x the
+  work, the affine structure); 6..64 rounds at the null rate; best header
+  trails reach round 5 only.
+
+Next: full-size trail-search and audit runs, hardware audit, mining path
+benchmark, ponytail review, final clean run, report.

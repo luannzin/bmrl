@@ -104,9 +104,9 @@ pub(crate) fn answer_problem(status: &Value, nonce_valid: &Value, brute_nonce: &
     }
 }
 
-/// Run `research/algebraic-models/<script>` with `instance` on stdin and parse its JSON stdout.
+/// Run `research/<script>` with `instance` on stdin and parse its JSON stdout.
 pub(crate) fn run_script(script: &str, instance: &Value) -> Result<Value> {
-    let path = research_storage::workspace_root().join("research").join("algebraic-models").join(script);
+    let path = research_storage::workspace_root().join("research").join(script);
     let mut child = Command::new(python())
         .arg("-I")
         .arg(path)
@@ -143,7 +143,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
                 "midstate": mid.state, "tail": mid.tail, "rounds": r, "zero_bits": k,
                 "timeout_ms": timeout_ms, "seed": seed.wrapping_add(i),
             });
-            let s = run_script("smt_reduced_round.py", &inst)?;
+            let s = run_script("algebraic-models/smt_reduced_round.py", &inst)?;
             let solver_seconds = s["solve_seconds"].as_f64().unwrap_or(f64::NAN);
             let status = s["status"].as_str().unwrap_or("error").to_string();
             let solver_nonce = s["nonce"].as_u64().map(|n| n as u32);

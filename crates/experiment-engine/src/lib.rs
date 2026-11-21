@@ -18,6 +18,7 @@
 
 pub mod algebraic;
 pub mod characteristic;
+pub mod characteristic_audit;
 pub mod differential;
 pub mod env;
 pub mod hardware;
@@ -27,6 +28,7 @@ pub mod schedule;
 pub mod smt;
 pub mod smt_scaling;
 pub mod statistical;
+pub mod trail_search;
 
 use anyhow::{Context, Result, bail};
 use research_storage::{Store, now_iso};
@@ -51,6 +53,8 @@ pub enum Kind {
     SmtScaling,
     Multiseed,
     Hardware,
+    CharacteristicAudit,
+    TrailSearch,
 }
 
 /// What exactly an experiment measures. Results never transfer between these.
@@ -122,7 +126,7 @@ pub struct Verification {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 10] = [
+    pub const ALL: [Kind; 12] = [
         Kind::ReducedRound,
         Kind::Differential,
         Kind::Statistical,
@@ -133,6 +137,8 @@ impl Kind {
         Kind::SmtScaling,
         Kind::Multiseed,
         Kind::Hardware,
+        Kind::CharacteristicAudit,
+        Kind::TrailSearch,
     ];
     /// The MVP experiment set (`bmr research all`).
     pub const MVP: [Kind; 4] = [Kind::ReducedRound, Kind::Differential, Kind::Statistical, Kind::Smt];
@@ -186,7 +192,7 @@ macro_rules! module {
 }
 
 /// Indexed by `Kind as usize`, in declaration order.
-const MODULES: [Module; 10] = [
+const MODULES: [Module; 12] = [
     module!("reduced-round", reduced_round),
     module!("differential", differential),
     module!("statistical", statistical),
@@ -197,6 +203,8 @@ const MODULES: [Module; 10] = [
     module!("smt-scaling", smt_scaling),
     module!("multiseed", multiseed),
     module!("hardware", hardware),
+    module!("characteristic-audit", characteristic_audit),
+    module!("trail-search", trail_search),
 ];
 
 /// Parameter helpers shared by the kinds.
@@ -414,6 +422,70 @@ pub fn run(store: &Store, kind: Kind, overrides: &Value, seed: u64, quick: bool)
     Ok(rec)
 }
 
+/// Benchmark kinds a complete run must contain.
+pub const BENCHMARK_KINDS: [&str; 5] = ["cpu", "gpu", "compare", "regtest", "mining"];
+
+/// Provenance audit of the registry against this binary. Nothing is changed:
+/// the latest completed record of each kind produced by this exact code (same
+/// source fingerprint, committed, clean tree) is "current"; everything else is
+/// history, kept with the reason it is not current.
+pub fn audit(store: &Store) -> Result<Value> {
+    let fp = env::source_fingerprint();
+    let matches_commit = env::binary_matches_commit();
+    let from_this_code = |r: &Value| r["environment"]["source_fingerprint"] == fp.as_str() && r["environment"]["binary_matches_commit"] == true;
+    let reason = |r: &Value| -> &'static str {
+        if r["environment"]["source_fingerprint"] != fp.as_str() {
+            "older code"
+        } else if r["environment"]["binary_matches_commit"] != true {
+            "uncommitted code"
+        } else if r["status"] != "completed" {
+            "not completed"
+        } else {
+            "superseded by a later run"
+        }
+    };
+    let exps = store.all_experiments()?;
+    let mut kinds = Vec::new();
+    let mut missing = Vec::new();
+    for kind in Kind::ALL {
+        let recs: Vec<&Value> = exps.iter().filter(|r| r["kind"] == kind.id()).collect();
+        let current = recs.iter().rev().find(|r| from_this_code(r) && r["status"] == "completed");
+        let cur_id = current.and_then(|r| r["id"].as_str());
+        if cur_id.is_none() {
+            missing.push(kind.id().to_string());
+        }
+        let history: Vec<Value> = recs
+            .iter()
+            .filter(|r| r["id"].as_str() != cur_id)
+            .map(|r| json!({ "id": r["id"], "reason": reason(r), "errata": r["errata"].as_array().map_or(0, Vec::len) }))
+            .collect();
+        kinds.push(json!({ "kind": kind.id(), "current": cur_id, "result": current.map(|r| r["result"].clone()), "history": history }));
+    }
+    let benches = store.all_benchmarks()?;
+    let mut bench_kinds = Vec::new();
+    for kind in BENCHMARK_KINDS {
+        let recs: Vec<&Value> = benches.iter().filter(|(k, _)| k == kind).map(|(_, r)| r).collect();
+        let current = recs.iter().rev().find(|r| from_this_code(r)).and_then(|r| r["id"].as_str());
+        if current.is_none() {
+            missing.push(format!("benchmark {kind}"));
+        }
+        bench_kinds.push(json!({ "kind": kind, "current": current, "history": recs.iter().filter_map(|r| r["id"].as_str()).filter(|id| Some(*id) != current).collect::<Vec<_>>() }));
+    }
+    let errata: Vec<Value> = exps.iter().filter(|r| r["errata"].is_array()).map(|r| json!({ "id": r["id"], "notes": r["errata"].as_array().map_or(0, Vec::len) })).collect();
+    Ok(json!({
+        "source_fingerprint": fp,
+        "git_commit": env::git_commit(),
+        "binary_matches_commit": matches_commit,
+        "experiments": kinds,
+        "benchmarks": bench_kinds,
+        "records_with_errata": errata,
+        "total_experiment_records": exps.len(),
+        "total_benchmark_records": benches.len(),
+        "missing_current": missing,
+        "passed": matches_commit && missing.is_empty(),
+    }))
+}
+
 /// Rerun a stored experiment from its recorded seed and parameters.
 pub fn reproduce(store: &Store, id: &str) -> Result<Value> {
     let rec = store.get_experiment(id)?.with_context(|| format!("no experiment {id}"))?;
@@ -447,7 +519,7 @@ mod tests {
     #[test]
     fn module_table_matches_kind_order() {
         let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
-        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware"]);
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search"]);
         assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
     }
 
@@ -465,7 +537,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("bmrl-struct-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let store = Store::open(&dir).unwrap();
-        for kind in Kind::STRUCTURAL {
+        for kind in Kind::STRUCTURAL.into_iter().chain([Kind::CharacteristicAudit, Kind::TrailSearch]) {
             let rec = run(&store, kind, &json!({}), 11, true).unwrap();
             if rec["status"] == "skipped" {
                 eprintln!("{} skipped: {}", kind.id(), rec["conclusion"]);

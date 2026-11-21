@@ -25,20 +25,55 @@ const SOURCES: &[(&str, &str)] = &[
     ("crates/differential-engine/src/characteristic.rs", include_str!("../../differential-engine/src/characteristic.rs")),
     ("crates/algebraic-engine/src/lib.rs", include_str!("../../algebraic-engine/src/lib.rs")),
     ("crates/hardware-model/src/lib.rs", include_str!("../../hardware-model/src/lib.rs")),
+    ("crates/experiment-engine/src/characteristic_audit.rs", include_str!("characteristic_audit.rs")),
+    ("crates/experiment-engine/src/trail_search.rs", include_str!("trail_search.rs")),
     ("research/algebraic-models/smt_reduced_round.py", include_str!("../../../research/algebraic-models/smt_reduced_round.py")),
     ("research/algebraic-models/smt_scaling.py", include_str!("../../../research/algebraic-models/smt_scaling.py")),
+    ("research/differential-cryptanalysis/trail_audit.py", include_str!("../../../research/differential-cryptanalysis/trail_audit.py")),
+    // Benchmarks and mining: kernels, backends, protocol code and the CLI that drives them.
+    ("crates/bitcoin-header/src/block.rs", include_str!("../../bitcoin-header/src/block.rs")),
+    ("crates/cpu-backend/src/lib.rs", include_str!("../../cpu-backend/src/lib.rs")),
+    ("crates/gpu-backend/src/lib.rs", include_str!("../../gpu-backend/src/lib.rs")),
+    ("gpu/wgsl/sha256d.wgsl", include_str!("../../../gpu/wgsl/sha256d.wgsl")),
+    ("crates/mining-engine/src/lib.rs", include_str!("../../mining-engine/src/lib.rs")),
+    ("crates/mining-engine/src/regtest.rs", include_str!("../../mining-engine/src/regtest.rs")),
+    ("crates/mining-engine/src/rpc.rs", include_str!("../../mining-engine/src/rpc.rs")),
+    ("apps/research-cli/src/main.rs", include_str!("../../../apps/research-cli/src/main.rs")),
 ];
 
-pub fn source_fingerprint() -> String {
+fn fingerprint<'a>(files: impl Iterator<Item = (&'a str, Vec<u8>)>) -> String {
     let mut all = Vec::new();
-    for (path, text) in SOURCES {
+    for (path, text) in files {
         all.extend_from_slice(path.as_bytes());
         all.push(0);
         // Normalise line endings so checkouts with CRLF give the same fingerprint.
-        all.extend(text.bytes().filter(|&b| b != b'\r'));
+        all.extend(text.into_iter().filter(|&b| b != b'\r'));
         all.push(0);
     }
     bitcoin_header::hex_encode(&sha256_core::sha256(&all))
+}
+
+/// Fingerprint of the sources this binary was compiled from.
+pub fn source_fingerprint() -> String {
+    fingerprint(SOURCES.iter().map(|(p, t)| (*p, t.as_bytes().to_vec())))
+}
+
+/// Whether `git_commit` describes this binary exactly: the same files on disk
+/// hash to the compiled fingerprint and git reports none of them modified.
+pub fn binary_matches_commit() -> bool {
+    let root = research_storage::workspace_root();
+    let on_disk = SOURCES.iter().map(|(p, _)| std::fs::read(root.join(p)).map(|b| (*p, b)));
+    let Ok(files) = on_disk.collect::<Result<Vec<_>, _>>() else { return false };
+    if fingerprint(files.into_iter()) != source_fingerprint() {
+        return false;
+    }
+    let paths: Vec<&str> = SOURCES.iter().map(|(p, _)| *p).collect();
+    std::process::Command::new("git")
+        .args(["status", "--porcelain", "--"])
+        .args(&paths)
+        .current_dir(&root)
+        .output()
+        .is_ok_and(|o| o.status.success() && o.stdout.is_empty())
 }
 
 #[cfg(target_arch = "x86_64")]
@@ -105,5 +140,6 @@ pub fn environment() -> Value {
         "bmr_version": env!("CARGO_PKG_VERSION"),
         "source_fingerprint": source_fingerprint(),
         "git_commit": git_commit(),
+        "binary_matches_commit": binary_matches_commit(),
     })
 }

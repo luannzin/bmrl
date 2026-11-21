@@ -171,6 +171,14 @@ pub fn binomial_z(successes: u64, n: u64, p: f64) -> f64 {
     (successes as f64 - n * p) / (n * p * (1.0 - p)).sqrt()
 }
 
+/// Pooled two-proportion z statistic for x1/n1 vs x2/n2.
+pub fn two_proportion_z(x1: u64, n1: u64, x2: u64, n2: u64) -> f64 {
+    let (p1, p2) = (x1 as f64 / n1 as f64, x2 as f64 / n2 as f64);
+    let p = (x1 + x2) as f64 / (n1 + n2) as f64;
+    let se = (p * (1.0 - p) * (1.0 / n1 as f64 + 1.0 / n2 as f64)).sqrt();
+    if se == 0.0 { 0.0 } else { (p1 - p2) / se }
+}
+
 /// Chi-square goodness-of-fit result.
 #[derive(Clone, Debug, PartialEq)]
 pub struct ChiSquare {
@@ -336,6 +344,9 @@ mod tests {
         assert!(ks_uniform(&low).1 < 1e-10);
         // scipy.special.kolmogorov(1.0) = 0.26999967167735456
         assert!(close(kolmogorov_q(1.0), 0.269_999_671_677_354_56, 1e-9));
+        // 51/131072 vs 48/65536 (characteristic audit, seed 11): z ≈ -3.19.
+        assert!(close(two_proportion_z(51, 131_072, 48, 65_536), -3.19, 0.01));
+        assert_eq!(two_proportion_z(0, 10, 0, 10), 0.0);
         let (b, a, se) = linear_fit(&[1.0, 2.0, 3.0, 4.0], &[3.0, 5.0, 7.0, 9.0]).unwrap();
         assert!(close(b, 2.0, 1e-12) && close(a, 1.0, 1e-12) && se < 1e-9);
     }
