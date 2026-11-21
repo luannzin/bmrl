@@ -1,0 +1,15 @@
+[package]
+name = "gpu-backend"
+description = "wgpu/WGSL SHA-256d nonce search (Vulkan, DX12, Metal)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+anyhow = "1.0.104"
+bitcoin-header.workspace = true
+bytemuck = "1.25.2"
+mining-engine.workspace = true
+pollster = "1.0.3"
+wgpu = "30.0.2"

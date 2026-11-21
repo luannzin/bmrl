@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "apps/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+publish = false
+
+[workspace.dependencies]
+sha256-core = { path = "crates/sha256-core" }
+sha256d = { path = "crates/sha256d" }
+bitcoin-header = { path = "crates/bitcoin-header" }
+mining-engine = { path = "crates/mining-engine" }
+cpu-backend = { path = "crates/cpu-backend" }
+gpu-backend = { path = "crates/gpu-backend" }
+differential-engine = { path = "crates/differential-engine" }
+statistical-engine = { path = "crates/statistical-engine" }
+experiment-engine = { path = "crates/experiment-engine" }
+verification = { path = "crates/verification" }
+research-storage = { path = "crates/research-storage" }
+algebraic-engine = { path = "crates/algebraic-engine" }
+hardware-model = { path = "crates/hardware-model" }
+
+# Tests run hashing loops; unoptimised debug builds make them needlessly slow.
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+codegen-units = 1
+lto = "fat"

@@ -1,0 +1,10 @@
+[package]
+name = "sha256d"
+description = "Double SHA-256 (Bitcoin's hash construction)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+sha256-core.workspace = true
