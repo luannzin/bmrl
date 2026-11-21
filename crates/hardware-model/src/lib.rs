@@ -270,8 +270,9 @@ pub fn resources(a: &Arch) -> Resources {
                 r.stages -= 1;
                 continue;
             }
-            // Registers after this stage: state words, live schedule window, nonce.
-            let live_w = ((t + 1)..=(t + 16).min(63)).filter(|&j| !fold || wvar[j]).count() as u64;
+            // Registers after this stage: state words, the schedule window still
+            // used by this block's remaining rounds (W_end.. never are), nonce.
+            let live_w = ((t + 1)..=(t + 16).min(end - 1)).filter(|&j| !fold || wvar[j]).count() as u64;
             let state_bits = 32 * svar.iter().filter(|&&v| !fold || v).count() as u64;
             // Without midstate and folding, block 2's chaining value is a pipeline value.
             let cv_bits = if block == Block::Second && !a.midstate && !fold { 256 } else { 0 };
@@ -402,5 +403,7 @@ mod tests {
         // three second-block rounds: same datapath as explicit midstate + precompute.
         assert_eq!(r[5], r[4]);
         assert_eq!(r[4].stages, 122);
+        // Early reject must not keep W61..W63 alive: fewer registers than without it.
+        assert!(r[3].register_bits < r[2].register_bits);
     }
 }
