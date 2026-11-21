@@ -678,6 +678,7 @@ dependencies = [
 name = "hardware-model"
 version = "0.1.0"
 dependencies = [
+ "algebraic-engine",
  "bitcoin-header",
  "sha256-core",
 ]
