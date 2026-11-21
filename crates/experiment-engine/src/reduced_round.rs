@@ -95,7 +95,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
 }
 
 /// Recompute the first samples with the independent SHA-256 and compare all counts.
-pub fn verify(params: &Value, seed: u64) -> Result<Verification> {
+pub fn verify(params: &Value, seed: u64, _: &Outcome) -> Result<Verification> {
     let rounds = p_rounds(params)?;
     let n = p_u64(params, "samples")?.min(64);
     let ind = independent::Sha256::default();

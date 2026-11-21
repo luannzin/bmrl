@@ -235,21 +235,6 @@ impl Target {
         }
         n
     }
-
-    /// Approximate value as f64 (for difficulty and expected-work reporting).
-    pub fn as_f64(&self) -> f64 {
-        self.0.iter().fold(0.0, |acc, &b| acc * 256.0 + b as f64)
-    }
-
-    /// Expected number of uniformly random hashes per success: 2^256 / (target + 1).
-    pub fn expected_hashes(&self) -> f64 {
-        2f64.powi(256) / (self.as_f64() + 1.0)
-    }
-}
-
-/// Difficulty relative to the main-network limit (`0x1d00ffff`).
-pub fn difficulty(bits: u32) -> f64 {
-    Target::from_compact(MAINNET_POW_LIMIT_BITS).target.as_f64() / Target::from_compact(bits).target.as_f64()
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -522,7 +507,6 @@ mod tests {
         assert_eq!(limit.words(), [0, 0xffff0000, 0, 0, 0, 0, 0, 0]);
         assert_eq!(Target::from_words(limit.words()), limit);
         assert_eq!(limit.leading_zeros(), 32);
-        assert!((difficulty(MAINNET_POW_LIMIT_BITS) - 1.0).abs() < 1e-12);
         let mut h = [0u8; 32];
         h[31] = 1; // hash number = 2^248
         assert!(Target::from_hash(&h) > limit);

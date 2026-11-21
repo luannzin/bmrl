@@ -5,7 +5,7 @@
 //! constant-folded outer schedule against the generic one.
 
 use crate::{Definition, FULL_ROUNDS, Outcome, Verification, p_f64, p_u64};
-use algebraic_engine::{rank, schedule_rows, unit_message, xor_schedule};
+use algebraic_engine::{rank, schedule_dependence, schedule_rows, unit_message, xor_schedule};
 use anyhow::Result;
 use rayon::prelude::*;
 use serde_json::{Value, json};
@@ -68,33 +68,15 @@ fn zero_inputs(block: &str) -> [bool; 16] {
 
 /// Per expanded word: varies?, and operation counts naive vs hoisted.
 fn redundancy(block: &str) -> Value {
-    let mut var = [false; 64];
-    let mut zero = [false; 64];
-    var[..16].copy_from_slice(&variable_inputs(block));
-    zero[..16].copy_from_slice(&zero_inputs(block));
-    let (mut adds, mut sigmas, mut hoisted_words) = (0u32, 0u32, Vec::new());
-    for t in 16..64 {
-        // Terms: σ1(W[t-2]), W[t-7], σ0(W[t-15]), W[t-16].
-        let terms = [(t - 2, true), (t - 7, false), (t - 15, true), (t - 16, false)];
-        let variable: Vec<_> = terms.iter().filter(|(i, _)| var[*i]).collect();
-        let const_nonzero = terms.iter().any(|(i, _)| !var[*i] && !zero[*i]);
-        var[t] = !variable.is_empty();
-        zero[t] = !var[t] && !const_nonzero;
-        if var[t] {
-            adds += variable.len() as u32 - 1 + const_nonzero as u32;
-            sigmas += variable.iter().filter(|(_, s)| *s).count() as u32;
-        } else {
-            hoisted_words.push(t);
-        }
-    }
+    let d = schedule_dependence(variable_inputs(block), zero_inputs(block));
     json!({
         "block": block,
         "naive_adds": 48 * 3,
         "naive_sigma_evaluations": 48 * 2,
-        "minimal_adds_per_nonce": adds,
-        "minimal_sigma_evaluations_per_nonce": sigmas,
-        "nonce_independent_words": hoisted_words,
-        "variable_words": (16..64).filter(|&t| var[t]).collect::<Vec<_>>(),
+        "minimal_adds_per_nonce": d.adds.iter().sum::<u32>(),
+        "minimal_sigma_evaluations_per_nonce": d.sigmas.iter().sum::<u32>(),
+        "nonce_independent_words": (16..64).filter(|&t| !d.variable[t]).collect::<Vec<_>>(),
+        "variable_words": (16..64).filter(|&t| d.variable[t]).collect::<Vec<_>>(),
     })
 }
 

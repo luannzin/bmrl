@@ -23,29 +23,7 @@ const PARAM_WORDS: usize = 28;
 pub const DUMP_MAX: u32 = 1 << 20;
 const WAIT: Duration = Duration::from_secs(20);
 
-/// Adapter description for discovery output.
-#[derive(Clone, Debug)]
-pub struct AdapterSummary {
-    pub name: String,
-    pub backend: String,
-    pub device_type: String,
-    pub driver: String,
-    pub driver_info: String,
-    pub vendor_id: u32,
-    pub device_id: u32,
-}
-
-fn summarize(info: &wgpu::AdapterInfo) -> AdapterSummary {
-    AdapterSummary {
-        name: info.name.clone(),
-        backend: format!("{:?}", info.backend),
-        device_type: format!("{:?}", info.device_type),
-        driver: info.driver.clone(),
-        driver_info: info.driver_info.clone(),
-        vendor_id: info.vendor,
-        device_id: info.device,
-    }
-}
+pub use wgpu::AdapterInfo;
 
 fn parse_backends(filter: Option<&str>) -> Result<wgpu::Backends> {
     Ok(match filter.map(str::to_ascii_lowercase).as_deref() {
@@ -62,9 +40,9 @@ fn instance(backends: wgpu::Backends) -> wgpu::Instance {
 }
 
 /// Every adapter wgpu can see on every backend.
-pub fn list_adapters() -> Vec<AdapterSummary> {
+pub fn list_adapters() -> Vec<AdapterInfo> {
     let all = wgpu::Backends::all();
-    pollster::block_on(instance(all).enumerate_adapters(all)).iter().map(|a| summarize(&a.get_info())).collect()
+    pollster::block_on(instance(all).enumerate_adapters(all)).iter().map(|a| a.get_info()).collect()
 }
 
 struct Buffers {
@@ -191,8 +169,8 @@ impl GpuBackend {
         })
     }
 
-    pub fn adapter(&self) -> AdapterSummary {
-        summarize(&self.info)
+    pub fn adapter(&self) -> &AdapterInfo {
+        &self.info
     }
 
     pub fn batch(&self) -> u32 {

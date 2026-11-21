@@ -46,10 +46,6 @@ pub fn default_params(quick: bool) -> Value {
     })
 }
 
-fn script() -> std::path::PathBuf {
-    research_storage::workspace_root().join("research").join("algebraic-models").join("smt_reduced_round.py")
-}
-
 fn python() -> String {
     std::env::var("BMR_PYTHON").unwrap_or_else(|_| "python".into())
 }
@@ -64,14 +60,56 @@ pub fn z3_version() -> Option<String> {
     out.status.success().then(|| String::from_utf8_lossy(&out.stdout).trim().to_string())
 }
 
-fn meets(words: &[u32; 8], k: u32) -> bool {
+/// k leading zero bits of the hash number (most significant word first).
+pub(crate) fn meets(words: &[u32; 8], k: u32) -> bool {
     words[0] >> (32 - k) == 0
 }
 
-fn solve(instance: &Value) -> Result<Value> {
+pub(crate) struct Brute {
+    pub nonce: Option<u32>,
+    pub hashes: u64,
+    pub seconds: f64,
+}
+
+/// Single-thread scan from nonce 0, capped at 2^(k+12) nonces (4096x the
+/// expected work): reduced-round structure can make a target unreachable.
+pub(crate) fn brute(mid: &HeaderMidstate, k: u32) -> Brute {
+    let t = Instant::now();
+    let mut hashes = 0;
+    for nonce in (0..=u32::MAX).take((1u64 << (k + 12)).min(1 << 32) as usize) {
+        hashes += 1;
+        if meets(&hash_number_words(&mid.hash_words(nonce)), k) {
+            return Brute { nonce: Some(nonce), hashes, seconds: t.elapsed().as_secs_f64() };
+        }
+    }
+    Brute { nonce: None, hashes, seconds: t.elapsed().as_secs_f64() }
+}
+
+/// A solver nonce counts only if both SHA-256 implementations confirm it.
+pub(crate) fn nonce_valid(header: &[u8; 80], mid: &HeaderMidstate, rounds: usize, k: u32, nonce: u32) -> bool {
+    let mut h = *header;
+    h[76..80].copy_from_slice(&nonce.to_le_bytes());
+    meets(&hash_number_words(&mid.hash_words(nonce)), k)
+        && meets(&Target::from_hash(&independent::Sha256::default().sha256d(&h, rounds)).words(), k)
+}
+
+/// Inconsistency of one solver answer, if any.
+pub(crate) fn answer_problem(status: &Value, nonce_valid: &Value, brute_nonce: &Value) -> Option<&'static str> {
+    if status == "sat" && nonce_valid != true {
+        Some("invalid solver nonce")
+    } else if status == "unsat" && !brute_nonce.is_null() {
+        Some("unsat contradicts a brute-force hit (model bug)")
+    } else {
+        None
+    }
+}
+
+/// Run `research/algebraic-models/<script>` with `instance` on stdin and parse its JSON stdout.
+pub(crate) fn run_script(script: &str, instance: &Value) -> Result<Value> {
+    let path = research_storage::workspace_root().join("research").join("algebraic-models").join(script);
     let mut child = Command::new(python())
         .arg("-I")
-        .arg(script())
+        .arg(path)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -94,48 +132,33 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     let Some(z3) = z3_version() else {
         return Ok(Outcome::skipped(format!("`{} -I -c \"import z3\"` failed; install with `pip install z3-solver`", python())));
     };
-    let ind = independent::Sha256::default();
     let (mut obs, mut det, mut flags) = (Vec::new(), Vec::new(), Vec::new());
     for &r in &rounds {
         for i in 0..instances {
             let header: [u8; 80] = SplitMix64::stream(seed, i).bytes();
             let mid = HeaderMidstate::with_rounds(&header, r);
-            let t = Instant::now();
-            let (mut brute_nonce, mut hashes) = (None, 0u64);
-            // Capped at 4096x the expected work: reduced-round structure can make targets unreachable.
-            for nonce in (0..=u32::MAX).take((1u64 << (k + 12)).min(1 << 32) as usize) {
-                hashes += 1;
-                if meets(&hash_number_words(&mid.hash_words(nonce)), k) {
-                    brute_nonce = Some(nonce);
-                    break;
-                }
-            }
-            let brute_seconds = t.elapsed().as_secs_f64();
-            let rate = hashes as f64 / brute_seconds.max(1e-9);
+            let b = brute(&mid, k);
+            let rate = b.hashes as f64 / b.seconds.max(1e-9);
             let inst = json!({
                 "midstate": mid.state, "tail": mid.tail, "rounds": r, "zero_bits": k,
                 "timeout_ms": timeout_ms, "seed": seed.wrapping_add(i),
             });
-            let s = solve(&inst)?;
+            let s = run_script("smt_reduced_round.py", &inst)?;
             let solver_seconds = s["solve_seconds"].as_f64().unwrap_or(f64::NAN);
             let status = s["status"].as_str().unwrap_or("error").to_string();
             let solver_nonce = s["nonce"].as_u64().map(|n| n as u32);
-            let valid = solver_nonce.map(|n| {
-                let mut h = header;
-                h[76..80].copy_from_slice(&n.to_le_bytes());
-                meets(&hash_number_words(&mid.hash_words(n)), k) && meets(&Target::from_hash(&ind.sha256d(&h, r)).words(), k)
-            });
-            let faster = status == "sat" && valid == Some(true) && solver_seconds < brute_seconds;
+            let valid = solver_nonce.map(|n| nonce_valid(&header, &mid, r, k, n));
+            let faster = status == "sat" && valid == Some(true) && solver_seconds < b.seconds;
             flags.push((r, faster));
-            det.push(json!({ "rounds": r, "instance": i, "midstate": mid.state, "brute_force_nonce": brute_nonce, "brute_force_hashes": hashes }));
+            det.push(json!({ "rounds": r, "instance": i, "midstate": mid.state, "brute_force_nonce": b.nonce, "brute_force_hashes": b.hashes }));
             obs.push(json!({
                 "rounds": r,
                 "instance": i,
                 "zero_bits": k,
-                "brute_force": { "nonce": brute_nonce, "hashes": hashes, "seconds": brute_seconds, "expected_hashes": 2f64.powi(k as i32) },
+                "brute_force": { "nonce": b.nonce, "hashes": b.hashes, "seconds": b.seconds, "expected_hashes": 2f64.powi(k as i32) },
                 "solver": { "status": status, "nonce": solver_nonce, "nonce_valid": valid, "seconds": solver_seconds, "timeout_ms": timeout_ms, "z3_version": z3 },
                 "solver_cost_in_hashes": solver_seconds * rate,
-                "solver_over_brute_force_time": solver_seconds / brute_seconds.max(1e-9),
+                "solver_over_brute_force_time": solver_seconds / b.seconds.max(1e-9),
                 "solver_faster": faster,
             }));
         }
@@ -179,17 +202,17 @@ mod tests {
 }
 
 /// Every solver nonce must be valid; `unsat` contradicts a brute-force hit.
-pub fn verify(outcome: &Outcome) -> Result<Verification> {
-    let mut problems = Vec::new();
-    for o in outcome.observations.as_array().into_iter().flatten() {
-        let tag = format!("r{} i{}", o["rounds"], o["instance"]);
-        if o["solver"]["status"] == "sat" && o["solver"]["nonce_valid"] != true {
-            problems.push(format!("{tag}: solver nonce invalid"));
-        }
-        if o["solver"]["status"] == "unsat" && !o["brute_force"]["nonce"].is_null() {
-            problems.push(format!("{tag}: solver claims unsat but brute force found a nonce (model bug)"));
-        }
-    }
+pub fn verify(_: &Value, _: u64, outcome: &Outcome) -> Result<Verification> {
+    let problems: Vec<String> = outcome
+        .observations
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|o| {
+            let p = answer_problem(&o["solver"]["status"], &o["solver"]["nonce_valid"], &o["brute_force"]["nonce"])?;
+            Some(format!("r{} i{}: {p}", o["rounds"], o["instance"]))
+        })
+        .collect();
     Ok(Verification {
         method: "solver nonces recomputed with HeaderMidstate (sha256-core) and with verification::independent over the full header; unsat answers cross-checked against brute force".into(),
         passed: problems.is_empty(),

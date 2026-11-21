@@ -62,11 +62,6 @@ pub fn erfc(x: f64) -> f64 {
     if x >= 0.0 { ans } else { 2.0 - ans }
 }
 
-/// Upper tail of the standard normal distribution.
-pub fn normal_sf(z: f64) -> f64 {
-    0.5 * erfc(z / std::f64::consts::SQRT_2)
-}
-
 /// Two-sided p-value of a z statistic.
 pub fn two_sided_p(z: f64) -> f64 {
     erfc(z.abs() / std::f64::consts::SQRT_2)
@@ -174,14 +169,6 @@ pub fn wilson(successes: u64, n: u64, z: f64) -> (f64, f64) {
 pub fn binomial_z(successes: u64, n: u64, p: f64) -> f64 {
     let n = n as f64;
     (successes as f64 - n * p) / (n * p * (1.0 - p)).sqrt()
-}
-
-/// Pooled two-proportion z statistic.
-pub fn two_proportion_z(x1: u64, n1: u64, x2: u64, n2: u64) -> f64 {
-    let (p1, p2) = (x1 as f64 / n1 as f64, x2 as f64 / n2 as f64);
-    let p = (x1 + x2) as f64 / (n1 + n2) as f64;
-    let se = (p * (1.0 - p) * (1.0 / n1 as f64 + 1.0 / n2 as f64)).sqrt();
-    if se == 0.0 { 0.0 } else { (p1 - p2) / se }
 }
 
 /// Chi-square goodness-of-fit result.
@@ -324,8 +311,8 @@ mod tests {
 
     #[test]
     fn normal_tail_values() {
-        assert!(close(normal_sf(1.959_963_984_540_054), 0.025, 1e-6));
-        assert!(close(normal_sf(0.0), 0.5, 1e-6));
+        assert!(close(two_sided_p(Z95), 0.05, 1e-6));
+        assert!(close(two_sided_p(0.0), 1.0, 1e-6));
         assert!(close(two_sided_p(3.0), 0.002_699_796_063_260_19, 1e-5));
     }
 

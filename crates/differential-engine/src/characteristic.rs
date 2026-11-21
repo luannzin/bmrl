@@ -74,11 +74,8 @@ pub fn maj_diff(da: u32, db: u32, dc: u32) -> (u32, u32) {
 
 #[derive(Clone, Debug)]
 pub struct Trail {
-    pub rounds: usize,
     /// Predicted schedule differences ΔW_t.
     pub delta_w: [u32; 64],
-    /// Cost of producing ΔW_t (t >= 16).
-    pub schedule_cost: [u32; 64],
     /// Predicted state difference; index 0 = input, t + 1 = after round t.
     pub states: Vec<State>,
     /// Cost of round t including ΔW_t, grouped estimator (see [`sum_cost`]).
@@ -138,7 +135,7 @@ pub fn xor_trail(delta: &[u32; 16], rounds: usize) -> Trail {
         states.push(next);
     }
     let [round_cost, round_cost_sequential] = costs;
-    Trail { rounds, delta_w: dw, schedule_cost: sched[0], states, round_cost, round_cost_sequential }
+    Trail { delta_w: dw, states, round_cost, round_cost_sequential }
 }
 
 /// Empirical propagation of a message difference.

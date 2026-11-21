@@ -207,7 +207,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
 
 /// Recompute hashes of the first header from the full 80 bytes (no midstate)
 /// with the independent SHA-256 and compare with the midstate path.
-pub fn verify(params: &Value, seed: u64) -> Result<Verification> {
+pub fn verify(params: &Value, seed: u64, _: &Outcome) -> Result<Verification> {
     let rounds = p_rounds(params)?;
     let per = p_u64(params, "nonces_per_header")?.min(2048);
     let ind = independent::Sha256::default();

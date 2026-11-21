@@ -7,5 +7,6 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
+algebraic-engine.workspace = true
 bitcoin-header.workspace = true
 sha256-core.workspace = true

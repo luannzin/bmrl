@@ -140,19 +140,12 @@ impl Kind {
     pub const STRUCTURAL: [Kind; 6] =
         [Kind::Characteristic, Kind::Algebraic, Kind::Schedule, Kind::SmtScaling, Kind::Multiseed, Kind::Hardware];
 
+    fn module(self) -> &'static Module {
+        &MODULES[self as usize]
+    }
+
     pub fn id(self) -> &'static str {
-        match self {
-            Kind::ReducedRound => "reduced-round",
-            Kind::Differential => "differential",
-            Kind::Statistical => "statistical",
-            Kind::Smt => "smt",
-            Kind::Characteristic => "characteristic",
-            Kind::Algebraic => "algebraic",
-            Kind::Schedule => "schedule",
-            Kind::SmtScaling => "smt-scaling",
-            Kind::Multiseed => "multiseed",
-            Kind::Hardware => "hardware",
-        }
+        self.module().id
     }
 
     pub fn parse(s: &str) -> Option<Kind> {
@@ -160,66 +153,51 @@ impl Kind {
     }
 
     pub fn definition(self) -> Definition {
-        match self {
-            Kind::ReducedRound => reduced_round::definition(),
-            Kind::Differential => differential::definition(),
-            Kind::Statistical => statistical::definition(),
-            Kind::Smt => smt::definition(),
-            Kind::Characteristic => characteristic::definition(),
-            Kind::Algebraic => algebraic::definition(),
-            Kind::Schedule => schedule::definition(),
-            Kind::SmtScaling => smt_scaling::definition(),
-            Kind::Multiseed => multiseed::definition(),
-            Kind::Hardware => hardware::definition(),
-        }
+        (self.module().definition)()
     }
 
     /// Default parameters; `quick` shrinks sample sizes for smoke tests.
     pub fn default_params(self, quick: bool) -> Value {
-        match self {
-            Kind::ReducedRound => reduced_round::default_params(quick),
-            Kind::Differential => differential::default_params(quick),
-            Kind::Statistical => statistical::default_params(quick),
-            Kind::Smt => smt::default_params(quick),
-            Kind::Characteristic => characteristic::default_params(quick),
-            Kind::Algebraic => algebraic::default_params(quick),
-            Kind::Schedule => schedule::default_params(quick),
-            Kind::SmtScaling => smt_scaling::default_params(quick),
-            Kind::Multiseed => multiseed::default_params(quick),
-            Kind::Hardware => hardware::default_params(quick),
-        }
+        (self.module().default_params)(quick)
     }
 
     pub fn execute(self, params: &Value, seed: u64) -> Result<Outcome> {
-        match self {
-            Kind::ReducedRound => reduced_round::execute(params, seed),
-            Kind::Differential => differential::execute(params, seed),
-            Kind::Statistical => statistical::execute(params, seed),
-            Kind::Smt => smt::execute(params, seed),
-            Kind::Characteristic => characteristic::execute(params, seed),
-            Kind::Algebraic => algebraic::execute(params, seed),
-            Kind::Schedule => schedule::execute(params, seed),
-            Kind::SmtScaling => smt_scaling::execute(params, seed),
-            Kind::Multiseed => multiseed::execute(params, seed),
-            Kind::Hardware => hardware::execute(params, seed),
-        }
+        (self.module().execute)(params, seed)
     }
 
     pub fn verify(self, params: &Value, seed: u64, outcome: &Outcome) -> Result<Verification> {
-        match self {
-            Kind::ReducedRound => reduced_round::verify(params, seed),
-            Kind::Differential => differential::verify(params, seed),
-            Kind::Statistical => statistical::verify(params, seed),
-            Kind::Smt => smt::verify(outcome),
-            Kind::Characteristic => characteristic::verify(params, seed, outcome),
-            Kind::Algebraic => algebraic::verify(params, seed, outcome),
-            Kind::Schedule => schedule::verify(params, seed, outcome),
-            Kind::SmtScaling => smt_scaling::verify(outcome),
-            Kind::Multiseed => multiseed::verify(params, seed, outcome),
-            Kind::Hardware => hardware::verify(params),
-        }
+        (self.module().verify)(params, seed, outcome)
     }
 }
+
+/// One experiment kind's entry points.
+struct Module {
+    id: &'static str,
+    definition: fn() -> Definition,
+    default_params: fn(bool) -> Value,
+    execute: fn(&Value, u64) -> Result<Outcome>,
+    verify: fn(&Value, u64, &Outcome) -> Result<Verification>,
+}
+
+macro_rules! module {
+    ($id:literal, $m:ident) => {
+        Module { id: $id, definition: $m::definition, default_params: $m::default_params, execute: $m::execute, verify: $m::verify }
+    };
+}
+
+/// Indexed by `Kind as usize`, in declaration order.
+const MODULES: [Module; 10] = [
+    module!("reduced-round", reduced_round),
+    module!("differential", differential),
+    module!("statistical", statistical),
+    module!("smt", smt),
+    module!("characteristic", characteristic),
+    module!("algebraic", algebraic),
+    module!("schedule", schedule),
+    module!("smt-scaling", smt_scaling),
+    module!("multiseed", multiseed),
+    module!("hardware", hardware),
+];
 
 /// Parameter helpers shared by the kinds.
 pub(crate) fn p_u64(params: &Value, key: &str) -> Result<u64> {
@@ -465,6 +443,13 @@ pub fn reproduce(store: &Store, id: &str) -> Result<Value> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn module_table_matches_kind_order() {
+        let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware"]);
+        assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
+    }
 
     #[test]
     fn classification_never_promotes_unreplicated_full_round_hits() {

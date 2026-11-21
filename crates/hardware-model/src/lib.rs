@@ -14,6 +14,7 @@
 
 #![forbid(unsafe_code)]
 
+use algebraic_engine::schedule_dependence;
 use bitcoin_header::HeaderMidstate;
 use sha256_core::{IV, K, State, block_words, feed_forward, round, small_sigma0, small_sigma1};
 
@@ -229,36 +230,26 @@ pub fn resources(a: &Arch) -> Resources {
         b
     };
     for (block, start, end) in blocks {
-        // Which message words / state words vary with the nonce.
-        let (mut wvar, mut wzero) = ([false; 64], [false; 64]);
+        // Which message words vary with the nonce, and which constants are zero.
+        let (mut var_in, mut zero_in) = ([false; 16], [false; 16]);
         match block {
             Block::First => {}
             Block::Second => {
-                wvar[3] = true;
-                (5..15).for_each(|i| wzero[i] = true);
+                var_in[3] = true;
+                (5..15).for_each(|i| zero_in[i] = true);
             }
             Block::Outer => {
-                (0..8).for_each(|i| wvar[i] = true);
-                (9..15).for_each(|i| wzero[i] = true);
+                (0..8).for_each(|i| var_in[i] = true);
+                (9..15).for_each(|i| zero_in[i] = true);
             }
         }
+        let sched = schedule_dependence(var_in, zero_in);
+        let wvar = sched.variable;
         let mut svar = [false; 8];
         // Schedule words used in this block.
         for t in 16..end {
-            let terms = [(t - 2, true), (t - 7, false), (t - 15, true), (t - 16, false)];
-            wvar[t] = terms.iter().any(|(i, _)| wvar[*i]);
-            wzero[t] = false;
-            if fold {
-                if wvar[t] {
-                    let v = terms.iter().filter(|(i, _)| wvar[*i]).count() as u64;
-                    let c = terms.iter().any(|(i, _)| !wvar[*i] && !wzero[*i]) as u64;
-                    r.adders += v - 1 + c;
-                    r.xor3 += terms.iter().filter(|(i, s)| *s && wvar[*i]).count() as u64;
-                }
-            } else {
-                r.adders += 3;
-                r.xor3 += 2;
-            }
+            r.adders += if fold { sched.adds[t] as u64 } else { 3 };
+            r.xor3 += if fold { sched.sigmas[t] as u64 } else { 2 };
         }
         for t in start..end {
             let [a_, b_, c_, d_, e_, f_, g_, h_] = svar;

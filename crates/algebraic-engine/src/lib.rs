@@ -94,6 +94,41 @@ pub fn schedule_rows(words: std::ops::Range<usize>) -> Vec<Vec<u64>> {
     rows
 }
 
+// ------------------------------------------------------------------ schedule dependence
+
+/// Which expanded words depend on varying inputs, and the minimal per-input
+/// work to compute them once constants are folded.
+pub struct ScheduleDependence {
+    /// W_t depends on a varying message word.
+    pub variable: [bool; 64],
+    /// W_t is the constant 0.
+    pub zero: [bool; 64],
+    /// Additions needed for W_t per input (0 for constant words): one per
+    /// varying term after the first, plus one if any constant term is nonzero.
+    pub adds: [u32; 64],
+    /// σ0/σ1 evaluations on varying words needed for W_t.
+    pub sigmas: [u32; 64],
+}
+
+/// Propagate variability through W_t = σ1(W_{t-2}) + W_{t-7} + σ0(W_{t-15}) + W_{t-16}.
+pub fn schedule_dependence(variable_in: [bool; 16], zero_in: [bool; 16]) -> ScheduleDependence {
+    let mut d = ScheduleDependence { variable: [false; 64], zero: [false; 64], adds: [0; 64], sigmas: [0; 64] };
+    d.variable[..16].copy_from_slice(&variable_in);
+    d.zero[..16].copy_from_slice(&zero_in);
+    for t in 16..64 {
+        let terms = [(t - 2, true), (t - 7, false), (t - 15, true), (t - 16, false)];
+        let varying = terms.iter().filter(|(i, _)| d.variable[*i]).count() as u32;
+        let const_nonzero = terms.iter().any(|(i, _)| !d.variable[*i] && !d.zero[*i]);
+        d.variable[t] = varying > 0;
+        d.zero[t] = varying == 0 && !const_nonzero;
+        if varying > 0 {
+            d.adds[t] = varying - 1 + const_nonzero as u32;
+            d.sigmas[t] = terms.iter().filter(|(i, s)| *s && d.variable[*i]).count() as u32;
+        }
+    }
+    d
+}
+
 // ------------------------------------------------------------------ degree bounds
 
 /// Per-bit upper bound on algebraic degree (0 = constant).

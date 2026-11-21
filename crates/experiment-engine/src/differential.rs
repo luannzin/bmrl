@@ -136,7 +136,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
 }
 
 /// Recompute the first 256 samples of every configuration with the independent SHA-256.
-pub fn verify(params: &Value, seed: u64) -> Result<Verification> {
+pub fn verify(params: &Value, seed: u64, _: &Outcome) -> Result<Verification> {
     let n = p_u64(params, "samples")?.min(256);
     let ind = independent::Sha256::default();
     let mut mismatched = Vec::new();

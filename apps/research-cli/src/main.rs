@@ -219,13 +219,18 @@ fn fmt_rate(h: f64) -> String {
 
 // ---------------------------------------------------------------- system
 
+fn adapter_json(a: &gpu_backend::AdapterInfo) -> Value {
+    json!({
+        "name": a.name, "api": format!("{:?}", a.backend), "type": format!("{:?}", a.device_type),
+        "driver": a.driver, "driver_info": a.driver_info,
+        "vendor_id": format!("{:#06x}", a.vendor), "device_id": format!("{:#06x}", a.device),
+    })
+}
+
 fn system(human: bool) -> Result<(Value, bool)> {
     let environment = env::environment();
-    let adapters: Vec<Value> = gpu_backend::list_adapters()
-        .into_iter()
-        .map(|a| json!({ "name": a.name, "api": a.backend, "type": a.device_type, "driver": a.driver, "driver_info": a.driver_info, "vendor_id": format!("{:#06x}", a.vendor_id), "device_id": format!("{:#06x}", a.device_id) }))
-        .collect();
-    let selected = GpuBackend::new(None).map(|g| g.adapter().name + " (" + &g.adapter().backend + ")").map_err(|e| format!("{e:#}"));
+    let adapters: Vec<Value> = gpu_backend::list_adapters().iter().map(adapter_json).collect();
+    let selected = GpuBackend::new(None).map(|g| format!("{} ({:?})", g.adapter().name, g.adapter().backend)).map_err(|e| format!("{e:#}"));
     let bitcoind = regtest::find_bitcoind(&workspace_root());
     let v = json!({
         "environment": environment,
@@ -412,13 +417,13 @@ fn gpu_throughput(g: &GpuBackend, seconds: f64) -> Result<(u64, f64)> {
 fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
     let g = GpuBackend::new(o.gpu_backend.as_deref())?;
     let a = g.adapter();
-    say!(human, "adapter    {} [{}] driver {} {}", a.name, a.backend, a.driver, a.driver_info);
+    say!(human, "adapter    {} [{:?}] driver {} {}", a.name, a.backend, a.driver, a.driver_info);
     g.calibrate(Duration::from_millis(250))?;
     let cpu = CpuBackend::new(Kernel::best(), o.threads)?;
     let parity = gpu_parity(&g, &cpu)?;
     let (n, s) = gpu_throughput(&g, o.seconds)?;
     let v = save_bench("gpu", json!({
-        "adapter": { "name": a.name, "api": a.backend, "type": a.device_type, "driver": a.driver, "driver_info": a.driver_info },
+        "adapter": adapter_json(a),
         "kernel": "gpu/wgsl/sha256d.wgsl (straightforward midstate kernel, no early reject)",
         "batch_nonces": g.batch(),
         "hashes_per_second": n as f64 / s,
@@ -458,7 +463,7 @@ fn bench_compare(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
     let a = g.adapter();
     let v = save_bench("compare", json!({
         "cpu": { "kernel": cpu.kernel().name(), "threads": cpu.threads(), "hashes_per_second": cpu_rate },
-        "gpu": { "adapter": a.name, "api": a.backend, "hashes_per_second": gpu_rate },
+        "gpu": { "adapter": adapter_json(a), "hashes_per_second": gpu_rate },
         "gpu_over_cpu": gpu_rate / cpu_rate,
         "concurrent": { "cpu_threads": cpu_threads, "cpu_hashes_per_second": cpu_conc.0 as f64 / cpu_conc.1, "gpu_hashes_per_second": gpu_conc.0 as f64 / gpu_conc.1, "combined_hashes_per_second": combined },
         "parity": parity,

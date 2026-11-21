@@ -8,28 +8,27 @@
 //! per-bit growth rate and where (if anywhere) the solver beat brute force in
 //! absolute terms. Only the latter counts as evidence.
 
+use crate::smt::{answer_problem, brute, nonce_valid, run_script};
 use crate::{Definition, Outcome, Verification, p_u64};
-use anyhow::{Context, Result, bail};
-use bitcoin_header::{HeaderMidstate, Target, hash_number_words};
+use anyhow::{Context, Result};
+use bitcoin_header::HeaderMidstate;
 use serde_json::{Value, json};
 use statistical_engine::{SplitMix64, linear_fit};
 use std::collections::BTreeMap;
-use std::io::Write;
-use std::process::{Command, Stdio};
 use std::time::Instant;
-use verification::independent;
 
 pub fn definition() -> Definition {
     Definition {
         hypothesis_id: "H-SMT-02",
         primitive: crate::primitive::HEADER,
         name: "Scaling of SAT/SMT nonce search with rounds and target difficulty",
-        version: 1,
+        // v2: encodings alternate per (r, k) point; v1 spent the whole budget on the first encoding.
+        version: 2,
         hypothesis: "For some round count r, the cost of SAT/SMT nonce search on r-round SHA-256d grows more slowly in the target size k than brute force (factor 2 per bit), or beats brute force outright.",
         null_hypothesis: "Solver cost per additional target bit is at least that of brute force, and the solver is never faster in absolute terms.",
         assumptions: &[
             "Same model as H-SMT-01; two encodings: word-level QF_BV and bit-blasted pure SAT.",
-            "Adaptive timeout: 8x the previous solve time at the same r, clamped to [min, max]; a (r, k) point with every instance timing out ends that r; an r with no solved k ends the encoding.",
+            "Adaptive timeout per encoding: 8x its previous solve time at the same r, clamped to [min, max]; a (r, k) point with every instance timing out ends that r for that encoding; an r with no solved k ends the encoding. Encodings alternate at every point so the budget is shared.",
             "Growth rates are least-squares slopes of log2(median solve seconds) vs k over solved points with solve time >= 50 ms (to exclude fixed overhead); extrapolated crossovers are heuristic.",
             "Brute force: single thread, generic reduced-round midstate path.",
             "Solver statistics are Z3's internal counters (sat conflicts, decisions).",
@@ -57,53 +56,6 @@ pub fn default_params(quick: bool) -> Value {
     }
 }
 
-fn script() -> std::path::PathBuf {
-    research_storage::workspace_root().join("research").join("algebraic-models").join("smt_scaling.py")
-}
-
-fn run_solver(inst: &Value) -> Result<Value> {
-    let python = std::env::var("BMR_PYTHON").unwrap_or_else(|_| "python".into());
-    let mut child = Command::new(python)
-        .arg("-I")
-        .arg(script())
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .context("starting python")?;
-    child.stdin.take().context("stdin")?.write_all(inst.to_string().as_bytes())?;
-    let out = child.wait_with_output()?;
-    if !out.status.success() {
-        bail!("solver script failed: {}", String::from_utf8_lossy(&out.stderr).trim());
-    }
-    serde_json::from_slice(&out.stdout).context("solver output is not JSON")
-}
-
-fn meets(words: &[u32; 8], k: u32) -> bool {
-    words[0] >> (32 - k) == 0
-}
-
-struct Brute {
-    nonce: Option<u32>,
-    hashes: u64,
-    seconds: f64,
-}
-
-/// Search up to 2^(k+12) nonces (4096x the expected work); reduced-round
-/// structure can make some targets unreachable, so the scan is capped.
-fn brute(mid: &HeaderMidstate, k: u32) -> Brute {
-    let t = Instant::now();
-    let mut hashes = 0;
-    let cap = (1u64 << (k + 12)).min(1 << 32);
-    for nonce in (0..=u32::MAX).take(cap as usize) {
-        hashes += 1;
-        if meets(&hash_number_words(&mid.hash_words(nonce)), k) {
-            return Brute { nonce: Some(nonce), hashes, seconds: t.elapsed().as_secs_f64() };
-        }
-    }
-    Brute { nonce: None, hashes, seconds: t.elapsed().as_secs_f64() }
-}
-
 fn list<T>(params: &Value, key: &str, f: impl Fn(&Value) -> Option<T>) -> Result<Vec<T>> {
     params[key].as_array().with_context(|| format!("{key} must be an array"))?.iter().map(|v| f(v).with_context(|| format!("bad entry in {key}"))).collect()
 }
@@ -129,7 +81,6 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
         return Ok(Outcome::skipped("python with z3-solver not available (pip install z3-solver)".into()));
     };
     let started = Instant::now();
-    let ind = independent::Sha256::default();
 
     // Deterministic brute-force grid (the reproducible part of this experiment).
     let mut brute_grid = BTreeMap::new();
@@ -147,14 +98,21 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     let mut frontier = Vec::new();
     let mut cnf_by_round: BTreeMap<usize, Value> = BTreeMap::new();
     let mut budget_hit = false;
-    'enc: for enc in &encodings {
-        for &r in &rounds {
-            let mut prev: Option<f64> = None;
-            let mut solved_any = false;
-            for &k in &ks {
+    // Encodings alternate at every (r, k) point so the time budget is shared
+    // fairly (v1 ran them one after another and the budget ran out in the first).
+    let mut active: Vec<&String> = encodings.iter().collect();
+    'grid: for &r in &rounds {
+        // Per encoding at this r: (previous solve time, frontier reached, any k solved).
+        let mut state: BTreeMap<&String, (Option<f64>, bool, bool)> = active.iter().map(|e| (*e, (None, false, false))).collect();
+        for &k in &ks {
+            for &enc in &active {
+                let (prev, done, solved_any) = state.get_mut(enc).expect("state per active encoding");
+                if *done {
+                    continue;
+                }
                 if started.elapsed().as_secs_f64() > budget {
                     budget_hit = true;
-                    break 'enc;
+                    break 'grid;
                 }
                 let timeout = prev.map_or(min_t, |s| ((s * 8000.0) as u64).clamp(min_t, max_t));
                 let mut times = Vec::new();
@@ -166,24 +124,18 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
                         "midstate": mid.state, "tail": mid.tail, "rounds": r, "zero_bits": k, "timeout_ms": timeout,
                         "seed": seed.wrapping_add(i), "encoding": enc, "cnf_stats": want_cnf,
                     });
-                    let s = run_solver(&inst)?;
+                    let s = run_script("smt_scaling.py", &inst)?;
                     if want_cnf && !s["cnf"].is_null() {
                         cnf_by_round.insert(r, s["cnf"].clone());
                     }
                     let status = s["status"].as_str().unwrap_or("error").to_string();
                     let solve = s["solve_seconds"].as_f64().unwrap_or(f64::NAN);
                     let nonce = s["nonce"].as_u64().map(|n| n as u32);
-                    let valid = nonce.map(|n| {
-                        let mut h = *header;
-                        h[76..80].copy_from_slice(&n.to_le_bytes());
-                        meets(&hash_number_words(&mid.hash_words(n)), k) && meets(&Target::from_hash(&ind.sha256d(&h, r)).words(), k)
-                    });
+                    let valid = nonce.map(|n| nonce_valid(header, mid, r, k, n));
                     if status == "sat" {
-                        all_unknown = false;
                         times.push(solve);
-                    } else if status == "unsat" {
-                        all_unknown = false;
                     }
+                    all_unknown &= status != "sat" && status != "unsat";
                     points.push(json!({
                         "encoding": enc, "rounds": r, "zero_bits": k, "instance": i, "timeout_ms": timeout,
                         "status": status, "nonce": nonce, "nonce_valid": valid,
@@ -196,14 +148,17 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
                 }
                 if all_unknown {
                     frontier.push(json!({ "encoding": enc, "rounds": r, "zero_bits": k, "timeout_ms": timeout }));
-                    break;
+                    *done = true;
+                } else {
+                    *solved_any = true;
+                    *prev = times.iter().copied().reduce(f64::max).or(*prev);
                 }
-                solved_any = true;
-                prev = times.iter().copied().reduce(f64::max).or(prev);
             }
-            if !solved_any {
-                break;
-            }
+        }
+        // An encoding that solved nothing at this r is not tried at larger r.
+        active.retain(|e| state[e].2);
+        if active.is_empty() {
+            break;
         }
     }
 
@@ -314,17 +269,16 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     ))
 }
 
-pub fn verify(outcome: &Outcome) -> Result<Verification> {
-    let mut problems = Vec::new();
-    for p in outcome.observations["points"].as_array().into_iter().flatten() {
-        let tag = format!("{} r{} k{} i{}", p["encoding"].as_str().unwrap_or(""), p["rounds"], p["zero_bits"], p["instance"]);
-        if p["status"] == "sat" && p["nonce_valid"] != true {
-            problems.push(format!("{tag}: invalid solver nonce"));
-        }
-        if p["status"] == "unsat" && !p["brute_force"]["nonce"].is_null() {
-            problems.push(format!("{tag}: unsat contradicts brute force"));
-        }
-    }
+pub fn verify(_: &Value, _: u64, outcome: &Outcome) -> Result<Verification> {
+    let problems: Vec<String> = outcome.observations["points"]
+        .as_array()
+        .into_iter()
+        .flatten()
+        .filter_map(|p| {
+            let problem = answer_problem(&p["status"], &p["nonce_valid"], &p["brute_force"]["nonce"])?;
+            Some(format!("{} r{} k{} i{}: {problem}", p["encoding"].as_str().unwrap_or(""), p["rounds"], p["zero_bits"], p["instance"]))
+        })
+        .collect();
     Ok(Verification {
         method: "every solver nonce recomputed with sha256-core (midstate) and verification::independent (full header); unsat answers checked against brute force".into(),
         passed: problems.is_empty(),

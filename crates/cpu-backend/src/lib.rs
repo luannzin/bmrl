@@ -48,10 +48,6 @@ impl Kernel {
     pub fn best() -> Kernel {
         if avx2_available() { Kernel::Avx2 } else { Kernel::Scalar }
     }
-
-    pub fn parse(s: &str) -> Option<Kernel> {
-        Kernel::ALL.into_iter().find(|k| k.name() == s)
-    }
 }
 
 fn avx2_available() -> bool {

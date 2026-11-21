@@ -167,7 +167,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
 
 /// Re-simulate every variant on a fresh header and check outputs against the
 /// independent SHA-256 over the full 80-byte header.
-pub fn verify(_params: &Value) -> Result<Verification> {
+pub fn verify(_: &Value, _: u64, _: &Outcome) -> Result<Verification> {
     let ind = verification::independent::Sha256::default();
     let mut header: [u8; 80] = SplitMix64::stream(0xfeed, 7).bytes();
     let mut problems = Vec::new();

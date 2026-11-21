@@ -109,10 +109,6 @@ pub struct Store {
     dir: PathBuf,
 }
 
-fn opt_bool(v: &Value) -> Option<bool> {
-    v.as_bool()
-}
-
 impl Store {
     pub fn open(dir: &Path) -> Result<Self> {
         std::fs::create_dir_all(dir.join("results")).with_context(|| format!("creating {}", dir.display()))?;
@@ -123,10 +119,6 @@ impl Store {
 
     pub fn open_default() -> Result<Self> {
         Self::open(&data_dir())
-    }
-
-    pub fn dir(&self) -> &Path {
-        &self.dir
     }
 
     /// Next id `<prefix>-NNNN` for `table`.
@@ -161,8 +153,8 @@ impl Store {
                 record["candidate_anomaly"].as_bool().unwrap_or(false),
                 record["seed"].as_u64().map(|s| s.to_string()),
                 record["samples"].as_i64(),
-                opt_bool(&record["reproduction"]["matched"]),
-                opt_bool(&record["verification"]["passed"]),
+                record["reproduction"]["matched"].as_bool(),
+                record["verification"]["passed"].as_bool(),
                 record["started_at"].as_str(),
                 record["finished_at"].as_str(),
                 serde_json::to_string(record)?,
