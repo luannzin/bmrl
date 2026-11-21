@@ -1,0 +1,567 @@
+{
+  "assumptions": [
+    "Every architecture variant is simulated cycle by cycle and must reproduce the software SHA-256d for every nonce; resource counts come from the same stage list.",
+    "One SHA-256 round per pipeline stage; 32 LUTs per 32-bit operator (adder, Σ/σ group, Ch, Maj); registers counted bit by bit; 80% utilization.",
+    "Clock ranges per device family and per-toggle energies (activity 0.5) are ASSUMPTIONS, not vendor power-tool output or measurements.",
+    "Device LUT/FF counts are published datasheet figures.",
+    "CPU/GPU energy bounds use vendor TDP/board power (specification, not measured) divided by measured hash rate; the ASIC point is a vendor specification."
+  ],
+  "baseline": "Measured CPU (best kernel, all threads) and GPU (WGSL) hash rates from the benchmark registry.",
+  "candidate_anomaly": false,
+  "conclusion": "MODEL ESTIMATE: figures below come from an analytical model with stated assumptions, validated only where noted; they are not measurements. All 6 variants reproduce the reference on every simulated nonce (mismatches: 0); full pipelines accept one nonce per cycle. Midstate pipeline: 128 stages, 1201 adders, 93696 register bits; with precompute + early reject + constant folding: 122 stages, 1062 adders (11.6% fewer), 83264 register bits (11.1% fewer). Constant folding applied to a design without midstate removes block 1 and the first three second-block rounds automatically, giving exactly the midstate + precompute datapath. Best modelled FPGA: midstate+precompute3+early-reject+fold on Xilinx Virtex UltraScale+ XCVU9P at up to 6.80 GH/s (model). Measured CPU baseline 115.8 MH/s; model/CPU throughput ratio up to 59x. Measured GPU baseline 498.8 MH/s; model/GPU throughput ratio up to 13.6x. Energy figures depend on assumed per-toggle energies; treat them as order-of-magnitude until calibrated with vendor power tools or board measurements.",
+  "configurations": [],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Random 80-byte headers from SplitMix64::stream(seed, i); consecutive nonces.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 1.9613738,
+  "environment": {
+    "arch": "x86_64",
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "702f263b3a0f5bf1ea3ba261b985b1d9953eb644",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "87ca960088c097dc06533b58f4e74705708b0bb126d710af4344b51cac0459b6"
+  },
+  "errata": [
+    {
+      "created_at": "2026-11-21T20:48:11Z",
+      "note": "Register counts for early-reject variants include schedule words W61..W63, which the outer block never uses after round 60 (folded design: 83,264 bits reported). Superseded by hardware-0003."
+    }
+  ],
+  "finished_at": "2026-11-21T20:25:00Z",
+  "hypothesis": "A fully pipelined SHA-256d datapath using midstate, precomputation, early reject and constant folding fits commodity FPGAs and delivers more hashes per second and per joule than the measured CPU and GPU baselines of this lab.",
+  "hypothesis_id": "H-HW-01",
+  "hypothesis_status": "modelled",
+  "id": "hardware-0002",
+  "implementation": [
+    "hardware_model::{simulate, resources, estimate}"
+  ],
+  "kind": "hardware",
+  "methodology": "Simulate each variant on random headers, compare every output with the reference, record latency and steady-state throughput. Count operators/registers with and without constant folding. Map to devices under the cost model; when no full pipeline fits, choose the best iterative core (u rounds per cycle). Compare with measured baselines.",
+  "name": "Pipelined SHA-256d datapaths: correctness, resources, FPGA throughput and energy model",
+  "null_hypothesis": "No modelled FPGA configuration exceeds the measured CPU/GPU throughput or their energy efficiency bound.",
+  "observations": {
+    "comparison": {
+      "asic": {
+        "joules_per_terahash": 17.5,
+        "name": "Bitmain Antminer S21 (vendor specification)"
+      },
+      "best_fpga_model": {
+        "device": "Xilinx Virtex UltraScale+ XCVU9P",
+        "hashes_per_second_high": 6800000000.0,
+        "joules_per_terahash_low": 10673.176470588236,
+        "variant": "midstate+precompute3+early-reject+fold"
+      },
+      "cpu": {
+        "benchmark": "bench-cpu-0001",
+        "hashes_per_second": 115819193.85103749,
+        "joules_per_terahash_tdp_bound": 1036097.696849278,
+        "power_source": "Intel Xeon E5-2680 v4 TDP (specification)"
+      },
+      "gpu": {
+        "benchmark": "bench-gpu-0001",
+        "hashes_per_second": 498804774.73011947,
+        "joules_per_terahash_tdp_bound": 330790.73890035227,
+        "power_source": "AMD Radeon RX 7600 total board power (specification)"
+      }
+    },
+    "cost_model": {
+      "activity": 0.5,
+      "luts_per_word_op": 32.0,
+      "pj_per_ff": [
+        0.05,
+        0.3
+      ],
+      "pj_per_lut": [
+        0.3,
+        1.5
+      ],
+      "utilization": 0.8
+    },
+    "variants": [
+      {
+        "devices": [
+          {
+            "device": "Xilinx Artix-7 XC7A100T",
+            "full_pipelines": 0,
+            "hashes_per_second": [
+              100000000.0,
+              133333333.33333331
+            ],
+            "iterative_cores": {
+              "cores": 16,
+              "rounds_per_cycle": 8
+            },
+            "joules_per_terahash": [
+              19136.8,
+              94107.2
+            ]
+          },
+          {
+            "device": "Xilinx Kintex-7 XC7K325T",
+            "full_pipelines": 1,
+            "hashes_per_second": [
+              200000000.0,
+              250000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              19236.8,
+              94107.2
+            ]
+          },
+          {
+            "device": "Xilinx Virtex UltraScale+ XCVU9P",
+            "full_pipelines": 10,
+            "hashes_per_second": [
+              3000000000.0,
+              4000000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              18386.8,
+              93107.2
+            ]
+          }
+        ],
+        "resources": {
+          "adders_32bit": 1801,
+          "ch_words": 192,
+          "dynamic_pj_per_hash": [
+            17636.8,
+            92107.2
+          ],
+          "luts_estimated": 91424.0,
+          "maj_words": 192,
+          "pipeline_stages": 192,
+          "register_bits": 156928,
+          "xor3_words": 672
+        },
+        "simulation": {
+          "cycles": 4287,
+          "headers": 4,
+          "latency_cycles": 192,
+          "mismatches": 0,
+          "nonces_per_header": 4096,
+          "output": "full digest",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "no-midstate"
+      },
+      {
+        "devices": [
+          {
+            "device": "Xilinx Artix-7 XC7A100T",
+            "full_pipelines": 0,
+            "hashes_per_second": [
+              150000000.0,
+              200000000.0
+            ],
+            "iterative_cores": {
+              "cores": 16,
+              "rounds_per_cycle": 8
+            },
+            "joules_per_terahash": [
+              12486.4,
+              61107.73333333334
+            ]
+          },
+          {
+            "device": "Xilinx Kintex-7 XC7K325T",
+            "full_pipelines": 2,
+            "hashes_per_second": [
+              400000000.0,
+              500000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              12286.4,
+              60774.4
+            ]
+          },
+          {
+            "device": "Xilinx Virtex UltraScale+ XCVU9P",
+            "full_pipelines": 15,
+            "hashes_per_second": [
+              4500000000.0,
+              6000000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              11986.4,
+              60441.066666666666
+            ]
+          }
+        ],
+        "resources": {
+          "adders_32bit": 1201,
+          "ch_words": 128,
+          "dynamic_pj_per_hash": [
+            11486.4,
+            59774.4
+          ],
+          "luts_estimated": 60960.0,
+          "maj_words": 128,
+          "pipeline_stages": 128,
+          "register_bits": 93696,
+          "xor3_words": 448
+        },
+        "simulation": {
+          "cycles": 4223,
+          "headers": 4,
+          "latency_cycles": 128,
+          "mismatches": 0,
+          "nonces_per_header": 4096,
+          "output": "full digest",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate"
+      },
+      {
+        "devices": [
+          {
+            "device": "Xilinx Artix-7 XC7A100T",
+            "full_pipelines": 0,
+            "hashes_per_second": [
+              150000000.0,
+              200000000.0
+            ],
+            "iterative_cores": {
+              "cores": 16,
+              "rounds_per_cycle": 8
+            },
+            "joules_per_terahash": [
+              12268.0,
+              59955.73333333334
+            ]
+          },
+          {
+            "device": "Xilinx Kintex-7 XC7K325T",
+            "full_pipelines": 2,
+            "hashes_per_second": [
+              400000000.0,
+              500000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              12068.0,
+              59622.4
+            ]
+          },
+          {
+            "device": "Xilinx Virtex UltraScale+ XCVU9P",
+            "full_pipelines": 15,
+            "hashes_per_second": [
+              4500000000.0,
+              6000000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              11768.0,
+              59289.066666666666
+            ]
+          }
+        ],
+        "resources": {
+          "adders_32bit": 1180,
+          "ch_words": 125,
+          "dynamic_pj_per_hash": [
+            11268.0,
+            58622.4
+          ],
+          "luts_estimated": 59904.0,
+          "maj_words": 125,
+          "pipeline_stages": 125,
+          "register_bits": 91296,
+          "xor3_words": 442
+        },
+        "simulation": {
+          "cycles": 4220,
+          "headers": 4,
+          "latency_cycles": 125,
+          "mismatches": 0,
+          "nonces_per_header": 4096,
+          "output": "full digest",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate+precompute3"
+      },
+      {
+        "devices": [
+          {
+            "device": "Xilinx Artix-7 XC7A100T",
+            "full_pipelines": 0,
+            "hashes_per_second": [
+              150000000.0,
+              200000000.0
+            ],
+            "iterative_cores": {
+              "cores": 31,
+              "rounds_per_cycle": 4
+            },
+            "joules_per_terahash": [
+              11980.0,
+              58491.73333333334
+            ]
+          },
+          {
+            "device": "Xilinx Kintex-7 XC7K325T",
+            "full_pipelines": 2,
+            "hashes_per_second": [
+              400000000.0,
+              500000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              11780.0,
+              58158.4
+            ]
+          },
+          {
+            "device": "Xilinx Virtex UltraScale+ XCVU9P",
+            "full_pipelines": 16,
+            "hashes_per_second": [
+              4800000000.0,
+              6400000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              11448.75,
+              57783.4
+            ]
+          }
+        ],
+        "resources": {
+          "adders_32bit": 1143,
+          "ch_words": 122,
+          "dynamic_pj_per_hash": [
+            10980.0,
+            57158.4
+          ],
+          "luts_estimated": 58144.0,
+          "maj_words": 122,
+          "pipeline_stages": 122,
+          "register_bits": 90336,
+          "xor3_words": 430
+        },
+        "simulation": {
+          "cycles": 4217,
+          "headers": 4,
+          "latency_cycles": 122,
+          "mismatches": 0,
+          "nonces_per_header": 4096,
+          "output": "H7 only (early reject)",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate+precompute3+early-reject"
+      },
+      {
+        "devices": [
+          {
+            "device": "Xilinx Artix-7 XC7A100T",
+            "full_pipelines": 0,
+            "hashes_per_second": [
+              150000000.0,
+              200000000.0
+            ],
+            "iterative_cores": {
+              "cores": 31,
+              "rounds_per_cycle": 4
+            },
+            "joules_per_terahash": [
+              11232.0,
+              54574.933333333334
+            ]
+          },
+          {
+            "device": "Xilinx Kintex-7 XC7K325T",
+            "full_pipelines": 3,
+            "hashes_per_second": [
+              600000000.0,
+              750000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              10765.333333333334,
+              53908.26666666666
+            ]
+          },
+          {
+            "device": "Xilinx Virtex UltraScale+ XCVU9P",
+            "full_pipelines": 17,
+            "hashes_per_second": [
+              5100000000.0,
+              6800000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              10673.176470588236,
+              53829.83529411765
+            ]
+          }
+        ],
+        "resources": {
+          "adders_32bit": 1062,
+          "ch_words": 120,
+          "dynamic_pj_per_hash": [
+            10232.0,
+            53241.6
+          ],
+          "luts_estimated": 54336.0,
+          "maj_words": 120,
+          "pipeline_stages": 122,
+          "register_bits": 83264,
+          "xor3_words": 396
+        },
+        "simulation": {
+          "cycles": 4217,
+          "headers": 4,
+          "latency_cycles": 122,
+          "mismatches": 0,
+          "nonces_per_header": 4096,
+          "output": "H7 only (early reject)",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate+precompute3+early-reject+fold"
+      },
+      {
+        "devices": [
+          {
+            "device": "Xilinx Artix-7 XC7A100T",
+            "full_pipelines": 0,
+            "hashes_per_second": [
+              150000000.0,
+              200000000.0
+            ],
+            "iterative_cores": {
+              "cores": 31,
+              "rounds_per_cycle": 4
+            },
+            "joules_per_terahash": [
+              11232.0,
+              54574.933333333334
+            ]
+          },
+          {
+            "device": "Xilinx Kintex-7 XC7K325T",
+            "full_pipelines": 3,
+            "hashes_per_second": [
+              600000000.0,
+              750000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              10765.333333333334,
+              53908.26666666666
+            ]
+          },
+          {
+            "device": "Xilinx Virtex UltraScale+ XCVU9P",
+            "full_pipelines": 17,
+            "hashes_per_second": [
+              5100000000.0,
+              6800000000.0
+            ],
+            "iterative_cores": null,
+            "joules_per_terahash": [
+              10673.176470588236,
+              53829.83529411765
+            ]
+          }
+        ],
+        "resources": {
+          "adders_32bit": 1062,
+          "ch_words": 120,
+          "dynamic_pj_per_hash": [
+            10232.0,
+            53241.6
+          ],
+          "luts_estimated": 54336.0,
+          "maj_words": 120,
+          "pipeline_stages": 122,
+          "register_bits": 83264,
+          "xor3_words": 396
+        },
+        "simulation": {
+          "cycles": 4284,
+          "headers": 4,
+          "latency_cycles": 189,
+          "mismatches": 0,
+          "nonces_per_header": 4096,
+          "output": "H7 only (early reject)",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "no-midstate+early-reject+fold"
+      }
+    ]
+  },
+  "params": {
+    "asic_reference": {
+      "joules_per_terahash": 17.5,
+      "name": "Bitmain Antminer S21 (vendor specification)"
+    },
+    "cost": {
+      "activity": 0.5,
+      "luts_per_word_op": 32.0,
+      "pj_per_ff": [
+        0.05,
+        0.3
+      ],
+      "pj_per_lut": [
+        0.3,
+        1.5
+      ],
+      "utilization": 0.8
+    },
+    "headers": 4,
+    "reference_power_w": {
+      "cpu": 120.0,
+      "cpu_source": "Intel Xeon E5-2680 v4 TDP (specification)",
+      "gpu": 165.0,
+      "gpu_source": "AMD Radeon RX 7600 total board power (specification)"
+    },
+    "reproduce": true,
+    "sim_nonces": 4096
+  },
+  "primitive": "bitcoin-header-sha256d-datapath",
+  "reproduction": {
+    "digest": "64c654947c80a2b93bb29dca5fcd4bfdea7e1b61fce3bc75669276b40a93f756",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research hardware --seed 1112363596 --params '{\"asic_reference\":{\"joules_per_terahash\":17.5,\"name\":\"Bitmain Antminer S21 (vendor specification)\"},\"cost\":{\"activity\":0.5,\"luts_per_word_op\":32.0,\"pj_per_ff\":[0.05,0.3],\"pj_per_lut\":[0.3,1.5],\"utilization\":0.8},\"headers\":4,\"reference_power_w\":{\"cpu\":120.0,\"cpu_source\":\"Intel Xeon E5-2680 v4 TDP (specification)\",\"gpu\":165.0,\"gpu_source\":\"AMD Radeon RX 7600 total board power (specification)\"},\"reproduce\":true,\"sim_nonces\":4096}'",
+  "result": "model-estimate",
+  "result_digest": "64c654947c80a2b93bb29dca5fcd4bfdea7e1b61fce3bc75669276b40a93f756",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "bitcoin-header-sha256d-datapath",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-21T20:24:58Z",
+  "status": "completed",
+  "verification": {
+    "detail": "6 variants x 256 nonces identical",
+    "method": "every variant re-simulated on an unseen header; outputs compared with the independent SHA-256 over the full serialized header; folding consistency (no-midstate folds to midstate) checked",
+    "passed": true
+  }
+}

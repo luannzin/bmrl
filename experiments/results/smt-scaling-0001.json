@@ -54,6 +54,12 @@
     "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
     "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
   },
+  "errata": [
+    {
+      "created_at": "2026-11-21T20:23:08Z",
+      "note": "The 900 s budget was spent on the qfbv encoding; bitblast-sat never ran past r=4, so this record contains no encoding comparison. Definition v2 alternates encodings at every point."
+    }
+  ],
   "finished_at": "2026-11-21T20:11:59Z",
   "hypothesis": "For some round count r, the cost of SAT/SMT nonce search on r-round SHA-256d grows more slowly in the target size k than brute force (factor 2 per bit), or beats brute force outright.",
   "hypothesis_id": "H-SMT-02",
@@ -146,7 +152,7 @@
         "solver_beat_brute_force": false,
         "time_points": 4,
         "time_slope_bits_per_bit": 0.1660087276945736,
-        "time_slope_se": 0.24836496882422726
+        "time_slope_se": 0.2483649688242273
       }
     ],
     "frontier": [

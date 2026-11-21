@@ -123,6 +123,12 @@
     "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
     "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
   },
+  "errata": [
+    {
+      "created_at": "2026-11-21T20:23:08Z",
+      "note": "Estimated probabilities use the sequential per-addition estimator, which charges a lone difference once per addition of a multi-operand sum; it was up to 15 bits too pessimistic (delta W15[31], round 17: empirical 2^-11.0 vs estimate 2^-26). Empirical counts are unaffected. Definition v2 adds the grouped estimator."
+    }
+  ],
   "finished_at": "2026-11-21T19:56:25Z",
   "hypothesis": "For a single-bit message difference, the carry-free XOR characteristic is followed by real pairs with probability measurably above 2^-256 through some number of rounds, and the Lipmaa–Moriai independence estimate predicts that probability within 1 bit wherever it is measurable.",
   "hypothesis_id": "H-CHAR-01",
@@ -144,7 +150,7 @@
         "word": 15
       },
       "estimator_error_bits": {
-        "max_abs": 14.974414589805527,
+        "max_abs": 14.974414589805528,
         "mean": 0.880847917047384,
         "rounds_compared": 17
       },
@@ -392,11 +398,11 @@
         {
           "biased_state_bits": 245,
           "ci95": [
-            0.00043957731534248115,
+            0.0004395773153424811,
             0.0005234790194195601
           ],
           "deterministic_state_bits": 206,
-          "empirical_log2": -11.025585410194473,
+          "empirical_log2": -11.025585410194472,
           "empirical_probability": 0.00047969818115234375,
           "followers": 503,
           "mean_state_difference_weight": 18.97723388671875,
@@ -441,7 +447,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 110.36236572265625,
+          "mean_state_difference_weight": 110.36236572265624,
           "predicted_log2": -380.0,
           "rounds": 20
         },
@@ -455,7 +461,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 125.37847900390625,
+          "mean_state_difference_weight": 125.37847900390624,
           "predicted_log2": -569.0,
           "rounds": 21
         },
@@ -609,7 +615,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.99041748046875,
+          "mean_state_difference_weight": 127.99041748046876,
           "predicted_log2": -2772.0,
           "rounds": 32
         },
@@ -651,7 +657,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95501708984375,
+          "mean_state_difference_weight": 127.95501708984376,
           "predicted_log2": -3439.0,
           "rounds": 35
         },
@@ -875,7 +881,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.87152099609375,
+          "mean_state_difference_weight": 127.87152099609376,
           "predicted_log2": -7392.0,
           "rounds": 51
         },
@@ -889,7 +895,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.92608642578125,
+          "mean_state_difference_weight": 127.92608642578124,
           "predicted_log2": -7647.0,
           "rounds": 52
         },
@@ -903,7 +909,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98846435546875,
+          "mean_state_difference_weight": 127.98846435546876,
           "predicted_log2": -7932.0,
           "rounds": 53
         },
@@ -945,7 +951,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98919677734375,
+          "mean_state_difference_weight": 127.98919677734376,
           "predicted_log2": -8708.0,
           "rounds": 56
         },
@@ -959,7 +965,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.92340087890625,
+          "mean_state_difference_weight": 127.92340087890624,
           "predicted_log2": -8960.0,
           "rounds": 57
         },
@@ -1528,7 +1534,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94586181640625,
+          "mean_state_difference_weight": 127.94586181640624,
           "predicted_log2": -718.0,
           "rounds": 22
         },
@@ -1612,7 +1618,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.99896240234375,
+          "mean_state_difference_weight": 127.99896240234376,
           "predicted_log2": -1924.0,
           "rounds": 28
         },
@@ -1626,7 +1632,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.96575927734375,
+          "mean_state_difference_weight": 127.96575927734376,
           "predicted_log2": -2122.0,
           "rounds": 29
         },
@@ -1654,7 +1660,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95404052734375,
+          "mean_state_difference_weight": 127.95404052734376,
           "predicted_log2": -2551.0,
           "rounds": 31
         },
@@ -1724,7 +1730,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98431396484375,
+          "mean_state_difference_weight": 127.98431396484376,
           "predicted_log2": -3652.0,
           "rounds": 36
         },
@@ -1836,7 +1842,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.99749755859375,
+          "mean_state_difference_weight": 127.99749755859376,
           "predicted_log2": -5496.0,
           "rounds": 44
         },
@@ -1850,7 +1856,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.91790771484375,
+          "mean_state_difference_weight": 127.91790771484376,
           "predicted_log2": -5767.0,
           "rounds": 45
         },
@@ -1864,7 +1870,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.90826416015625,
+          "mean_state_difference_weight": 127.90826416015624,
           "predicted_log2": -6013.0,
           "rounds": 46
         },
@@ -1878,7 +1884,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.89898681640625,
+          "mean_state_difference_weight": 127.89898681640624,
           "predicted_log2": -6275.0,
           "rounds": 47
         },
@@ -1906,7 +1912,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.96942138671875,
+          "mean_state_difference_weight": 127.96942138671876,
           "predicted_log2": -6759.0,
           "rounds": 49
         },
@@ -1920,7 +1926,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.92718505859375,
+          "mean_state_difference_weight": 127.92718505859376,
           "predicted_log2": -7023.0,
           "rounds": 50
         },
@@ -2032,7 +2038,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95404052734375,
+          "mean_state_difference_weight": 127.95404052734376,
           "predicted_log2": -9142.0,
           "rounds": 58
         },
@@ -2074,7 +2080,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94085693359375,
+          "mean_state_difference_weight": 127.94085693359376,
           "predicted_log2": -9950.0,
           "rounds": 61
         },
@@ -2102,7 +2108,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.96832275390625,
+          "mean_state_difference_weight": 127.96832275390624,
           "predicted_log2": -10446.0,
           "rounds": 63
         },
@@ -2263,7 +2269,7 @@
       },
       "estimator_error_bits": {
         "max_abs": 14.939579214314692,
-        "mean": 1.4939579214314693,
+        "mean": 1.493957921431469,
         "rounds_compared": 10
       },
       "last_round_followed_by_two_or_more": 10,
@@ -2417,7 +2423,7 @@
           ],
           "deterministic_state_bits": 206,
           "empirical_log2": -11.060420785685308,
-          "empirical_probability": 0.00046825408935546875,
+          "empirical_probability": 0.0004682540893554687,
           "followers": 491,
           "mean_state_difference_weight": 18.98486328125,
           "predicted_log2": -26.0,
@@ -2489,7 +2495,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.86529541015625,
+          "mean_state_difference_weight": 127.86529541015624,
           "predicted_log2": -580.0,
           "rounds": 15
         },
@@ -2503,7 +2509,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.87225341796875,
+          "mean_state_difference_weight": 127.87225341796876,
           "predicted_log2": -751.0,
           "rounds": 16
         },
@@ -2545,7 +2551,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95367431640625,
+          "mean_state_difference_weight": 127.95367431640624,
           "predicted_log2": -1320.0,
           "rounds": 19
         },
@@ -2643,7 +2649,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.93524169921875,
+          "mean_state_difference_weight": 127.93524169921876,
           "predicted_log2": -2636.0,
           "rounds": 26
         },
@@ -2685,7 +2691,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.99859619140625,
+          "mean_state_difference_weight": 127.99859619140624,
           "predicted_log2": -3232.0,
           "rounds": 29
         },
@@ -2699,7 +2705,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.92779541015625,
+          "mean_state_difference_weight": 127.92779541015624,
           "predicted_log2": -3420.0,
           "rounds": 30
         },
@@ -2713,7 +2719,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.90521240234375,
+          "mean_state_difference_weight": 127.90521240234376,
           "predicted_log2": -3629.0,
           "rounds": 31
         },
@@ -2839,7 +2845,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.86895751953125,
+          "mean_state_difference_weight": 127.86895751953124,
           "predicted_log2": -5813.0,
           "rounds": 40
         },
@@ -2965,7 +2971,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.97393798828125,
+          "mean_state_difference_weight": 127.97393798828124,
           "predicted_log2": -8142.0,
           "rounds": 49
         },
@@ -3021,7 +3027,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98284912109375,
+          "mean_state_difference_weight": 127.98284912109376,
           "predicted_log2": -9203.0,
           "rounds": 53
         },
@@ -3105,7 +3111,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95916748046875,
+          "mean_state_difference_weight": 127.95916748046876,
           "predicted_log2": -10812.0,
           "rounds": 59
         },
@@ -3119,7 +3125,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98162841796875,
+          "mean_state_difference_weight": 127.98162841796876,
           "predicted_log2": -11081.0,
           "rounds": 60
         },
@@ -3408,7 +3414,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 110.22369384765625,
+          "mean_state_difference_weight": 110.22369384765624,
           "predicted_log2": -260.0,
           "rounds": 5
         },
@@ -3422,7 +3428,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 125.24945068359375,
+          "mean_state_difference_weight": 125.24945068359376,
           "predicted_log2": -392.0,
           "rounds": 6
         },
@@ -3436,7 +3442,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.83892822265625,
+          "mean_state_difference_weight": 127.83892822265624,
           "predicted_log2": -580.0,
           "rounds": 7
         },
@@ -3450,7 +3456,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94000244140625,
+          "mean_state_difference_weight": 127.94000244140624,
           "predicted_log2": -751.0,
           "rounds": 8
         },
@@ -3478,7 +3484,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.97698974609375,
+          "mean_state_difference_weight": 127.97698974609376,
           "predicted_log2": -1139.0,
           "rounds": 10
         },
@@ -3548,7 +3554,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98809814453125,
+          "mean_state_difference_weight": 127.98809814453124,
           "predicted_log2": -2042.0,
           "rounds": 15
         },
@@ -3590,7 +3596,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.99945068359375,
+          "mean_state_difference_weight": 127.99945068359376,
           "predicted_log2": -2594.0,
           "rounds": 18
         },
@@ -3660,7 +3666,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.96234130859375,
+          "mean_state_difference_weight": 127.96234130859376,
           "predicted_log2": -3555.0,
           "rounds": 23
         },
@@ -3674,7 +3680,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95623779296875,
+          "mean_state_difference_weight": 127.95623779296876,
           "predicted_log2": -3753.0,
           "rounds": 24
         },
@@ -3716,7 +3722,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.99774169921875,
+          "mean_state_difference_weight": 127.99774169921876,
           "predicted_log2": -4341.0,
           "rounds": 27
         },
@@ -3730,7 +3736,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98968505859375,
+          "mean_state_difference_weight": 127.98968505859376,
           "predicted_log2": -4540.0,
           "rounds": 28
         },
@@ -3772,7 +3778,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.92803955078125,
+          "mean_state_difference_weight": 127.92803955078124,
           "predicted_log2": -5195.0,
           "rounds": 31
         },
@@ -3814,7 +3820,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94012451171875,
+          "mean_state_difference_weight": 127.94012451171876,
           "predicted_log2": -5834.0,
           "rounds": 34
         },
@@ -3842,7 +3848,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98834228515625,
+          "mean_state_difference_weight": 127.98834228515624,
           "predicted_log2": -6259.0,
           "rounds": 36
         },
@@ -3870,7 +3876,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94842529296875,
+          "mean_state_difference_weight": 127.94842529296876,
           "predicted_log2": -6751.0,
           "rounds": 38
         },
@@ -3884,7 +3890,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94818115234375,
+          "mean_state_difference_weight": 127.94818115234376,
           "predicted_log2": -7002.0,
           "rounds": 39
         },
@@ -3912,7 +3918,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.92266845703125,
+          "mean_state_difference_weight": 127.92266845703124,
           "predicted_log2": -7444.0,
           "rounds": 41
         },
@@ -3926,7 +3932,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.97125244140625,
+          "mean_state_difference_weight": 127.97125244140624,
           "predicted_log2": -7683.0,
           "rounds": 42
         },
@@ -3968,7 +3974,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.96710205078125,
+          "mean_state_difference_weight": 127.96710205078124,
           "predicted_log2": -8413.0,
           "rounds": 45
         },
@@ -3996,7 +4002,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.97406005859375,
+          "mean_state_difference_weight": 127.97406005859376,
           "predicted_log2": -8893.0,
           "rounds": 47
         },
@@ -4122,7 +4128,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.97796630859375,
+          "mean_state_difference_weight": 127.97796630859376,
           "predicted_log2": -11208.0,
           "rounds": 56
         },
@@ -4150,7 +4156,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.98822021484375,
+          "mean_state_difference_weight": 127.98822021484376,
           "predicted_log2": -11732.0,
           "rounds": 58
         },
@@ -4178,7 +4184,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.96038818359375,
+          "mean_state_difference_weight": 127.96038818359376,
           "predicted_log2": -12249.0,
           "rounds": 60
         },
@@ -4192,7 +4198,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.90692138671875,
+          "mean_state_difference_weight": 127.90692138671876,
           "predicted_log2": -12505.0,
           "rounds": 61
         },
@@ -4206,7 +4212,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.95074462890625,
+          "mean_state_difference_weight": 127.95074462890624,
           "predicted_log2": -12768.0,
           "rounds": 62
         },
@@ -4234,7 +4240,7 @@
           "empirical_log2": null,
           "empirical_probability": 0.0,
           "followers": 0,
-          "mean_state_difference_weight": 127.94366455078125,
+          "mean_state_difference_weight": 127.94366455078124,
           "predicted_log2": -13318.0,
           "rounds": 64
         }

@@ -42,6 +42,12 @@
     "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
     "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
   },
+  "errata": [
+    {
+      "created_at": "2026-11-21T20:23:08Z",
+      "note": "The constant-folded outer schedule used sigma0(256) = 0x04000022 (correct: 0x00400022) and differed from the generic schedule on all 1024 inputs, so its 21.39 ns timing comparison is invalid. Definition v1 verification did not check folding parity. GF(2) ranks, low-weight differences, statistics and redundancy counts are unaffected. Superseded by the definition v2 rerun."
+    }
+  ],
   "finished_at": "2026-11-21T19:56:33Z",
   "hypothesis": "The SHA-256 message schedule has exploitable structure: low-weight linearized expanded differences, statistical dependence between expanded words, or nonce-independent work in Bitcoin header hashing beyond what the verified baseline kernel already precomputes.",
   "hypothesis_id": "H-SCHED-01",
@@ -264,7 +270,7 @@
     },
     "outer_schedule_folding": {
       "double_compression_ns": 755.8441162109375,
-      "folded_ns": 97.77050018310547,
+      "folded_ns": 97.77050018310548,
       "generic_ns": 119.16532516479492,
       "mismatches": 1024,
       "note": "timing is an engineering measurement and is excluded from the reproducibility digest",
@@ -291,7 +297,7 @@
       1.0,
       0.504216194152832,
       0.5040569305419922,
-      0.49755287170410156,
+      0.4975528717041016,
       0.4976773262023926,
       0.49962759017944336,
       0.5000228881835938,
@@ -305,7 +311,7 @@
       0.5004582405090332,
       0.5001211166381836,
       0.500274658203125,
-      0.49997997283935547,
+      0.4999799728393554,
       0.4995002746582031,
       0.5004124641418457,
       0.5000619888305664,
@@ -327,7 +333,7 @@
       0.5006370544433594,
       0.4994850158691406,
       0.5000004768371582,
-      0.49954652786254883,
+      0.4995465278625488,
       0.49965429306030273,
       0.5003185272216797,
       0.5005216598510742,

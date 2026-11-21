@@ -37,6 +37,12 @@
     "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
     "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
   },
+  "errata": [
+    {
+      "created_at": "2026-11-21T20:48:11Z",
+      "note": "Register counts for the unfolded early-reject variant include schedule words W61..W63, which the outer block never uses after round 60. Folded counts are unaffected. Superseded by hardware-0003."
+    }
+  ],
   "finished_at": "2026-11-21T20:12:10Z",
   "hypothesis": "A fully pipelined SHA-256d datapath using midstate, precomputation, early reject and constant folding fits commodity FPGAs and delivers more hashes per second and per joule than the measured CPU and GPU baselines of this lab.",
   "hypothesis_id": "H-HW-01",
