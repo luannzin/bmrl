@@ -1,0 +1,808 @@
+{
+  "assumptions": [
+    "Seeds are independent (SplitMix64 streams of the derived seed).",
+    "Per-seed tests: Šidák-adjusted minimum bit p-value (256 bits), leading-zero chi-square against P(lz = k) = 2^-(k+1), consecutive-input bit-agreement chi-square against Binomial(256, 1/2).",
+    "Decision: KS test of the per-seed p-values, Bonferroni over functions x round counts x 3 tests.",
+    "Control: 256-bit outputs of SplitMix64 keyed by (seed, input index); unrelated to SHA-256.",
+    "SHA-256 (single) is evaluated on the same header/nonce inputs as SHA-256d, digest read as a little-endian number like a block hash."
+  ],
+  "baseline": "Random function: uniform p-values; target hit rate 2^-k; the control function measured under the same battery.",
+  "candidate_anomaly": false,
+  "conclusion": "NEGATIVE RESULT: no deviation from the baseline was detected in any tested configuration at the stated sample size and significance level. 32 independent seeds x 131072 hashes per cell; KS threshold 2.56e-4. Negative control (non-SHA PRF) deviates: false — battery calibrated at this size Cells with p-value distributions departing from uniform: []. Full-round 8-bit target hit ratios (observed/expected): sha256-header-nonce hit ratio 0.9901 (95% CI 0.9724..1.0078); sha256d-header-nonce hit ratio 1.0044 (95% CI 0.9880..1.0208); sha256d-random-inputs hit ratio 1.0068 (95% CI 0.9922..1.0213).",
+  "configurations": [
+    {
+      "deviation_detected": false,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 20
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 24
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 20
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 24
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 20
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 24
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Per seed s: headers from SplitMix64::stream(derived(seed, s), h); random-input variant draws a fresh header and nonce per input.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 8.5340163,
+  "environment": {
+    "arch": "x86_64",
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "f5b4070eb14668d69f80cd8bc0f7f492748cff7a",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
+  },
+  "finished_at": "2026-11-21T20:12:08Z",
+  "hypothesis": "Across many independent seeds, the p-values of bit-frequency, leading-zero and consecutive-input tests on r-round SHA-256, SHA-256d of headers over the nonce, or SHA-256d of random inputs are not Uniform(0, 1), while a non-SHA pseudo-random control is.",
+  "hypothesis_id": "H-STAT-02",
+  "hypothesis_status": "not-supported-single-seed",
+  "id": "multiseed-0001",
+  "implementation": [
+    "experiment_engine::statistical::Counts",
+    "bitcoin_header::HeaderMidstate::with_rounds",
+    "statistical_engine::ks_uniform"
+  ],
+  "kind": "multiseed",
+  "methodology": "For each seed, function and round count, hash headers_per_seed x nonces_per_header inputs and compute the three p-values and the 8-bit target hit rate. Across seeds, report KS statistics, the fraction of seeds with p < 0.01 (Wilson 95% interval) and the mean hit-rate ratio with a 95% interval.",
+  "name": "Multi-seed random-function tests of SHA-256, SHA-256d and header hashing",
+  "null_hypothesis": "For every function and round count, each test's p-values across seeds are Uniform(0, 1) (KS test), as for the control.",
+  "observations": {
+    "cells": [
+      {
+        "deviation_detected": false,
+        "function": "sha256-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 16,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.16390743476515324,
+            "ks_p": 0.3274159824328286,
+            "min_p": 0.033216447980850224,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.10121153876059509,
+            "ks_p": 0.8814474863682247,
+            "min_p": 0.0032896095164462224,
+            "seeds_with_p_below_0_01": 1
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.16032262596808544,
+            "ks_p": 0.35359493898011574,
+            "min_p": 0.02711175230340227,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9897633755014539,
+              1.0262278354360461
+            ],
+            "expected": 1.0,
+            "mean": 1.00799560546875
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 20,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.09912912821835596,
+            "ks_p": 0.8960450870938592,
+            "min_p": 0.007554782460952761,
+            "seeds_with_p_below_0_01": 1
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.11382621941485882,
+            "ks_p": 0.7767254249019857,
+            "min_p": 0.030545015371543194,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.017310567031640967,
+              0.2014712314415458
+            ],
+            "ks_d": 0.1325404363382732,
+            "ks_p": 0.5965596168714008,
+            "min_p": 0.00019594067088808087,
+            "seeds_with_p_below_0_01": 2
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.961472997605008,
+              0.992384424269992
+            ],
+            "expected": 1.0,
+            "mean": 0.9769287109375
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 24,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.14695362782906995,
+            "ks_p": 0.4626080521558976,
+            "min_p": 0.01007542277178995,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.10112971846068364,
+            "ks_p": 0.8820380667087211,
+            "min_p": 0.043016259969879705,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.17215000863692165,
+            "ks_p": 0.272329791743276,
+            "min_p": 0.0455922614326026,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9847887708146371,
+              1.0141125963728628
+            ],
+            "expected": 1.0,
+            "mean": 0.99945068359375
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 64,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.08360923668291953,
+            "ks_p": 0.9729369323215955,
+            "min_p": 0.036266551983767735,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.2575765565537206,
+            "ks_p": 0.023169972855624086,
+            "min_p": 0.02321264445293043,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.16566572100204802,
+            "ks_p": 0.3150671136228904,
+            "min_p": 0.050104476362344386,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9723873822459538,
+              1.0078372271290463
+            ],
+            "expected": 1.0,
+            "mean": 0.9901123046875
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 16,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.16159332199614634,
+            "ks_p": 0.3441621195056397,
+            "min_p": 0.01767318016195438,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.13479503721633646,
+            "ks_p": 0.5748244636597867,
+            "min_p": 0.10090053352402199,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.17143375795239113,
+            "ks_p": 0.27683455500271087,
+            "min_p": 0.0116972386213525,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9843073721899406,
+              1.0110539559350593
+            ],
+            "expected": 1.0,
+            "mean": 0.9976806640625
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 20,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.22409332199614634,
+            "ks_p": 0.06847832538207703,
+            "min_p": 0.04505459933687493,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.1286468381138216,
+            "ks_p": 0.6344508288548456,
+            "min_p": 0.0036768825012160984,
+            "seeds_with_p_below_0_01": 1
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.17800255252563424,
+            "ks_p": 0.2375021154389431,
+            "min_p": 0.0015310971886396474,
+            "seeds_with_p_below_0_01": 1
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9882588836524036,
+              1.0160135772850964
+            ],
+            "expected": 1.0,
+            "mean": 1.00213623046875
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 24,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.13190366022824507,
+            "ks_p": 0.6027309945142396,
+            "min_p": 0.006530781698143993,
+            "seeds_with_p_below_0_01": 1
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.1941246541691024,
+            "ks_p": 0.15889268350275818,
+            "min_p": 0.017464979874665207,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.14281367420473534,
+            "ks_p": 0.4996583505271581,
+            "min_p": 0.020683857015904084,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9984911971389303,
+              1.0281201309860697
+            ],
+            "expected": 1.0,
+            "mean": 1.0133056640625
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-header-nonce",
+        "hashes_per_seed": 131072,
+        "rounds": 64,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.127995786010336,
+            "ks_p": 0.640812140236251,
+            "min_p": 0.028442731004593158,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.13551644802445428,
+            "ks_p": 0.567914200744965,
+            "min_p": 0.011185876131864081,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.16699148795996077,
+            "ks_p": 0.3059706055518478,
+            "min_p": 0.016499033157730922,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9879878660766479,
+              1.020801196423352
+            ],
+            "expected": 1.0,
+            "mean": 1.00439453125
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-random-inputs",
+        "hashes_per_seed": 131072,
+        "rounds": 16,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.1310587762722485,
+            "ks_p": 0.6109374375770331,
+            "min_p": 0.005922758363593107,
+            "seeds_with_p_below_0_01": 1
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.10349723715467452,
+            "ks_p": 0.8644138358156331,
+            "min_p": 0.011293725276763861,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.27482874271572233,
+            "ks_p": 0.01249926066472663,
+            "min_p": 0.002290949766132859,
+            "seeds_with_p_below_0_01": 1
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9810821185994687,
+              1.0108612407755313
+            ],
+            "expected": 1.0,
+            "mean": 0.9959716796875
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-random-inputs",
+        "hashes_per_seed": 131072,
+        "rounds": 20,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.08840667800385366,
+            "ks_p": 0.9554321804305687,
+            "min_p": 0.05815138753779858,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.10911271263326378,
+            "ks_p": 0.8186294009832913,
+            "min_p": 0.03402272873625359,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.09828646334297853,
+            "ks_p": 0.9016882632291101,
+            "min_p": 0.08649964335978859,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9840655429662246,
+              1.0233807460962754
+            ],
+            "expected": 1.0,
+            "mean": 1.00372314453125
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-random-inputs",
+        "hashes_per_seed": 131072,
+        "rounds": 24,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.2426653522321584,
+            "ks_p": 0.03824707863668908,
+            "min_p": 0.009379687121428185,
+            "seeds_with_p_below_0_01": 1
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.14134277823381525,
+            "ks_p": 0.5131398789249713,
+            "min_p": 0.08353237441905696,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.005537860164003122,
+              0.15744263820012558
+            ],
+            "ks_d": 0.142397354614767,
+            "ks_p": 0.5034582069444937,
+            "min_p": 0.00215493421162179,
+            "seeds_with_p_below_0_01": 1
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9816693237142663,
+              1.0108843872232336
+            ],
+            "expected": 1.0,
+            "mean": 0.99627685546875
+          }
+        }
+      },
+      {
+        "deviation_detected": false,
+        "function": "sha256d-random-inputs",
+        "hashes_per_seed": 131072,
+        "rounds": 64,
+        "seeds": 32,
+        "tests": {
+          "bit_frequency": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.15845292822318893,
+            "ks_p": 0.36777790470747673,
+            "min_p": 0.036266551983767735,
+            "seeds_with_p_below_0_01": 0
+          },
+          "consecutive_agreement": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.11421393150512621,
+            "ks_p": 0.7731677043753317,
+            "min_p": 0.01058028265214562,
+            "seeds_with_p_below_0_01": 0
+          },
+          "leading_zeros": {
+            "fraction_ci95": [
+              0.0,
+              0.1071791982550706
+            ],
+            "ks_d": 0.08415380998217542,
+            "ks_p": 0.9712268498750269,
+            "min_p": 0.05633872042758961,
+            "seeds_with_p_below_0_01": 0
+          },
+          "target_8bit_hit_ratio": {
+            "ci95": [
+              0.9922478620257994,
+              1.0213019426617007
+            ],
+            "expected": 1.0,
+            "mean": 1.00677490234375
+          }
+        }
+      }
+    ],
+    "control": {
+      "deviation_detected": false,
+      "tests": {
+        "bit_frequency": {
+          "fraction_ci95": [
+            0.005537860164003122,
+            0.15744263820012558
+          ],
+          "ks_d": 0.24772937922497773,
+          "ks_p": 0.03236901960357521,
+          "min_p": 0.00872950134015099,
+          "seeds_with_p_below_0_01": 1
+        },
+        "consecutive_agreement": {
+          "fraction_ci95": [
+            0.005537860164003122,
+            0.15744263820012558
+          ],
+          "ks_d": 0.3252645510442268,
+          "ks_p": 0.0016355152534722995,
+          "min_p": 0.007939660920295565,
+          "seeds_with_p_below_0_01": 1
+        },
+        "leading_zeros": {
+          "fraction_ci95": [
+            0.0,
+            0.1071791982550706
+          ],
+          "ks_d": 0.32921176905805927,
+          "ks_p": 0.0013748863720022748,
+          "min_p": 0.08462409455437843,
+          "seeds_with_p_below_0_01": 0
+        },
+        "target_8bit_hit_ratio": {
+          "ci95": [
+            0.9745049932027338,
+            1.0031561396097661
+          ],
+          "expected": 1.0,
+          "mean": 0.98883056640625
+        }
+      }
+    }
+  },
+  "params": {
+    "alpha": 0.01,
+    "functions": [
+      "sha256-header-nonce",
+      "sha256d-header-nonce",
+      "sha256d-random-inputs"
+    ],
+    "headers_per_seed": 8,
+    "nonces_per_header": 16384,
+    "reproduce": true,
+    "rounds": [
+      16,
+      20,
+      24,
+      64
+    ],
+    "seeds": 32
+  },
+  "primitive": "sha256,sha256d,bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "4465e329e59c04a598487f60a4f7814665d3ede03b4701dca24f4a372485f842",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research multiseed --seed 1112363596 --params '{\"alpha\":0.01,\"functions\":[\"sha256-header-nonce\",\"sha256d-header-nonce\",\"sha256d-random-inputs\"],\"headers_per_seed\":8,\"nonces_per_header\":16384,\"reproduce\":true,\"rounds\":[16,20,24,64],\"seeds\":32}'",
+  "result": "negative",
+  "result_digest": "4465e329e59c04a598487f60a4f7814665d3ede03b4701dca24f4a372485f842",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "sha256,sha256d,bitcoin-header-sha256d",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 20
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 24
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 20
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 24
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 20
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 24
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-21T20:11:59Z",
+  "status": "completed",
+  "verification": {
+    "detail": "all recomputed hashes identical",
+    "method": "SHA-256 and SHA-256d header paths recomputed over the full 80-byte header with the independent implementation (256 nonces per round count)",
+    "passed": true
+  }
+}

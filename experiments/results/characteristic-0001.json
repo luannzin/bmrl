@@ -1,0 +1,4461 @@
+{
+  "assumptions": [
+    "Chaining value and block uniform (SplitMix64 streams).",
+    "Estimated cost: modular additions via Lipmaa–Moriai with uniform independent operands (also applied to additions of the round constant), Ch/Maj one bit per undetermined position, rounds independent.",
+    "Empirical following requires both the schedule difference and the full 256-bit state difference to match the trail at every round.",
+    "When no pair follows, the 95% upper bound is the rule of three (3/n).",
+    "Per-bit bias tests: two-sided z, Bonferroni over 256 bits x 65 state indices x differences."
+  ],
+  "baseline": "Random permutation behaviour: trail probability 2^-256 per round-state; each state-difference bit set with probability 1/2.",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. Delta W15[31]: trail followed by >= 2 of 1048576 pairs through round 17; estimated log2 probability at 64 rounds -10808; per-bit bias last seen at round 22 ; estimator error where measurable: mean +0.88 bits, max |.| 14.97 bits. Delta W15[0]: trail followed by >= 2 of 1048576 pairs through round 17; estimated log2 probability at 64 rounds -10697; per-bit bias last seen at round 22 ; estimator error where measurable: mean +0.99 bits, max |.| 15.91 bits. Delta W8[31]: trail followed by >= 2 of 1048576 pairs through round 10; estimated log2 probability at 64 rounds -12120; per-bit bias last seen at round 15 ; estimator error where measurable: mean +1.49 bits, max |.| 14.94 bits. Delta W0[31]: trail followed by >= 2 of 1048576 pairs through round 2; estimated log2 probability at 64 rounds -13318; per-bit bias last seen at round 7 ; estimator error where measurable: mean +7.54 bits, max |.| 15.08 bits. Estimated probabilities beyond the measurable range are heuristic extrapolations, not evidence.",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 17
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 17
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 10
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 2
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [
+    {
+      "chaining_value": "2b790bb7047aaa0e2a758be11447af1bdf3d4c4602869f4a5f456f73be9a54a0",
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "message": "5a10a0fe52355814fa2383f71065d505b6d2688fb1062d177feec8670208f797471696ecd0fbe7fa373268345ad77a64dea6afbe105f17a160144f52ac4a5779",
+      "rounds": 17,
+      "sample_index": 254,
+      "scope": "reduced-round",
+      "state_difference": "2214024080000000000000000000000002100040800000000000000000000000",
+      "type": "pair-following-xor-trail"
+    },
+    {
+      "chaining_value": "c9c66a45cdecf9213ef3b643fdad0b4c7adc9df791e55164553c7996b3934c5e",
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "message": "0d0ee01acb220e87645e2b41bf1453d05807342ce8f3fb609d749c3c92ecf8a8896d211991f6c2c3a17f3e743f199688e871c0e70b800ce6f14ad909000e6063",
+      "rounds": 17,
+      "sample_index": 5975,
+      "scope": "reduced-round",
+      "state_difference": "4428048000000001000000000000000004200080000000010000000000000000",
+      "type": "pair-following-xor-trail"
+    },
+    {
+      "chaining_value": "1089fe2dd1038d327bbd1f6372046ed33e7d51c1e29707e7a1d4515b3d465b3d",
+      "delta": {
+        "bit": 31,
+        "word": 8
+      },
+      "message": "3ea9494b8211f914eca725611748eff065ebf2699f759708c0dfc96b30038c90d710010022531b9bab6d00c273e07de15cbb51881cd5a11241661d71c5fcee3b",
+      "rounds": 10,
+      "sample_index": 2192,
+      "scope": "reduced-round",
+      "state_difference": "2214024080000000000000000000000002100040800000000000000000000000",
+      "type": "pair-following-xor-trail"
+    },
+    {
+      "chaining_value": "05fee1f972d676395679820b71d96f05bd89ed81da8ef9e284adfc6da8d0dbca",
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "message": "5e3990a8d4928072e3ab712695b94b098cadff3cb9a644d200b22b15bb83e646b30f7ba79cd71b4ea6748c9e86e949b96a07ee9c41785607c5837997e82c0ad9",
+      "rounds": 2,
+      "sample_index": 2894,
+      "scope": "reduced-round",
+      "state_difference": "2214024080000000000000000000000002100040800000000000000000000000",
+      "type": "pair-following-xor-trail"
+    }
+  ],
+  "dataset": {
+    "description": "n random (chaining value, block) pairs; sample i from SplitMix64::stream(seed, i).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 2.2104121,
+  "environment": {
+    "arch": "x86_64",
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": null,
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
+  },
+  "finished_at": "2026-11-21T19:56:25Z",
+  "hypothesis": "For a single-bit message difference, the carry-free XOR characteristic is followed by real pairs with probability measurably above 2^-256 through some number of rounds, and the Lipmaa–Moriai independence estimate predicts that probability within 1 bit wherever it is measurable.",
+  "hypothesis_id": "H-CHAR-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "characteristic-0001",
+  "implementation": [
+    "differential_engine::characteristic::xor_trail",
+    "differential_engine::characteristic::propagate"
+  ],
+  "kind": "characteristic",
+  "methodology": "For each difference, compute the XOR trail and its estimated cumulative log2 probability for every round 1..64. Trace n random pairs through 64 rounds; count pairs following the trail through each round; for the first n_bits pairs record every state-difference bit at every round. Compare estimated and empirical log2 probabilities where at least 30 pairs follow.",
+  "name": "XOR differential characteristics of SHA-256 compression through 64 rounds",
+  "null_hypothesis": "No pair follows the characteristic beyond a few rounds after the difference enters, and per-bit state differences are unbiased once diffusion completes.",
+  "observations": [
+    {
+      "bit_samples": 16384,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "estimator_error_bits": {
+        "max_abs": 14.974414589805527,
+        "mean": 0.880847917047384,
+        "rounds_compared": 17
+      },
+      "last_round_followed_by_two_or_more": 17,
+      "last_round_with_biased_state_bit": 22,
+      "per_round": [
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 0
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 1
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 2
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 3
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 4
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 5
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 6
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 7
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 8
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 9
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 10
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 11
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 12
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 13
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 14
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 15
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 2.0,
+          "predicted_log2": 0.0,
+          "rounds": 16
+        },
+        {
+          "biased_state_bits": 245,
+          "ci95": [
+            0.00043957731534248115,
+            0.0005234790194195601
+          ],
+          "deterministic_state_bits": 206,
+          "empirical_log2": -11.025585410194473,
+          "empirical_probability": 0.00047969818115234375,
+          "followers": 503,
+          "mean_state_difference_weight": 18.97723388671875,
+          "predicted_log2": -26.0,
+          "rounds": 17
+        },
+        {
+          "biased_state_bits": 209,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 142,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 48.47296142578125,
+          "predicted_log2": -95.0,
+          "rounds": 18
+        },
+        {
+          "biased_state_bits": 149,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 78,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 80.43890380859375,
+          "predicted_log2": -232.0,
+          "rounds": 19
+        },
+        {
+          "biased_state_bits": 85,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 14,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 110.36236572265625,
+          "predicted_log2": -380.0,
+          "rounds": 20
+        },
+        {
+          "biased_state_bits": 32,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 125.37847900390625,
+          "predicted_log2": -569.0,
+          "rounds": 21
+        },
+        {
+          "biased_state_bits": 4,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.88330078125,
+          "predicted_log2": -790.0,
+          "rounds": 22
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.916748046875,
+          "predicted_log2": -972.0,
+          "rounds": 23
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01959228515625,
+          "predicted_log2": -1156.0,
+          "rounds": 24
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.04119873046875,
+          "predicted_log2": -1338.0,
+          "rounds": 25
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.04473876953125,
+          "predicted_log2": -1550.0,
+          "rounds": 26
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.03411865234375,
+          "predicted_log2": -1737.0,
+          "rounds": 27
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9835205078125,
+          "predicted_log2": -1942.0,
+          "rounds": 28
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9781494140625,
+          "predicted_log2": -2128.0,
+          "rounds": 29
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0107421875,
+          "predicted_log2": -2363.0,
+          "rounds": 30
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.03009033203125,
+          "predicted_log2": -2573.0,
+          "rounds": 31
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99041748046875,
+          "predicted_log2": -2772.0,
+          "rounds": 32
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01422119140625,
+          "predicted_log2": -2979.0,
+          "rounds": 33
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9881591796875,
+          "predicted_log2": -3219.0,
+          "rounds": 34
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95501708984375,
+          "predicted_log2": -3439.0,
+          "rounds": 35
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.05718994140625,
+          "predicted_log2": -3695.0,
+          "rounds": 36
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.04010009765625,
+          "predicted_log2": -3914.0,
+          "rounds": 37
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98291015625,
+          "predicted_log2": -4156.0,
+          "rounds": 38
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.968994140625,
+          "predicted_log2": -4373.0,
+          "rounds": 39
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.965576171875,
+          "predicted_log2": -4631.0,
+          "rounds": 40
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9765625,
+          "predicted_log2": -4857.0,
+          "rounds": 41
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0213623046875,
+          "predicted_log2": -5109.0,
+          "rounds": 42
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.09747314453125,
+          "predicted_log2": -5374.0,
+          "rounds": 43
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.110595703125,
+          "predicted_log2": -5601.0,
+          "rounds": 44
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.12493896484375,
+          "predicted_log2": -5840.0,
+          "rounds": 45
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.11053466796875,
+          "predicted_log2": -6081.0,
+          "rounds": 46
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.07818603515625,
+          "predicted_log2": -6335.0,
+          "rounds": 47
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01397705078125,
+          "predicted_log2": -6584.0,
+          "rounds": 48
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.927001953125,
+          "predicted_log2": -6839.0,
+          "rounds": 49
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.85888671875,
+          "predicted_log2": -7108.0,
+          "rounds": 50
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.87152099609375,
+          "predicted_log2": -7392.0,
+          "rounds": 51
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.92608642578125,
+          "predicted_log2": -7647.0,
+          "rounds": 52
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98846435546875,
+          "predicted_log2": -7932.0,
+          "rounds": 53
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.06939697265625,
+          "predicted_log2": -8179.0,
+          "rounds": 54
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01263427734375,
+          "predicted_log2": -8445.0,
+          "rounds": 55
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98919677734375,
+          "predicted_log2": -8708.0,
+          "rounds": 56
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.92340087890625,
+          "predicted_log2": -8960.0,
+          "rounds": 57
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9835205078125,
+          "predicted_log2": -9235.0,
+          "rounds": 58
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.02288818359375,
+          "predicted_log2": -9493.0,
+          "rounds": 59
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.011962890625,
+          "predicted_log2": -9744.0,
+          "rounds": 60
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.07513427734375,
+          "predicted_log2": -10008.0,
+          "rounds": 61
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94970703125,
+          "predicted_log2": -10281.0,
+          "rounds": 62
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.021484375,
+          "predicted_log2": -10537.0,
+          "rounds": 63
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.04254150390625,
+          "predicted_log2": -10808.0,
+          "rounds": 64
+        }
+      ],
+      "samples": 1048576,
+      "trail_round_costs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        26,
+        69,
+        137,
+        148,
+        189,
+        221,
+        182,
+        184,
+        182,
+        212,
+        187,
+        205,
+        186,
+        235,
+        210,
+        199,
+        207,
+        240,
+        220,
+        256,
+        219,
+        242,
+        217,
+        258,
+        226,
+        252,
+        265,
+        227,
+        239,
+        241,
+        254,
+        249,
+        255,
+        269,
+        284,
+        255,
+        285,
+        247,
+        266,
+        263,
+        252,
+        275,
+        258,
+        251,
+        264,
+        273,
+        256,
+        271
+      ],
+      "trail_schedule_difference_weights": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3,
+        0,
+        3,
+        0,
+        9,
+        1,
+        4,
+        0,
+        8,
+        3,
+        11,
+        0,
+        18,
+        5,
+        12,
+        0,
+        15,
+        10,
+        18,
+        3,
+        15,
+        8,
+        17,
+        6,
+        16,
+        16,
+        17,
+        13,
+        18,
+        18,
+        18,
+        15,
+        17,
+        15,
+        17,
+        16,
+        15,
+        15,
+        15,
+        17,
+        21,
+        13,
+        19,
+        24,
+        15,
+        19,
+        15
+      ]
+    },
+    {
+      "bit_samples": 16384,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "estimator_error_bits": {
+        "max_abs": 15.906890595608518,
+        "mean": 0.9944714871999542,
+        "rounds_compared": 17
+      },
+      "last_round_followed_by_two_or_more": 17,
+      "last_round_with_biased_state_bit": 22,
+      "per_round": [
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 0
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 1
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 2
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 3
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 4
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 5
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 6
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 7
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 8
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 9
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 10
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 11
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 12
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 13
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 14
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 15
+        },
+        {
+          "biased_state_bits": 254,
+          "ci95": [
+            0.24902065271031357,
+            0.250677911711686
+          ],
+          "deterministic_state_bits": 228,
+          "empirical_log2": -2.000875313209298,
+          "empirical_probability": 0.2498483657836914,
+          "followers": 261985,
+          "mean_state_difference_weight": 3.99365234375,
+          "predicted_log2": -3.0,
+          "rounds": 16
+        },
+        {
+          "biased_state_bits": 243,
+          "ci95": [
+            0.00009571601195353802,
+            0.0001368284726719278
+          ],
+          "deterministic_state_bits": 164,
+          "empirical_log2": -13.093109404391482,
+          "empirical_probability": 0.00011444091796875,
+          "followers": 120,
+          "mean_state_difference_weight": 25.40142822265625,
+          "predicted_log2": -29.0,
+          "rounds": 17
+        },
+        {
+          "biased_state_bits": 204,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 100,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 56.15997314453125,
+          "predicted_log2": -90.0,
+          "rounds": 18
+        },
+        {
+          "biased_state_bits": 142,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 36,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 88.0947265625,
+          "predicted_log2": -207.0,
+          "rounds": 19
+        },
+        {
+          "biased_state_bits": 80,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 116.1358642578125,
+          "predicted_log2": -346.0,
+          "rounds": 20
+        },
+        {
+          "biased_state_bits": 27,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 126.699951171875,
+          "predicted_log2": -519.0,
+          "rounds": 21
+        },
+        {
+          "biased_state_bits": 2,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94586181640625,
+          "predicted_log2": -718.0,
+          "rounds": 22
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01025390625,
+          "predicted_log2": -899.0,
+          "rounds": 23
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9678955078125,
+          "predicted_log2": -1108.0,
+          "rounds": 24
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9923095703125,
+          "predicted_log2": -1303.0,
+          "rounds": 25
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.02972412109375,
+          "predicted_log2": -1507.0,
+          "rounds": 26
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01458740234375,
+          "predicted_log2": -1691.0,
+          "rounds": 27
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99896240234375,
+          "predicted_log2": -1924.0,
+          "rounds": 28
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96575927734375,
+          "predicted_log2": -2122.0,
+          "rounds": 29
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9427490234375,
+          "predicted_log2": -2337.0,
+          "rounds": 30
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95404052734375,
+          "predicted_log2": -2551.0,
+          "rounds": 31
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.00958251953125,
+          "predicted_log2": -2760.0,
+          "rounds": 32
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9869384765625,
+          "predicted_log2": -2967.0,
+          "rounds": 33
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.02130126953125,
+          "predicted_log2": -3213.0,
+          "rounds": 34
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.00750732421875,
+          "predicted_log2": -3427.0,
+          "rounds": 35
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98431396484375,
+          "predicted_log2": -3652.0,
+          "rounds": 36
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0904541015625,
+          "predicted_log2": -3876.0,
+          "rounds": 37
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.06439208984375,
+          "predicted_log2": -4115.0,
+          "rounds": 38
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.09130859375,
+          "predicted_log2": -4328.0,
+          "rounds": 39
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.04498291015625,
+          "predicted_log2": -4576.0,
+          "rounds": 40
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.050537109375,
+          "predicted_log2": -4788.0,
+          "rounds": 41
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01739501953125,
+          "predicted_log2": -4993.0,
+          "rounds": 42
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9891357421875,
+          "predicted_log2": -5243.0,
+          "rounds": 43
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99749755859375,
+          "predicted_log2": -5496.0,
+          "rounds": 44
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.91790771484375,
+          "predicted_log2": -5767.0,
+          "rounds": 45
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.90826416015625,
+          "predicted_log2": -6013.0,
+          "rounds": 46
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.89898681640625,
+          "predicted_log2": -6275.0,
+          "rounds": 47
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.954345703125,
+          "predicted_log2": -6501.0,
+          "rounds": 48
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96942138671875,
+          "predicted_log2": -6759.0,
+          "rounds": 49
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.92718505859375,
+          "predicted_log2": -7023.0,
+          "rounds": 50
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.998046875,
+          "predicted_log2": -7287.0,
+          "rounds": 51
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0411376953125,
+          "predicted_log2": -7545.0,
+          "rounds": 52
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0865478515625,
+          "predicted_log2": -7809.0,
+          "rounds": 53
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.18426513671875,
+          "predicted_log2": -8053.0,
+          "rounds": 54
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0987548828125,
+          "predicted_log2": -8337.0,
+          "rounds": 55
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.00872802734375,
+          "predicted_log2": -8617.0,
+          "rounds": 56
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0560302734375,
+          "predicted_log2": -8873.0,
+          "rounds": 57
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95404052734375,
+          "predicted_log2": -9142.0,
+          "rounds": 58
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.03759765625,
+          "predicted_log2": -9408.0,
+          "rounds": 59
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.02069091796875,
+          "predicted_log2": -9676.0,
+          "rounds": 60
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94085693359375,
+          "predicted_log2": -9950.0,
+          "rounds": 61
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96435546875,
+          "predicted_log2": -10197.0,
+          "rounds": 62
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96832275390625,
+          "predicted_log2": -10446.0,
+          "rounds": 63
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.02752685546875,
+          "predicted_log2": -10697.0,
+          "rounds": 64
+        }
+      ],
+      "samples": 1048576,
+      "trail_round_costs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        26,
+        61,
+        117,
+        139,
+        173,
+        199,
+        181,
+        209,
+        195,
+        204,
+        184,
+        233,
+        198,
+        215,
+        214,
+        209,
+        207,
+        246,
+        214,
+        225,
+        224,
+        239,
+        213,
+        248,
+        212,
+        205,
+        250,
+        253,
+        271,
+        246,
+        262,
+        226,
+        258,
+        264,
+        264,
+        258,
+        264,
+        244,
+        284,
+        280,
+        256,
+        269,
+        266,
+        268,
+        274,
+        247,
+        249,
+        251
+      ],
+      "trail_schedule_difference_weights": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        2,
+        0,
+        4,
+        0,
+        4,
+        1,
+        4,
+        0,
+        6,
+        4,
+        11,
+        0,
+        11,
+        6,
+        11,
+        4,
+        12,
+        14,
+        12,
+        10,
+        13,
+        11,
+        21,
+        8,
+        16,
+        10,
+        10,
+        16,
+        17,
+        19,
+        13,
+        20,
+        15,
+        16,
+        19,
+        16,
+        11,
+        14,
+        15,
+        18,
+        16,
+        16,
+        16,
+        15,
+        18,
+        21,
+        15
+      ]
+    },
+    {
+      "bit_samples": 16384,
+      "delta": {
+        "bit": 31,
+        "word": 8
+      },
+      "estimator_error_bits": {
+        "max_abs": 14.939579214314692,
+        "mean": 1.4939579214314693,
+        "rounds_compared": 10
+      },
+      "last_round_followed_by_two_or_more": 10,
+      "last_round_with_biased_state_bit": 15,
+      "per_round": [
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 0
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 1
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 2
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 3
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 4
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 5
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 6
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 7
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 8
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 2.0,
+          "predicted_log2": 0.0,
+          "rounds": 9
+        },
+        {
+          "biased_state_bits": 245,
+          "ci95": [
+            0.0004286354914811303,
+            0.0005115327435377283
+          ],
+          "deterministic_state_bits": 206,
+          "empirical_log2": -11.060420785685308,
+          "empirical_probability": 0.00046825408935546875,
+          "followers": 491,
+          "mean_state_difference_weight": 18.98486328125,
+          "predicted_log2": -26.0,
+          "rounds": 10
+        },
+        {
+          "biased_state_bits": 212,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 142,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 48.40240478515625,
+          "predicted_log2": -78.0,
+          "rounds": 11
+        },
+        {
+          "biased_state_bits": 158,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 78,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 80.2960205078125,
+          "predicted_log2": -186.0,
+          "rounds": 12
+        },
+        {
+          "biased_state_bits": 94,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 14,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 110.2283935546875,
+          "predicted_log2": -260.0,
+          "rounds": 13
+        },
+        {
+          "biased_state_bits": 41,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 125.2628173828125,
+          "predicted_log2": -392.0,
+          "rounds": 14
+        },
+        {
+          "biased_state_bits": 10,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.86529541015625,
+          "predicted_log2": -580.0,
+          "rounds": 15
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.87225341796875,
+          "predicted_log2": -751.0,
+          "rounds": 16
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9476318359375,
+          "predicted_log2": -934.0,
+          "rounds": 17
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9561767578125,
+          "predicted_log2": -1139.0,
+          "rounds": 18
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95367431640625,
+          "predicted_log2": -1320.0,
+          "rounds": 19
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0443115234375,
+          "predicted_log2": -1504.0,
+          "rounds": 20
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0281982421875,
+          "predicted_log2": -1677.0,
+          "rounds": 21
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9669189453125,
+          "predicted_log2": -1870.0,
+          "rounds": 22
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.906005859375,
+          "predicted_log2": -2042.0,
+          "rounds": 23
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9119873046875,
+          "predicted_log2": -2239.0,
+          "rounds": 24
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.884033203125,
+          "predicted_log2": -2430.0,
+          "rounds": 25
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.93524169921875,
+          "predicted_log2": -2636.0,
+          "rounds": 26
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96142578125,
+          "predicted_log2": -2823.0,
+          "rounds": 27
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9859619140625,
+          "predicted_log2": -3029.0,
+          "rounds": 28
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99859619140625,
+          "predicted_log2": -3232.0,
+          "rounds": 29
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.92779541015625,
+          "predicted_log2": -3420.0,
+          "rounds": 30
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.90521240234375,
+          "predicted_log2": -3629.0,
+          "rounds": 31
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.8795166015625,
+          "predicted_log2": -3836.0,
+          "rounds": 32
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9617919921875,
+          "predicted_log2": -4054.0,
+          "rounds": 33
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.048583984375,
+          "predicted_log2": -4315.0,
+          "rounds": 34
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.08111572265625,
+          "predicted_log2": -4550.0,
+          "rounds": 35
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.09814453125,
+          "predicted_log2": -4813.0,
+          "rounds": 36
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9971923828125,
+          "predicted_log2": -5067.0,
+          "rounds": 37
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.8887939453125,
+          "predicted_log2": -5309.0,
+          "rounds": 38
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.90966796875,
+          "predicted_log2": -5574.0,
+          "rounds": 39
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.86895751953125,
+          "predicted_log2": -5813.0,
+          "rounds": 40
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.8792724609375,
+          "predicted_log2": -6064.0,
+          "rounds": 41
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9552001953125,
+          "predicted_log2": -6315.0,
+          "rounds": 42
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.00225830078125,
+          "predicted_log2": -6573.0,
+          "rounds": 43
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.00848388671875,
+          "predicted_log2": -6864.0,
+          "rounds": 44
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.05364990234375,
+          "predicted_log2": -7115.0,
+          "rounds": 45
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.05609130859375,
+          "predicted_log2": -7380.0,
+          "rounds": 46
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9853515625,
+          "predicted_log2": -7630.0,
+          "rounds": 47
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99072265625,
+          "predicted_log2": -7873.0,
+          "rounds": 48
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.97393798828125,
+          "predicted_log2": -8142.0,
+          "rounds": 49
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9930419921875,
+          "predicted_log2": -8431.0,
+          "rounds": 50
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0023193359375,
+          "predicted_log2": -8679.0,
+          "rounds": 51
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.00360107421875,
+          "predicted_log2": -8934.0,
+          "rounds": 52
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98284912109375,
+          "predicted_log2": -9203.0,
+          "rounds": 53
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9598388671875,
+          "predicted_log2": -9455.0,
+          "rounds": 54
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99951171875,
+          "predicted_log2": -9717.0,
+          "rounds": 55
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9957275390625,
+          "predicted_log2": -10002.0,
+          "rounds": 56
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01080322265625,
+          "predicted_log2": -10236.0,
+          "rounds": 57
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0264892578125,
+          "predicted_log2": -10528.0,
+          "rounds": 58
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95916748046875,
+          "predicted_log2": -10812.0,
+          "rounds": 59
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98162841796875,
+          "predicted_log2": -11081.0,
+          "rounds": 60
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0421142578125,
+          "predicted_log2": -11336.0,
+          "rounds": 61
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99267578125,
+          "predicted_log2": -11587.0,
+          "rounds": 62
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9896240234375,
+          "predicted_log2": -11862.0,
+          "rounds": 63
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9989013671875,
+          "predicted_log2": -12120.0,
+          "rounds": 64
+        }
+      ],
+      "samples": 1048576,
+      "trail_round_costs": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        26,
+        52,
+        108,
+        74,
+        132,
+        188,
+        171,
+        183,
+        205,
+        181,
+        184,
+        173,
+        193,
+        172,
+        197,
+        191,
+        206,
+        187,
+        206,
+        203,
+        188,
+        209,
+        207,
+        218,
+        261,
+        235,
+        263,
+        254,
+        242,
+        265,
+        239,
+        251,
+        251,
+        258,
+        291,
+        251,
+        265,
+        250,
+        243,
+        269,
+        289,
+        248,
+        255,
+        269,
+        252,
+        262,
+        285,
+        234,
+        292,
+        284,
+        269,
+        255,
+        251,
+        275,
+        258
+      ],
+      "trail_schedule_difference_weights": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        3,
+        1,
+        9,
+        3,
+        9,
+        3,
+        10,
+        10,
+        9,
+        4,
+        22,
+        13,
+        21,
+        11,
+        14,
+        21,
+        15,
+        12,
+        14,
+        18,
+        20,
+        18,
+        19,
+        12,
+        15,
+        20,
+        14,
+        20,
+        15,
+        14,
+        13,
+        12,
+        11,
+        16,
+        21,
+        13,
+        17,
+        16,
+        16,
+        15,
+        15
+      ]
+    },
+    {
+      "bit_samples": 16384,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "estimator_error_bits": {
+        "max_abs": 15.084808387804362,
+        "mean": 7.542404193902181,
+        "rounds_compared": 2
+      },
+      "last_round_followed_by_two_or_more": 2,
+      "last_round_with_biased_state_bit": 7,
+      "per_round": [
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 0.0,
+          "predicted_log2": 0.0,
+          "rounds": 0
+        },
+        {
+          "biased_state_bits": 256,
+          "ci95": [
+            0.9999963365128064,
+            1.0
+          ],
+          "deterministic_state_bits": 256,
+          "empirical_log2": 0.0,
+          "empirical_probability": 1.0,
+          "followers": 1048576,
+          "mean_state_difference_weight": 2.0,
+          "predicted_log2": 0.0,
+          "rounds": 1
+        },
+        {
+          "biased_state_bits": 245,
+          "ci95": [
+            0.0004760919185518702,
+            0.0005632580820207792
+          ],
+          "deterministic_state_bits": 206,
+          "empirical_log2": -10.915191612195638,
+          "empirical_probability": 0.0005178451538085938,
+          "followers": 543,
+          "mean_state_difference_weight": 18.97296142578125,
+          "predicted_log2": -26.0,
+          "rounds": 2
+        },
+        {
+          "biased_state_bits": 212,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 142,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 48.35394287109375,
+          "predicted_log2": -78.0,
+          "rounds": 3
+        },
+        {
+          "biased_state_bits": 155,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 78,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 80.2098388671875,
+          "predicted_log2": -186.0,
+          "rounds": 4
+        },
+        {
+          "biased_state_bits": 91,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 14,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 110.22369384765625,
+          "predicted_log2": -260.0,
+          "rounds": 5
+        },
+        {
+          "biased_state_bits": 38,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 125.24945068359375,
+          "predicted_log2": -392.0,
+          "rounds": 6
+        },
+        {
+          "biased_state_bits": 7,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.83892822265625,
+          "predicted_log2": -580.0,
+          "rounds": 7
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94000244140625,
+          "predicted_log2": -751.0,
+          "rounds": 8
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.962646484375,
+          "predicted_log2": -934.0,
+          "rounds": 9
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.97698974609375,
+          "predicted_log2": -1139.0,
+          "rounds": 10
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0113525390625,
+          "predicted_log2": -1320.0,
+          "rounds": 11
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.07110595703125,
+          "predicted_log2": -1504.0,
+          "rounds": 12
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.03857421875,
+          "predicted_log2": -1677.0,
+          "rounds": 13
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01397705078125,
+          "predicted_log2": -1870.0,
+          "rounds": 14
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98809814453125,
+          "predicted_log2": -2042.0,
+          "rounds": 15
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9906005859375,
+          "predicted_log2": -2236.0,
+          "rounds": 16
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.984619140625,
+          "predicted_log2": -2420.0,
+          "rounds": 17
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99945068359375,
+          "predicted_log2": -2594.0,
+          "rounds": 18
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.04095458984375,
+          "predicted_log2": -2771.0,
+          "rounds": 19
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.01336669921875,
+          "predicted_log2": -2958.0,
+          "rounds": 20
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0172119140625,
+          "predicted_log2": -3153.0,
+          "rounds": 21
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9593505859375,
+          "predicted_log2": -3315.0,
+          "rounds": 22
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96234130859375,
+          "predicted_log2": -3555.0,
+          "rounds": 23
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95623779296875,
+          "predicted_log2": -3753.0,
+          "rounds": 24
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9210205078125,
+          "predicted_log2": -3958.0,
+          "rounds": 25
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0078125,
+          "predicted_log2": -4139.0,
+          "rounds": 26
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.99774169921875,
+          "predicted_log2": -4341.0,
+          "rounds": 27
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98968505859375,
+          "predicted_log2": -4540.0,
+          "rounds": 28
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0120849609375,
+          "predicted_log2": -4763.0,
+          "rounds": 29
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95751953125,
+          "predicted_log2": -4968.0,
+          "rounds": 30
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.92803955078125,
+          "predicted_log2": -5195.0,
+          "rounds": 31
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.954833984375,
+          "predicted_log2": -5388.0,
+          "rounds": 32
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9351806640625,
+          "predicted_log2": -5609.0,
+          "rounds": 33
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94012451171875,
+          "predicted_log2": -5834.0,
+          "rounds": 34
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.974853515625,
+          "predicted_log2": -6059.0,
+          "rounds": 35
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98834228515625,
+          "predicted_log2": -6259.0,
+          "rounds": 36
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9796142578125,
+          "predicted_log2": -6516.0,
+          "rounds": 37
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94842529296875,
+          "predicted_log2": -6751.0,
+          "rounds": 38
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94818115234375,
+          "predicted_log2": -7002.0,
+          "rounds": 39
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9423828125,
+          "predicted_log2": -7226.0,
+          "rounds": 40
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.92266845703125,
+          "predicted_log2": -7444.0,
+          "rounds": 41
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.97125244140625,
+          "predicted_log2": -7683.0,
+          "rounds": 42
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9385986328125,
+          "predicted_log2": -7935.0,
+          "rounds": 43
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.90380859375,
+          "predicted_log2": -8173.0,
+          "rounds": 44
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96710205078125,
+          "predicted_log2": -8413.0,
+          "rounds": 45
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9625244140625,
+          "predicted_log2": -8644.0,
+          "rounds": 46
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.97406005859375,
+          "predicted_log2": -8893.0,
+          "rounds": 47
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.002197265625,
+          "predicted_log2": -9138.0,
+          "rounds": 48
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0262451171875,
+          "predicted_log2": -9371.0,
+          "rounds": 49
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.05523681640625,
+          "predicted_log2": -9612.0,
+          "rounds": 50
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.05279541015625,
+          "predicted_log2": -9884.0,
+          "rounds": 51
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.09918212890625,
+          "predicted_log2": -10158.0,
+          "rounds": 52
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.11187744140625,
+          "predicted_log2": -10410.0,
+          "rounds": 53
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.0582275390625,
+          "predicted_log2": -10692.0,
+          "rounds": 54
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.002197265625,
+          "predicted_log2": -10951.0,
+          "rounds": 55
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.97796630859375,
+          "predicted_log2": -11208.0,
+          "rounds": 56
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.980712890625,
+          "predicted_log2": -11469.0,
+          "rounds": 57
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.98822021484375,
+          "predicted_log2": -11732.0,
+          "rounds": 58
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 128.024169921875,
+          "predicted_log2": -11988.0,
+          "rounds": 59
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.96038818359375,
+          "predicted_log2": -12249.0,
+          "rounds": 60
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.90692138671875,
+          "predicted_log2": -12505.0,
+          "rounds": 61
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.95074462890625,
+          "predicted_log2": -12768.0,
+          "rounds": 62
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.9393310546875,
+          "predicted_log2": -13039.0,
+          "rounds": 63
+        },
+        {
+          "biased_state_bits": 0,
+          "ci95": [
+            0.0,
+            2.86102294921875e-6
+          ],
+          "deterministic_state_bits": 0,
+          "empirical_log2": null,
+          "empirical_probability": 0.0,
+          "followers": 0,
+          "mean_state_difference_weight": 127.94366455078125,
+          "predicted_log2": -13318.0,
+          "rounds": 64
+        }
+      ],
+      "samples": 1048576,
+      "trail_round_costs": [
+        0,
+        26,
+        52,
+        108,
+        74,
+        132,
+        188,
+        171,
+        183,
+        205,
+        181,
+        184,
+        173,
+        193,
+        172,
+        194,
+        184,
+        174,
+        177,
+        187,
+        195,
+        162,
+        240,
+        198,
+        205,
+        181,
+        202,
+        199,
+        223,
+        205,
+        227,
+        193,
+        221,
+        225,
+        225,
+        200,
+        257,
+        235,
+        251,
+        224,
+        218,
+        239,
+        252,
+        238,
+        240,
+        231,
+        249,
+        245,
+        233,
+        241,
+        272,
+        274,
+        252,
+        282,
+        259,
+        257,
+        261,
+        263,
+        256,
+        261,
+        256,
+        263,
+        271,
+        279
+      ],
+      "trail_schedule_difference_weights": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        3,
+        0,
+        3,
+        0,
+        9,
+        1,
+        4,
+        0,
+        8,
+        3,
+        11,
+        0,
+        18,
+        5,
+        12,
+        0,
+        15,
+        10,
+        18,
+        3,
+        15,
+        8,
+        17,
+        6,
+        16,
+        16,
+        17,
+        13,
+        18,
+        18,
+        18,
+        15,
+        17,
+        15,
+        17,
+        16,
+        15,
+        15,
+        15,
+        17,
+        21,
+        13,
+        19,
+        24,
+        15,
+        19
+      ]
+    }
+  ],
+  "params": {
+    "alpha": 0.01,
+    "bit_samples": 16384,
+    "deltas": [
+      {
+        "bit": 31,
+        "word": 15
+      },
+      {
+        "bit": 0,
+        "word": 15
+      },
+      {
+        "bit": 31,
+        "word": 8
+      },
+      {
+        "bit": 31,
+        "word": 0
+      }
+    ],
+    "reproduce": true,
+    "samples": 1048576
+  },
+  "primitive": "sha256-compression",
+  "reproduction": {
+    "digest": "43ded1e934132a23efe7a03175570f497cc1b12486fa74856b14c47b466de831",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research characteristic --seed 1112363596 --params '{\"alpha\":0.01,\"bit_samples\":16384,\"deltas\":[{\"bit\":31,\"word\":15},{\"bit\":0,\"word\":15},{\"bit\":31,\"word\":8},{\"bit\":31,\"word\":0}],\"reproduce\":true,\"samples\":1048576}'",
+  "result": "reduced-round-only",
+  "result_digest": "43ded1e934132a23efe7a03175570f497cc1b12486fa74856b14c47b466de831",
+  "samples": 1048576,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "sha256-compression",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 17
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 17
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 10
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 2
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-21T19:56:23Z",
+  "status": "completed",
+  "verification": {
+    "detail": "256 pairs x 65 state indices per difference; mismatches: []",
+    "method": "independent SHA-256 recomputes every per-round state difference (as output minus chaining value) and the schedule from the FIPS formula for the first pairs; following counts and all bit counts compared",
+    "passed": true
+  }
+}

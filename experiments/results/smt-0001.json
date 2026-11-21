@@ -1,0 +1,332 @@
+{
+  "assumptions": [
+    "Midstate (first header block) is concrete; only the 32-bit nonce is symbolic.",
+    "Brute force uses the generic reduced-round midstate path on one core (no SIMD); it is the honest baseline for 'expected work'.",
+    "Solver timing includes model construction inside Z3 but not Python start-up.",
+    "Solver results are only trusted after independent re-verification."
+  ],
+  "baseline": "Single-thread brute force from nonce 0; expected 2^k hash evaluations.",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. Solver returned a nonce for 6 of 8 instances within 30000 ms. Best solver/brute-force time ratio: 5.870e-3 (>1 means the solver was slower). Target: 8 leading zero bits; brute force needs about 2^8 hashes, so a solver shortcut would have to beat microseconds.",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 8
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 8
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 12
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 12
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 16
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "`instances` random 80-byte headers per round count from SplitMix64::stream(seed, instance).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 100.1514472,
+  "environment": {
+    "arch": "x86_64",
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": null,
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5762b608fd2113a81ceec75e50aa77b88b56a70ca0faaabaf2ba25d47a37ff3f"
+  },
+  "finished_at": "2026-11-21T19:56:23Z",
+  "hypothesis": "For some round count r, a QF_BV SMT solver finds a nonce whose r-round SHA-256d header hash has k leading zero bits in less time than brute-force search on one CPU core.",
+  "hypothesis_id": "H-SMT-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "smt-0001",
+  "implementation": [
+    "research/algebraic-models/smt_reduced_round.py (z3-solver)",
+    "bitcoin_header::HeaderMidstate::with_rounds"
+  ],
+  "kind": "smt",
+  "methodology": "For each round count and instance, build a random header, compute the r-round midstate, time brute force to the first valid nonce, then ask Z3 for any valid nonce with a timeout. A configuration is flagged only when the solver returns a verified nonce faster than brute force.",
+  "name": "Z3 bit-vector nonce search on reduced-round SHA-256d",
+  "null_hypothesis": "Solver time exceeds the brute-force time for every instance (no algebraic shortcut exploitable by a generic SMT solver).",
+  "observations": [
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 1048576,
+        "nonce": null,
+        "seconds": 0.2722348
+      },
+      "instance": 0,
+      "rounds": 4,
+      "solver": {
+        "nonce": 4143972352,
+        "nonce_valid": true,
+        "seconds": 0.0016486000022268854,
+        "status": "sat",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 6349.968468157115,
+      "solver_faster": true,
+      "solver_over_brute_force_time": 0.006055801838070979,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 1048576,
+        "nonce": null,
+        "seconds": 0.2736305
+      },
+      "instance": 1,
+      "rounds": 4,
+      "solver": {
+        "nonce": 553648128,
+        "nonce_valid": true,
+        "seconds": 0.0016060999987530522,
+        "status": "sat",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 6154.7156193936,
+      "solver_faster": true,
+      "solver_over_brute_force_time": 0.005869594211000061,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 272,
+        "nonce": 271,
+        "seconds": 0.0000823
+      },
+      "instance": 0,
+      "rounds": 8,
+      "solver": {
+        "nonce": 3347053733,
+        "nonce_valid": true,
+        "seconds": 1.377793899999233,
+        "status": "sat",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 4553583.727822496,
+      "solver_faster": false,
+      "solver_over_brute_force_time": 16741.116646406233,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 47,
+        "nonce": 46,
+        "seconds": 0.0000149
+      },
+      "instance": 1,
+      "rounds": 8,
+      "solver": {
+        "nonce": 1215466337,
+        "nonce_valid": true,
+        "seconds": 0.9588605000026292,
+        "status": "sat",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 3024593.5234982264,
+      "solver_faster": false,
+      "solver_over_brute_force_time": 64353.05369145163,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 465,
+        "nonce": 464,
+        "seconds": 0.0001606
+      },
+      "instance": 0,
+      "rounds": 12,
+      "solver": {
+        "nonce": 563139031,
+        "nonce_valid": true,
+        "seconds": 15.971053900000696,
+        "status": "sat",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 46242466.148818955,
+      "solver_faster": false,
+      "solver_over_brute_force_time": 99446.16376090096,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 41,
+        "nonce": 40,
+        "seconds": 0.0000143
+      },
+      "instance": 1,
+      "rounds": 12,
+      "solver": {
+        "nonce": 2807329482,
+        "nonce_valid": true,
+        "seconds": 16.48041579999699,
+        "status": "sat",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 47251541.80418718,
+      "solver_faster": false,
+      "solver_over_brute_force_time": 1152476.6293704188,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 683,
+        "nonce": 682,
+        "seconds": 0.0002404
+      },
+      "instance": 0,
+      "rounds": 16,
+      "solver": {
+        "nonce": null,
+        "nonce_valid": null,
+        "seconds": 30.269249500001024,
+        "status": "unknown",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 85997909.35316432,
+      "solver_faster": false,
+      "solver_over_brute_force_time": 125912.01955075302,
+      "zero_bits": 8
+    },
+    {
+      "brute_force": {
+        "expected_hashes": 256.0,
+        "hashes": 162,
+        "nonce": 161,
+        "seconds": 0.0000588
+      },
+      "instance": 1,
+      "rounds": 16,
+      "solver": {
+        "nonce": null,
+        "nonce_valid": null,
+        "seconds": 30.288192599997274,
+        "status": "unknown",
+        "timeout_ms": 30000,
+        "z3_version": "5.4.1"
+      },
+      "solver_cost_in_hashes": 83447061.24489045,
+      "solver_faster": false,
+      "solver_over_brute_force_time": 515105.31632648426,
+      "zero_bits": 8
+    }
+  ],
+  "params": {
+    "instances": 2,
+    "reproduce": false,
+    "rounds": [
+      4,
+      8,
+      12,
+      16
+    ],
+    "timeout_ms": 30000,
+    "zero_bits": 8
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "matched": null,
+    "method": "not run in-process for this kind; use `bmr research reproduce <id>`"
+  },
+  "reproduction_command": "bmr research smt --seed 1112363596 --params '{\"instances\":2,\"reproduce\":false,\"rounds\":[4,8,12,16],\"timeout_ms\":30000,\"zero_bits\":8}'",
+  "result": "reduced-round-only",
+  "result_digest": "3ced3b03eb75268d77b98cf2ce5af51ca30c49394ac6d69f41cff9b0fb7a3b7e",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 8
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 8
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 12
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 12
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 16
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-21T19:54:43Z",
+  "status": "completed",
+  "verification": {
+    "detail": "all solver answers consistent",
+    "method": "solver nonces recomputed with HeaderMidstate (sha256-core) and with verification::independent over the full header; unsat answers cross-checked against brute force",
+    "passed": true
+  }
+}
