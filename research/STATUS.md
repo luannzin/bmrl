@@ -30,6 +30,26 @@ experiment kind reproduced its previous result digest bit for bit. Details:
 - **New 5-round structure:** H7 bits 1 and 0 sum to zero over the nonce's
   low byte too often (0.5272, z = 445; 0.5038, z = 63). Nothing at 6 or 8
   rounds.
+- **Discovery wave (2026-11-22)**, all from committed code:
+  - *Work sharing* [work-sharing-0001]: an exact DAG count of every
+    feasible way to batch headers. Only version rolling (overt AsicBoost)
+    shares per-nonce work: 11.6% at 4 headers, 15.5% at most; every other
+    pattern under 1%. GPU kernel v3 (8 version-rolled headers per nonce)
+    measures 1.914 GH/s against v2's 1.752, +9.2% [bench-gpu-0006].
+  - *Mainnet header atlas* [header-atlas-0001]: 977,066 headers from P2P
+    peers validated by our own consensus code (0 failures). hash / target
+    is uniform over every block (KS p = 0.869; per era 0.064 to 0.992).
+    Miner fingerprints only: nonce bit 7 biased (|z| up to 149), BIP320
+    version bits in 95.9% of 2026 blocks. Network 9.87e20 H/s.
+  - *Evolved rules* [evolved-rules-0001]: 60,000 GP rules per round count.
+    At 4 rounds the search rediscovered `bswap(bswap(n) + probe7)`, held-out
+    A = 64.0 (positive control). 5, 6, 8, 64 rounds: best held-out A 0.994,
+    1.021, 1.005, 1.008, none significant.
+  - *Grover circuit* [grover-circuit-0001]: the 64-round header SHA256d as a
+    reversible circuit (14,977 qubits, 82,496 Toffoli per half, 1.65e5 per
+    iteration against the model's 1.47e5), correct on every input; simulated
+    Grover reaches 0.9999 as theory says. With Pauli noise at 1e-3 per gate
+    even 4 rounds is a random guess; 8 rounds drops to 0.099 at 1e-5.
 
 ## 2. Disproven or invalidated
 
@@ -67,8 +87,10 @@ about 4.5 × 10^15 machines to meet the block interval at 80 bits.
 
 ## 5. Next
 
-1. **GPU kernel v2: done** (3.48x, see section 1). It changed the source
-   fingerprint, so the full suite must be rerun from the current commit.
+1. **GPU kernels v2 and v3: done** (3.48x, then +9.2%, see section 1). The
+   source fingerprint changed several times since the last full run, so
+   the full suite must be rerun from the current commit before
+   `bmr research audit` passes again.
 2. **`bmr research evolve` queue:** smt at 5-7 rounds (frontier), trail-sat
    with 4x the solver budget, new-seed replications, and first experiments
    for the untested families (probabilistic neutral bits, differential-linear).

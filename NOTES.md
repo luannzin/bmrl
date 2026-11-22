@@ -193,3 +193,53 @@ Next (planning with the user, nothing started):
    frequency/voltage tuning and measured J/TH.
 4. Track 1 science in parallel: learned selection rule, miner-freedom model,
    solver calibration against published characteristics.
+
+## 2026-11-22: Discovery wave (E3, E8, E1, E4) and the public repo
+
+The user asked for the four strongest ideas at maximum effort. Re-ranked
+all twelve: E3, E8 (with E12's economics), E1 and E4 stayed; E9
+(cross-implementation fuzzing) was dropped because bitcoinfuzz already
+does it; E6b needs a full UTXO set; E11 needs the user to change GPU clocks.
+
+Done (`bmr research discovery` runs all four):
+- E3 `work-sharing`: exact DAG of the header SHA256d, sums re-associated by
+  dependency class, every batching pattern counted. Version rolling is the
+  only one that shares work (11.6% at k = 4, 15.5% ceiling). GPU kernel v3
+  shares the inner schedule across k version-rolled headers: k = 2, 4, 8,
+  16 gave 1880, 1933, 1953, 1422 MH/s (dev harness, v2 1789); k = 8 kept.
+  bench-gpu-0006: v1 505.8, v2 1752, v3 1914 MH/s; parity over 8 headers.
+  `Work::version_rolled` applies BIP320 bits.
+- E8 `header-atlas` + `bmr research sync-headers`: a minimal P2P client
+  (version handshake, getheaders) downloaded 977,071 headers in about two
+  minutes into `experiments/data/` (gitignored). Our own retarget and
+  median-time-past code validates the whole chain. Results in STATUS.
+- E1 `evolved-rules`: genetic programming over nonce, template and a probe
+  hash. First dry run was invalid: consecutive low nonces share the top
+  byte, which at 4 rounds fixes the hash number's top byte, so no rule
+  could be scored and the positive-control test passed vacuously. Fixed by
+  spreading the sample (n = i * 0x9e3779b1) and asserting hits exist.
+  The recorded run rediscovered the 4-round affine shortcut by itself.
+- E4 `grover-circuit`: the real header SHA256d as a reversible circuit,
+  simulated exactly. Two bugs found before recording: the Pauli-noise
+  state grew exponentially (each fault leaves per-input garbage; now an
+  input with garbage after an oracle call counts as decohered), and a
+  4-round template could hold no target hit at all, which made the
+  iteration count infinite (now the template with the largest d is
+  chosen and M = 0 is refused).
+- Board: B-03 and B-17 link `evolved-rules`, B-13 `grover-circuit`, B-16
+  `work-sharing`, B-01 `header-atlas`.
+- Repo presentation in the Lines' style: `tools/logo.py` draws a 32x32
+  pixel-art bitcoin turning in the dusk palette (banner.webp with
+  banner.png for reduced motion, icon, sprite, social preview); README
+  rewritten; description and eight topics set.
+
+Current state: no idea has changed the number of hashes per block at 64
+rounds. Records of this wave come from several commits; the full suite
+must be rerun from one commit before the audit passes.
+
+Next:
+1. Mining with v3 for real: version rolling in the mining engine and a
+   Stratum V1 client (BIP310), then testnet4 and short mainnet runs.
+2. Second seeds for the new hypotheses; evolve rules with a larger budget
+   at 5 rounds, where structure is known to exist.
+3. Full-suite rerun from one commit.

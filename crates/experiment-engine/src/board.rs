@@ -259,7 +259,8 @@ pub fn proposals(store: &Store, recs: &[Value], e: &Entry) -> Result<Vec<Value>>
         }
     }
     if let Some(d) = e.design {
-        out.push(json!({ "entry": e.id, "rule": "unexplored", "executable": false, "rationale": format!("{}: no experiment tests this family yet", e.family), "design": d, "priority": 25.0 }));
+        let why = if e.kinds.is_empty() { "no experiment tests this family yet" } else { "this part of the family is not tested yet" };
+        out.push(json!({ "entry": e.id, "rule": "unexplored", "executable": false, "rationale": format!("{}: {why}", e.family), "design": d, "priority": 25.0 }));
     }
     out.sort_by(|a, b| b["priority"].as_f64().unwrap_or(0.0).total_cmp(&a["priority"].as_f64().unwrap_or(0.0)));
     Ok(out)
