@@ -272,3 +272,39 @@ known. Three pushes:
 Current state: every lens at 64 rounds is null, and X1 shows exactly why
 the reduced-round shortcuts end. Nothing found changes the number of
 hashes per block.
+
+## 2026-11-22: Template luck (H-LUCK-01)
+
+The user wanted a bolder hypothesis that uses the lab's full machinery.
+Chosen: the template is the biggest free choice a miner has (a new merkle
+root costs one coinbase hash), and the lab had only tested 16 templates.
+If hit rates differed between templates and persisted, choosing templates
+would be a free multiplier.
+
+Done:
+- New kind `template-luck` (`crates/experiment-engine/src/template_luck.rs`,
+  board entry B-18): every nonce of each template on the GPU (kernel v3,
+  8 version-rolled templates per scan, every hit re-hashed on the CPU),
+  hits at k and k + 8 bits split by nonce parity. Tests: dispersion against
+  Poisson, even/odd correlation, top 10% chosen on even nonces re-measured
+  on odd ones. Kill rule fixed before the run: all four at Bonferroni
+  alpha 0.01/20. Unit test plants 5% luck in a quarter of the templates;
+  every test finds it.
+- template-luck-0001 from `7813595` (clean tree): 2,048 templates x 2^32
+  nonces, 74 min. 64 rounds: D/df 0.956 (p 0.15), r -0.010, A = 1.0008
+  (0.9978..1.0039) at 20 bits and 1.007 (0.960..1.057) at 28 bits; spread
+  between templates <= 0.13% SD. 4 rounds (positive control): A = 9.85.
+  5, 6, 8 rounds: clean. Verifier: GPU hits of template 0 below 2^26 equal
+  the independent SHA-256 recount, hit for hit.
+- Board bug fixed: a skipped in-process rerun (matched = null) was shown as
+  "reproduced" (also evolved-rules-0002); now "not rerun in-process".
+
+Current state: hypothesis dead at 64 rounds. Choosing templates does not
+change the hit rate by more than 0.4%. Reproduction ran only for the quick
+version; the full run is single-seed. board.rs changed after the record, so
+the audit lists template-luck-0001 as older code until the next full rerun.
+
+Side note, not significant: dispersion sits below 1 at 5, 6, 8 and 64
+rounds (0.90, 0.88, 0.77, 0.96; 8 rounds p 0.006 against a Bonferroni
+threshold of 5e-4). Under-dispersion means templates are more alike, never
+luckier, so it cannot help mining. A new seed at 8 rounds would settle it.

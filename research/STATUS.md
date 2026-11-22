@@ -62,11 +62,19 @@ experiment kind reproduced its previous result digest bit for bit. Details:
   - *Evolved rules at scale* [evolved-rules-0002]: 450,000 rules per round
     count, 56 held-out templates of 2^22 nonces: nothing at 5, 6, 8 or 64
     rounds; at 64 the best rule's held-out A is 0.998 (0.991..1.005).
+- **Template luck (2026-11-22)** [template-luck-0001]: every nonce of 2,048
+  templates on the GPU (2^43 header hashes, 74 min). Hit counts at 20 bits
+  are Poisson (D/df 0.956, p 0.15); even and odd nonces do not correlate
+  (r -0.010); the top 10% chosen on even nonces give A = 1.0008
+  (0.9978..1.0039) on odd ones, 1.007 (0.960..1.057) at 28 bits. Template
+  rate spread <= 0.13% SD (95%). Positive control: at 4 rounds the same
+  selection gives A = 9.85. 5, 6, 8 rounds clean.
 
 ## 2. Disproven or invalidated
 
 - **Mining shortcuts: none.** Every candidate algorithm (class selection,
-  linear selection, neighbours, trail filters, early abort, SAT/SMT, Grover)
+  linear selection, neighbours, trail filters, early abort, SAT/SMT, Grover,
+  template choice)
   either measures at the exhaustive work at 64 rounds, is cost per hash
   only, or is a speculative model.
 - **Invalidated by our own checks, before publication:** a normal

@@ -285,8 +285,16 @@ fn verification_status(recs: &[&Value], seeds: usize, e: &Entry) -> String {
     if recs.iter().any(|r| r["candidate_anomaly"] == true) {
         return "candidate anomaly, unconfirmed".into();
     }
-    let reproduced = recs.iter().all(|r| r["reproduction"]["matched"] != false);
-    format!("verified{}, {seeds} run seed(s)", if reproduced { ", reproduced" } else { ", NOT reproduced" })
+    // `matched` is null when the kind skipped the in-process rerun (long GPU or GP runs).
+    let matched = |m: Value| recs.iter().any(|r| r["reproduction"]["matched"] == m);
+    let reproduced = if matched(json!(false)) {
+        ", NOT reproduced"
+    } else if matched(Value::Null) {
+        ", not rerun in-process"
+    } else {
+        ", reproduced"
+    };
+    format!("verified{reproduced}, {seeds} run seed(s)")
 }
 
 /// Build the board from the registry.
