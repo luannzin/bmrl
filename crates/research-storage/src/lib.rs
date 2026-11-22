@@ -121,11 +121,20 @@ impl Store {
         Self::open(&data_dir())
     }
 
-    /// Next id `<prefix>-NNNN` for `table`.
+    /// Next id `<prefix>-NNNN` for `table`. Only ids of exactly that shape
+    /// count: `smt-%` also matches `smt-scaling-0002`, which once made the
+    /// next smt id skip a number and could have reused an existing id.
     fn next_id(&self, table: &str, prefix: &str) -> Result<String> {
-        let sql = format!("SELECT id FROM {table} WHERE id LIKE ?1 ORDER BY id DESC LIMIT 1");
-        let last: Option<String> = self.conn.query_row(&sql, params![format!("{prefix}-%")], |r| r.get(0)).optional()?;
-        let n = last.and_then(|id| id.rsplit('-').next()?.parse::<u32>().ok()).unwrap_or(0);
+        let mut stmt = self.conn.prepare(&format!("SELECT id FROM {table} WHERE id LIKE ?1"))?;
+        let ids = stmt.query_map(params![format!("{prefix}-%")], |r| r.get::<_, String>(0))?;
+        let mut n = 0u32;
+        for id in ids {
+            let id = id?;
+            let rest = &id[prefix.len() + 1..];
+            if !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_digit()) {
+                n = n.max(rest.parse().unwrap_or(0));
+            }
+        }
         Ok(format!("{prefix}-{:04}", n + 1))
     }
 
@@ -133,16 +142,19 @@ impl Store {
         self.next_id("experiments", kind)
     }
 
-    /// Insert or update an experiment record and rewrite its JSON file.
+    /// Insert an experiment record, or update the same run's record (same id
+    /// and start time), and rewrite its JSON file. A different run with the
+    /// same id is refused: history is append-only.
     pub fn save_experiment(&self, record: &Value) -> Result<PathBuf> {
         let id = record["id"].as_str().context("record without id")?;
-        self.conn.execute(
+        let changed = self.conn.execute(
             "INSERT INTO experiments (id, kind, name, definition_version, status, result, candidate_anomaly, seed, samples,
                                       reproduced, verified, started_at, finished_at, record)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
              ON CONFLICT(id) DO UPDATE SET status = excluded.status, result = excluded.result,
                  candidate_anomaly = excluded.candidate_anomaly, reproduced = excluded.reproduced,
-                 verified = excluded.verified, finished_at = excluded.finished_at, record = excluded.record",
+                 verified = excluded.verified, finished_at = excluded.finished_at, record = excluded.record
+             WHERE experiments.started_at = excluded.started_at",
             params![
                 id,
                 record["kind"].as_str(),
@@ -160,6 +172,7 @@ impl Store {
                 serde_json::to_string(record)?,
             ],
         )?;
+        anyhow::ensure!(changed == 1, "experiment id {id} already belongs to another run; refusing to overwrite it");
         let path = self.dir.join("results").join(format!("{id}.json"));
         std::fs::write(&path, serde_json::to_string_pretty(record)?)?;
         Ok(path)
@@ -385,6 +398,15 @@ mod tests {
         let list = store.list_experiments(Some("smt"), 10).unwrap();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0]["reproduced"], true);
+        // A kind whose name extends another's must not shift or reuse its ids.
+        let other = json!({ "id": "smt-scaling-0007", "kind": "smt-scaling", "name": "n", "definition_version": 1, "status": "completed", "started_at": "2026-01-01T00:00:00Z" });
+        store.save_experiment(&other).unwrap();
+        assert_eq!(store.next_experiment_id("smt").unwrap(), "smt-0002");
+        // Same id, different run: refused, original kept.
+        let mut clash = rec.clone();
+        clash["started_at"] = json!("2030-01-01T00:00:00Z");
+        assert!(store.save_experiment(&clash).is_err());
+        assert_eq!(store.get_experiment("smt-0001").unwrap().unwrap()["started_at"], rec["started_at"]);
         let mut b = json!({ "x": 1 });
         assert_eq!(store.save_benchmark("cpu", &mut b).unwrap(), "bench-cpu-0001");
         assert!(dir.join("results").join("smt-0001.json").exists());
