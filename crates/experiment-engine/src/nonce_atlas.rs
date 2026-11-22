@@ -254,14 +254,14 @@ fn enumerate(p: &Prepared, nonce_bits: usize, k_store: u32) -> Map {
 
 // ------------------------------------------------------------- templates
 
-struct Template {
-    label: String,
-    header: [u8; 80],
+pub(crate) struct Template {
+    pub(crate) label: String,
+    pub(crate) header: [u8; 80],
     /// Known block-level nonce (real templates).
     known: Option<(u32, String)>,
 }
 
-fn synthetic(seed: u64, i: u64) -> Template {
+pub(crate) fn synthetic(seed: u64, i: u64) -> Template {
     let mut rng = SplitMix64::stream(seed ^ 0xa71a5, i);
     let mut prev: [u8; 32] = rng.bytes();
     prev[22..].fill(0); // internal order: the hash number's top 80 bits are zero, as for a real block
@@ -297,7 +297,7 @@ fn real_templates() -> Vec<Template> {
     out
 }
 
-fn prepared(header: &[u8; 80], rounds: usize) -> Prepared {
+pub(crate) fn prepared(header: &[u8; 80], rounds: usize) -> Prepared {
     let base = Work::new(BlockHeader::deserialize(header), Target([0xff; 32]));
     Prepared::new(&Work { midstate: HeaderMidstate::with_rounds(header, rounds), ..base })
 }

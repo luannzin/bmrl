@@ -22,6 +22,8 @@ pub mod characteristic;
 pub mod characteristic_audit;
 pub mod differential;
 pub mod env;
+pub mod evolved_rules;
+pub mod grover_circuit;
 pub mod hardware;
 pub mod header_atlas;
 pub mod multiseed;
@@ -66,6 +68,8 @@ pub enum Kind {
     QuantumModel,
     WorkSharing,
     HeaderAtlas,
+    EvolvedRules,
+    GroverCircuit,
 }
 
 /// What exactly an experiment measures. Results never transfer between these.
@@ -137,7 +141,7 @@ pub struct Verification {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 17] = [
+    pub const ALL: [Kind; 19] = [
         Kind::ReducedRound,
         Kind::Differential,
         Kind::Statistical,
@@ -155,6 +159,8 @@ impl Kind {
         Kind::QuantumModel,
         Kind::WorkSharing,
         Kind::HeaderAtlas,
+        Kind::EvolvedRules,
+        Kind::GroverCircuit,
     ];
     /// The MVP experiment set (`bmr research all`).
     pub const MVP: [Kind; 4] = [Kind::ReducedRound, Kind::Differential, Kind::Statistical, Kind::Smt];
@@ -164,7 +170,7 @@ impl Kind {
     /// Structural-shortcut search (`bmr research breakthrough`).
     pub const BREAKTHROUGH: [Kind; 3] = [Kind::NonceAtlas, Kind::TrailSat, Kind::QuantumModel];
     /// Discovery wave (`bmr research discovery`).
-    pub const DISCOVERY: [Kind; 2] = [Kind::WorkSharing, Kind::HeaderAtlas];
+    pub const DISCOVERY: [Kind; 4] = [Kind::WorkSharing, Kind::HeaderAtlas, Kind::EvolvedRules, Kind::GroverCircuit];
 
     fn module(self) -> &'static Module {
         &MODULES[self as usize]
@@ -212,7 +218,7 @@ macro_rules! module {
 }
 
 /// Indexed by `Kind as usize`, in declaration order.
-const MODULES: [Module; 17] = [
+const MODULES: [Module; 19] = [
     module!("reduced-round", reduced_round),
     module!("differential", differential),
     module!("statistical", statistical),
@@ -230,6 +236,8 @@ const MODULES: [Module; 17] = [
     module!("quantum-model", quantum_model),
     module!("work-sharing", work_sharing),
     module!("header-atlas", header_atlas),
+    module!("evolved-rules", evolved_rules),
+    module!("grover-circuit", grover_circuit),
 ];
 
 /// Parameter helpers shared by the kinds.
@@ -553,7 +561,7 @@ mod tests {
     #[test]
     fn module_table_matches_kind_order() {
         let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
-        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing", "header-atlas"]);
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing", "header-atlas", "evolved-rules", "grover-circuit"]);
         assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
     }
 

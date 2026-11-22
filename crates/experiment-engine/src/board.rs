@@ -43,7 +43,7 @@ pub const ENTRIES: &[Entry] = &[
         id: "B-01", family: "statistical bias", title: "Output bias of full-round header SHA256d",
         hypothesis: "Some output bit, word or leading-zero count of SHA256d(header) is biased over the nonce, so the target event has probability other than 2^-k per evaluation.",
         basis: "A relative bias e in the event 'k leading zero bits' changes the expected work per block by 1/(1 + e). Sampling tests bound e directly; the exhaustive atlas counts the event over every nonce of each template.",
-        kinds: &["statistical", "multiseed", "nonce-atlas"], derivation: None, speculative: false, design: None,
+        kinds: &["statistical", "multiseed", "nonce-atlas", "header-atlas"], derivation: None, speculative: false, design: None,
     },
     Entry {
         id: "B-02", family: "random-function structure", title: "Per-template nonce map versus a random function",
@@ -55,7 +55,7 @@ pub const ENTRIES: &[Entry] = &[
         id: "B-03", family: "input selection / conditional probability", title: "Selecting nonces without hashing them",
         hypothesis: "A class of nonces chosen without evaluating SHA256d (fixed bits, linear half-spaces, byte values, Hamming weight, trail conditions) meets the target more often than the rest.",
         basis: "Each candidate still costs one SHA256d, so a class with held-out amplification A needs 1/A of the exhaustive work per hit. The atlas scores every linear half-space over two 24-bit projections (2^25 masks) and 3k class strategies over every nonce, then re-measures each family's winner on held-out templates.",
-        kinds: &["nonce-atlas", "trail-search"], derivation: None, speculative: false, design: None,
+        kinds: &["nonce-atlas", "trail-search", "evolved-rules"], derivation: None, speculative: false, design: None,
     },
     Entry {
         id: "B-04", family: "differential (output level)", title: "Neighbours of hits",
@@ -119,7 +119,7 @@ pub const ENTRIES: &[Entry] = &[
         id: "B-13", family: "quantum search", title: "Grover search with a reversible SHA256d oracle",
         hypothesis: "Grover search needs fewer oracle queries than classical evaluations and finishes within the block interval on a feasible number of machines.",
         basis: "Grover needs (pi/4) sqrt(2^d) iterations; P machines need (pi/4) sqrt(2^d / P) each. Meeting a 600 s deadline forces P ~ 2^d (pi t_iter / 4T)^2, so total queries grow back toward linear in 2^d.",
-        kinds: &["quantum-model"], derivation: None, speculative: true, design: None,
+        kinds: &["quantum-model", "grover-circuit"], derivation: None, speculative: true, design: None,
     },
     Entry {
         id: "B-14", family: "reversible / specialized circuits", title: "Energy per hash, not hashes per block",
@@ -139,8 +139,8 @@ pub const ENTRIES: &[Entry] = &[
     Entry {
         id: "B-16", family: "message reuse across templates", title: "AsicBoost-type schedule sharing",
         hypothesis: "Reusing work across templates (shared second-block schedules) lowers the number of evaluations.",
-        basis: "Merkle roots whose last four bytes collide give several midstates one shared second-block message, so the schedule is computed once for all of them.",
-        kinds: &[],
+        basis: "Merkle roots whose last four bytes collide (covert) or BIP320 version rolling (overt) give several midstates one shared second-block message, so the schedule is computed once for all of them. work-sharing counts every batching pattern exactly; bmr benchmark gpu measures kernel v3.",
+        kinds: &["work-sharing"],
         derivation: Some("Exact: the sharing removes schedule work (cost per hash); every midstate still needs its own compression per nonce, so the number of evaluations is unchanged."),
         speculative: false, design: None,
     },
@@ -148,7 +148,7 @@ pub const ENTRIES: &[Entry] = &[
         id: "B-17", family: "learned and combined distinguishers", title: "Boomerang, differential-linear and learned distinguishers",
         hypothesis: "A combined (boomerang, differential-linear) or machine-learned distinguisher reaches more rounds of the header function than single characteristics.",
         basis: "These combine short characteristics; they distinguish reduced-round SHA-256 compression from random but need chosen pairs or quartets, not single inputs.",
-        kinds: &[], derivation: None, speculative: false,
+        kinds: &["evolved-rules"], derivation: None, speculative: false,
         design: Some("Differential-linear: for the nonce MSB difference (2^-11 per round) and each output bit of H7 at 6-8 rounds, measure the correlation of the output difference over 2^30 pairs; then ask whether any correlation changes single-input hit rates (the atlas's linear family is the single-input test)."),
     },
 ];

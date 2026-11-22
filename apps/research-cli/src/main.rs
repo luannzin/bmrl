@@ -152,6 +152,10 @@ enum ResearchCmd {
     SyncHeaders,
     /// Mainnet header atlas: validate the chain, test hash/target uniformity, miner behaviour, economics.
     HeaderAtlas(ResearchOpts),
+    /// Genetic programming of cheap nonce-selection rules, measured on held-out templates.
+    EvolvedRules(ResearchOpts),
+    /// Gate-level Grover on the header SHA256d: verified circuit, exact resources, noise threshold (simulated).
+    GroverCircuit(ResearchOpts),
     /// Discovery wave: every kind in Kind::DISCOVERY.
     Discovery(ResearchOpts),
     /// Rebuild the breakthrough research board (research/BOARD.md) from the registry.
@@ -709,6 +713,8 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
         ResearchCmd::QuantumModel(o) => single(Kind::QuantumModel, &o),
         ResearchCmd::WorkSharing(o) => single(Kind::WorkSharing, &o),
         ResearchCmd::HeaderAtlas(o) => single(Kind::HeaderAtlas, &o),
+        ResearchCmd::EvolvedRules(o) => single(Kind::EvolvedRules, &o),
+        ResearchCmd::GroverCircuit(o) => single(Kind::GroverCircuit, &o),
         ResearchCmd::SyncHeaders => {
             use experiment_engine::header_atlas;
             let mut chain = header_atlas::load()?;
