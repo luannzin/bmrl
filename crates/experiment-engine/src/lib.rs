@@ -17,17 +17,21 @@
 //! * classification and conclusion are derived from data, never hand-written.
 
 pub mod algebraic;
+pub mod board;
 pub mod characteristic;
 pub mod characteristic_audit;
 pub mod differential;
 pub mod env;
 pub mod hardware;
 pub mod multiseed;
+pub mod nonce_atlas;
+pub mod quantum_model;
 pub mod reduced_round;
 pub mod schedule;
 pub mod smt;
 pub mod smt_scaling;
 pub mod statistical;
+pub mod trail_sat;
 pub mod trail_search;
 
 use anyhow::{Context, Result, bail};
@@ -55,6 +59,9 @@ pub enum Kind {
     Hardware,
     CharacteristicAudit,
     TrailSearch,
+    NonceAtlas,
+    TrailSat,
+    QuantumModel,
 }
 
 /// What exactly an experiment measures. Results never transfer between these.
@@ -126,7 +133,7 @@ pub struct Verification {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 12] = [
+    pub const ALL: [Kind; 15] = [
         Kind::ReducedRound,
         Kind::Differential,
         Kind::Statistical,
@@ -139,12 +146,17 @@ impl Kind {
         Kind::Hardware,
         Kind::CharacteristicAudit,
         Kind::TrailSearch,
+        Kind::NonceAtlas,
+        Kind::TrailSat,
+        Kind::QuantumModel,
     ];
     /// The MVP experiment set (`bmr research all`).
     pub const MVP: [Kind; 4] = [Kind::ReducedRound, Kind::Differential, Kind::Statistical, Kind::Smt];
     /// SHA-256 Structural Exploration initiative (`bmr research structural`).
     pub const STRUCTURAL: [Kind; 6] =
         [Kind::Characteristic, Kind::Algebraic, Kind::Schedule, Kind::SmtScaling, Kind::Multiseed, Kind::Hardware];
+    /// Structural-shortcut search (`bmr research breakthrough`).
+    pub const BREAKTHROUGH: [Kind; 3] = [Kind::NonceAtlas, Kind::TrailSat, Kind::QuantumModel];
 
     fn module(self) -> &'static Module {
         &MODULES[self as usize]
@@ -192,7 +204,7 @@ macro_rules! module {
 }
 
 /// Indexed by `Kind as usize`, in declaration order.
-const MODULES: [Module; 12] = [
+const MODULES: [Module; 15] = [
     module!("reduced-round", reduced_round),
     module!("differential", differential),
     module!("statistical", statistical),
@@ -205,6 +217,9 @@ const MODULES: [Module; 12] = [
     module!("hardware", hardware),
     module!("characteristic-audit", characteristic_audit),
     module!("trail-search", trail_search),
+    module!("nonce-atlas", nonce_atlas),
+    module!("trail-sat", trail_sat),
+    module!("quantum-model", quantum_model),
 ];
 
 /// Parameter helpers shared by the kinds.
@@ -527,7 +542,7 @@ mod tests {
     #[test]
     fn module_table_matches_kind_order() {
         let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
-        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search"]);
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model"]);
         assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
     }
 
@@ -545,7 +560,7 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("bmrl-struct-test-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         let store = Store::open(&dir).unwrap();
-        for kind in Kind::STRUCTURAL.into_iter().chain([Kind::CharacteristicAudit, Kind::TrailSearch]) {
+        for kind in Kind::STRUCTURAL.into_iter().chain([Kind::CharacteristicAudit, Kind::TrailSearch]).chain(Kind::BREAKTHROUGH) {
             let rec = run(&store, kind, &json!({}), 11, true).unwrap();
             if rec["status"] == "skipped" {
                 eprintln!("{} skipped: {}", kind.id(), rec["conclusion"]);

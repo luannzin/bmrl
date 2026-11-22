@@ -78,11 +78,15 @@ pub struct Prepared {
     w17: u32,
     /// Target as big-endian words, most significant first.
     target: [u32; 8],
+    /// Rounds per compression. Only [`Prepared::hash_words`] and
+    /// [`Prepared::hash8`] accept reduced rounds; the search kernels are full-round only.
+    rounds: usize,
 }
 
 impl Prepared {
     pub fn new(work: &Work) -> Self {
-        assert_eq!(work.midstate.rounds, ROUNDS, "production kernels are full-round only");
+        let rounds = work.midstate.rounds;
+        assert!(rounds >= 3, "the precomputed rounds 0..=2 need at least 3 rounds, got {rounds}");
         let mut w = work.midstate.second_block(0);
         w[3] = 0;
         // W16 = σ1(W14) + W9 + σ0(W1) + W0 and W17 = σ1(W15) + W10 + σ0(W2) + W1
@@ -93,7 +97,7 @@ impl Prepared {
         for t in 0..3 {
             pre = round(&pre, K[t], w[t]);
         }
-        Self { mid: work.midstate.state, w, pre, w16, w17, target: work.target.words() }
+        Self { mid: work.midstate.state, w, pre, w16, w17, target: work.target.words(), rounds }
     }
 
     #[inline(always)]
@@ -113,7 +117,7 @@ impl Prepared {
     fn outer_schedule(&self, nonce: u32) -> [u32; 64] {
         let w = self.inner_schedule(nonce);
         let mut s = self.pre;
-        for t in 3..64 {
+        for t in 3..self.rounds {
             s = round(&s, K[t], w[t]);
         }
         let inner = feed_forward(&self.mid, &s);
@@ -131,15 +135,35 @@ impl Prepared {
     pub fn hash_words(&self, nonce: u32) -> State {
         let w2 = self.outer_schedule(nonce);
         let mut s = IV;
-        for t in 0..64 {
+        for t in 0..self.rounds {
             s = round(&s, K[t], w2[t]);
         }
         feed_forward(&IV, &s)
     }
 
+    /// Full output state words of nonces `base..base + 8`, word-major:
+    /// `out[word][lane]` belongs to nonce `base + lane`. AVX2 when available.
+    pub fn hash8(&self, base: u32) -> [[u32; 8]; 8] {
+        #[cfg(target_arch = "x86_64")]
+        if avx2_available() {
+            // SAFETY: AVX2 support was checked.
+            return unsafe { avx2::hash8(self, base) };
+        }
+        let mut out = [[0u32; 8]; 8];
+        for lane in 0..8 {
+            let h = self.hash_words(base.wrapping_add(lane as u32));
+            for (o, x) in out.iter_mut().zip(h) {
+                o[lane] = x;
+            }
+        }
+        out
+    }
+
     /// Does `nonce` meet the target? Rejects after round 60 when H7 is too big.
+    /// Full rounds only.
     #[inline]
     pub fn check(&self, nonce: u32) -> bool {
+        debug_assert_eq!(self.rounds, ROUNDS);
         let w2 = self.outer_schedule(nonce);
         let mut s = IV;
         for t in 0..61 {
@@ -158,6 +182,7 @@ impl Prepared {
 
 /// Scan `count` nonces from `start` on the current thread.
 pub fn scan_range(kernel: Kernel, p: &Prepared, work: &Work, start: u32, count: u32, out: &mut Vec<u32>) {
+    assert_eq!(p.rounds, ROUNDS, "search kernels are full-round only");
     match kernel {
         Kernel::Midstate => {
             let target = work.target.words();
@@ -278,6 +303,38 @@ mod avx2 {
         for t in from..64 {
             w[t] = add(add(ssig1(w[t - 2]), w[t - 7]), add(ssig0(w[t - 15]), w[t - 16]));
         }
+    }
+
+    /// [`Prepared::hash8`]: all three compressions cut to `p.rounds`, full output.
+    #[target_feature(enable = "avx2")]
+    pub fn hash8(p: &Prepared, base: u32) -> [[u32; 8]; 8] {
+        let bswap = _mm256_setr_epi8(3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12, 3, 2, 1, 0, 7, 6, 5, 4, 11, 10, 9, 8, 15, 14, 13, 12);
+        let zero = _mm256_setzero_si256();
+        let mut w = [zero; 64];
+        for (wi, &x) in w.iter_mut().zip(&p.w) {
+            *wi = splat(x);
+        }
+        w[3] = _mm256_shuffle_epi8(add(splat(base), _mm256_setr_epi32(0, 1, 2, 3, 4, 5, 6, 7)), bswap);
+        w[16] = splat(p.w16);
+        w[17] = splat(p.w17);
+        schedule(&mut w, 18);
+        let mut s = p.pre.map(|x| splat(x));
+        for t in 3..p.rounds {
+            round(&mut s, K[t], w[t]);
+        }
+        let mut w2 = [zero; 64];
+        for i in 0..8 {
+            w2[i] = add(splat(p.mid[i]), s[i]);
+        }
+        w2[8] = splat(0x8000_0000);
+        w2[15] = splat(256);
+        schedule(&mut w2, 16);
+        let mut s2 = IV.map(|x| splat(x));
+        for t in 0..p.rounds {
+            round(&mut s2, K[t], w2[t]);
+        }
+        // SAFETY: __m256i and [u32; 8] have identical size; every bit pattern is valid.
+        std::array::from_fn(|i| unsafe { std::mem::transmute::<V, [u32; 8]>(add(s2[i], splat(IV[i]))) })
     }
 
     /// Scan `groups * 8` nonces from `start`.
@@ -406,6 +463,22 @@ mod tests {
         let p = Prepared::new(&work);
         for nonce in [0u32, 1, 0x1234_5678, u32::MAX, 0x8000_0000] {
             assert_eq!(p.hash_words(nonce), work.midstate.hash_words(nonce), "nonce {nonce:#x}");
+        }
+    }
+
+    #[test]
+    fn hash8_matches_reference_at_every_round_count() {
+        let header = synthetic_work(6, 0).header.serialize();
+        for rounds in [3, 4, 5, 8, 17, 63, 64] {
+            let work = Work { midstate: bitcoin_header::HeaderMidstate::with_rounds(&header, rounds), ..synthetic_work(6, 0) };
+            let p = Prepared::new(&work);
+            for base in [0u32, 8, 0x1234_5670, u32::MAX - 7] {
+                let out = p.hash8(base);
+                for lane in 0..8u32 {
+                    let want = work.midstate.hash_words(base.wrapping_add(lane));
+                    assert!((0..8).all(|w| out[w][lane as usize] == want[w]), "rounds {rounds} nonce {}", base.wrapping_add(lane));
+                }
+            }
         }
     }
 

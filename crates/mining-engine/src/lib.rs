@@ -62,7 +62,7 @@ pub fn find_nonce(backend: &dyn Backend, work: &Work, slice: u64) -> anyhow::Res
         let count = slice.min((1 << 32) - start);
         let scan = backend.scan(work, start as u32, count, 1)?;
         hashes += scan.hashes;
-        for nonce in scan.found {
+        if let Some(&nonce) = scan.found.first() {
             anyhow::ensure!(work.verify(nonce), "backend {} reported invalid nonce {nonce:#010x}", backend.name());
             return Ok((Some(nonce), hashes));
         }

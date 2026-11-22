@@ -138,6 +138,23 @@ enum ResearchCmd {
     CharacteristicAudit(ResearchOpts),
     /// Trail-to-search conversion: trail search, neighbour and condition strategies for SHA256d <= target.
     TrailSearch(ResearchOpts),
+    /// Exhaustive nonce-space atlas: random-function tests and every input-selection strategy over all 2^32 nonces.
+    NonceAtlas(ResearchOpts),
+    /// SAT-optimal XOR characteristics from miner-controlled header words, measured; exact z3 identity proofs.
+    TrailSat(ResearchOpts),
+    /// Grover and reversible-circuit models of the Bitcoin search (speculative, model only).
+    QuantumModel(ResearchOpts),
+    /// Structural-shortcut search: nonce-atlas, trail-sat and quantum-model.
+    Breakthrough(ResearchOpts),
+    /// Rebuild the breakthrough research board (research/BOARD.md) from the registry.
+    Board,
+    /// Propose the next experiments from previous findings; `--run N` executes the top N executable ones.
+    Evolve {
+        #[arg(long, default_value_t = 0)]
+        run: usize,
+        #[arg(long)]
+        quick: bool,
+    },
     /// Hypothesis registry with evidence-derived status.
     Hypotheses,
     /// One hypothesis with all evidence and counterexamples.
@@ -621,7 +638,11 @@ fn experiment_ok(rec: &Value) -> bool {
 
 fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
     let store = Store::open_default()?;
-    let cmd_name = if matches!(cmd, ResearchCmd::Structural(_)) { "structural" } else { "" };
+    let cmd_name = match cmd {
+        ResearchCmd::Structural(_) => "structural",
+        ResearchCmd::Breakthrough(_) => "breakthrough",
+        _ => "",
+    };
     let single = |kind, o: &ResearchOpts| -> Result<(Value, bool)> {
         let rec = run_kind(human, &store, kind, o)?;
         let ok = experiment_ok(&rec);
@@ -640,6 +661,34 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
         ResearchCmd::Hardware(o) => single(Kind::Hardware, &o),
         ResearchCmd::CharacteristicAudit(o) => single(Kind::CharacteristicAudit, &o),
         ResearchCmd::TrailSearch(o) => single(Kind::TrailSearch, &o),
+        ResearchCmd::NonceAtlas(o) => single(Kind::NonceAtlas, &o),
+        ResearchCmd::TrailSat(o) => single(Kind::TrailSat, &o),
+        ResearchCmd::QuantumModel(o) => single(Kind::QuantumModel, &o),
+        ResearchCmd::Board => {
+            let board = experiment_engine::board::build(&store)?;
+            let path = workspace_root().join("research").join("BOARD.md");
+            std::fs::write(&path, experiment_engine::board::render(&board))?;
+            for e in board["entries"].as_array().into_iter().flatten() {
+                say!(human, "{:<5} {:<44} {}", e["id"].as_str().unwrap_or(""), e["family"].as_str().unwrap_or(""), e["verification"].as_str().unwrap_or(""));
+            }
+            say!(human, "board       {}", path.display());
+            Ok((board, true))
+        }
+        ResearchCmd::Evolve { run, quick } => {
+            let board = experiment_engine::board::build(&store)?;
+            let queue = experiment_engine::board::queue(&board);
+            for p in &queue {
+                say!(human, "{:<5} {:<13} {:>7.2}  {}", p["entry"].as_str().unwrap_or(""), p["rule"].as_str().unwrap_or(""), p["priority"].as_f64().unwrap_or(0.0), p["command"].as_str().or(p["design"].as_str()).unwrap_or(""));
+            }
+            let mut ran = Vec::new();
+            for p in queue.iter().filter(|p| p["executable"] == true).take(run) {
+                let kind = p["kind"].as_str().and_then(Kind::parse).context("proposal has unknown kind")?;
+                let o = ResearchOpts { seed: p["seed"].as_u64().unwrap_or(DEFAULT_SEED), quick, params: Some(p["overrides"].to_string()) };
+                ran.push(run_kind(human, &store, kind, &o)?);
+            }
+            let ok = ran.iter().all(experiment_ok);
+            Ok((json!({ "proposals": queue, "ran": ran }), ok))
+        }
         ResearchCmd::Hypotheses => {
             let rows = store.list_hypotheses()?;
             for h in &rows {
@@ -657,11 +706,15 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
             }
             Ok((json!({ "hypothesis": h, "evidence": evidence }), true))
         }
-        ResearchCmd::All(o) | ResearchCmd::Structural(o) if o.params.is_some() => {
+        ResearchCmd::All(o) | ResearchCmd::Structural(o) | ResearchCmd::Breakthrough(o) if o.params.is_some() => {
             bail!("--params is per experiment kind; run kinds individually to override parameters")
         }
-        ResearchCmd::All(o) | ResearchCmd::Structural(o) => {
-            let kinds: &[Kind] = if matches!(cmd_name, "structural") { &Kind::STRUCTURAL } else { &Kind::MVP };
+        ResearchCmd::All(o) | ResearchCmd::Structural(o) | ResearchCmd::Breakthrough(o) => {
+            let kinds: &[Kind] = match cmd_name {
+                "structural" => &Kind::STRUCTURAL,
+                "breakthrough" => &Kind::BREAKTHROUGH,
+                _ => &Kind::MVP,
+            };
             let mut recs = Vec::new();
             for &kind in kinds {
                 let rec = run_kind(human, &store, kind, &o)?;
@@ -765,7 +818,8 @@ mod tests {
             "bmr research all", "bmr mine regtest", "bmr --json research smt --quick", "bmr research reproduce x",
             "bmr research characteristic", "bmr research algebraic", "bmr research schedule", "bmr research smt-scaling",
             "bmr research multiseed", "bmr research hardware", "bmr research structural --quick", "bmr research hypotheses",
-            "bmr research hypothesis H-CHAR-01",
+            "bmr research hypothesis H-CHAR-01", "bmr research nonce-atlas --quick", "bmr research trail-sat", "bmr research quantum-model",
+            "bmr research breakthrough --quick", "bmr research board", "bmr research evolve --run 2",
         ] {
             assert!(Cli::try_parse_from(args.split(' ')).is_ok(), "{args}");
         }
