@@ -270,6 +270,52 @@ pub fn check_proof_of_work(hash_internal: &[u8; 32], bits: u32, pow_limit_bits: 
     Ok(c.target.is_met_by(hash_internal))
 }
 
+/// Blocks per difficulty period and its target timespan (two weeks).
+pub const RETARGET_INTERVAL: usize = 2016;
+pub const TARGET_TIMESPAN: u64 = 14 * 24 * 60 * 60;
+
+/// Bitcoin Core `CalculateNextWorkRequired` (main network, no min-difficulty
+/// rules): the bits for the first block of a period, from the bits of the
+/// period's last block and the time from its first to its last block.
+pub fn next_work_required(last_bits: u32, first_time: u32, last_time: u32, pow_limit_bits: u32) -> u32 {
+    let span = (last_time as i64 - first_time as i64).clamp(TARGET_TIMESPAN as i64 / 4, TARGET_TIMESPAN as i64 * 4) as u64;
+    // 256-bit target as little-endian u64 limbs; target * span fits (target <= 2^224, span < 2^23).
+    let be = Target::from_compact(last_bits).target.0;
+    let mut limbs: [u64; 4] = std::array::from_fn(|i| u64::from_be_bytes(be[24 - 8 * i..32 - 8 * i].try_into().expect("8 bytes")));
+    let mut carry = 0u128;
+    for l in &mut limbs {
+        let v = *l as u128 * span as u128 + carry;
+        *l = v as u64;
+        carry = v >> 64;
+    }
+    let mut rem = 0u128;
+    for l in limbs.iter_mut().rev() {
+        let v = (rem << 64) | *l as u128;
+        *l = (v / TARGET_TIMESPAN as u128) as u64;
+        rem = v % TARGET_TIMESPAN as u128;
+    }
+    let mut out = [0u8; 32];
+    for (i, l) in limbs.iter().enumerate() {
+        out[24 - 8 * i..32 - 8 * i].copy_from_slice(&l.to_be_bytes());
+    }
+    let limit = Target::from_compact(pow_limit_bits).target;
+    Target(out).min(limit).to_compact()
+}
+
+/// Median of up to the last 11 block times (consensus: a block's time must exceed it).
+pub fn median_time_past(times: &[u32]) -> u32 {
+    let mut last: Vec<u32> = times[times.len().saturating_sub(11)..].to_vec();
+    last.sort_unstable();
+    last[last.len() / 2]
+}
+
+/// Expected number of hashes for a block at `bits`: 2^256 / (target + 1), as f64.
+pub fn block_work(bits: u32) -> f64 {
+    let t = Target::from_compact(bits).target;
+    let value = t.0.iter().fold(0.0f64, |acc, &b| acc * 256.0 + b as f64);
+    2f64.powi(256) / (value + 1.0)
+}
+
 /// Hash words `H0..H7` (as produced by the compression function) to the
 /// big-endian words of the number they encode, most significant first.
 #[inline(always)]
@@ -415,6 +461,18 @@ pub mod fixtures {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn next_work_required_scales_clamps_and_caps() {
+        let t = TARGET_TIMESPAN as u32;
+        assert_eq!(next_work_required(0x1b04864c, 0, t, MAINNET_POW_LIMIT_BITS), 0x1b04864c);
+        assert_eq!(next_work_required(0x1b04864c, 0, t / 2, MAINNET_POW_LIMIT_BITS), 0x1b024326);
+        // Ten times slower is clamped to four.
+        assert_eq!(next_work_required(0x1b04864c, 0, 10 * t, MAINNET_POW_LIMIT_BITS), 0x1b121930);
+        // Never easier than the proof-of-work limit.
+        assert_eq!(next_work_required(0x1d00ffff, 0, 2 * t, MAINNET_POW_LIMIT_BITS), 0x1d00ffff);
+        assert_eq!(median_time_past(&[5, 1, 4, 2, 3]), 3);
+    }
 
     #[test]
     fn known_headers_roundtrip_hash_and_pow() {

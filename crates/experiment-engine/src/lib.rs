@@ -23,6 +23,7 @@ pub mod characteristic_audit;
 pub mod differential;
 pub mod env;
 pub mod hardware;
+pub mod header_atlas;
 pub mod multiseed;
 pub mod nonce_atlas;
 pub mod quantum_model;
@@ -64,6 +65,7 @@ pub enum Kind {
     TrailSat,
     QuantumModel,
     WorkSharing,
+    HeaderAtlas,
 }
 
 /// What exactly an experiment measures. Results never transfer between these.
@@ -135,7 +137,7 @@ pub struct Verification {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 16] = [
+    pub const ALL: [Kind; 17] = [
         Kind::ReducedRound,
         Kind::Differential,
         Kind::Statistical,
@@ -152,6 +154,7 @@ impl Kind {
         Kind::TrailSat,
         Kind::QuantumModel,
         Kind::WorkSharing,
+        Kind::HeaderAtlas,
     ];
     /// The MVP experiment set (`bmr research all`).
     pub const MVP: [Kind; 4] = [Kind::ReducedRound, Kind::Differential, Kind::Statistical, Kind::Smt];
@@ -161,7 +164,7 @@ impl Kind {
     /// Structural-shortcut search (`bmr research breakthrough`).
     pub const BREAKTHROUGH: [Kind; 3] = [Kind::NonceAtlas, Kind::TrailSat, Kind::QuantumModel];
     /// Discovery wave (`bmr research discovery`).
-    pub const DISCOVERY: [Kind; 1] = [Kind::WorkSharing];
+    pub const DISCOVERY: [Kind; 2] = [Kind::WorkSharing, Kind::HeaderAtlas];
 
     fn module(self) -> &'static Module {
         &MODULES[self as usize]
@@ -209,7 +212,7 @@ macro_rules! module {
 }
 
 /// Indexed by `Kind as usize`, in declaration order.
-const MODULES: [Module; 16] = [
+const MODULES: [Module; 17] = [
     module!("reduced-round", reduced_round),
     module!("differential", differential),
     module!("statistical", statistical),
@@ -226,6 +229,7 @@ const MODULES: [Module; 16] = [
     module!("trail-sat", trail_sat),
     module!("quantum-model", quantum_model),
     module!("work-sharing", work_sharing),
+    module!("header-atlas", header_atlas),
 ];
 
 /// Parameter helpers shared by the kinds.
@@ -549,7 +553,7 @@ mod tests {
     #[test]
     fn module_table_matches_kind_order() {
         let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
-        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing"]);
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing", "header-atlas"]);
         assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
     }
 

@@ -5,6 +5,7 @@
 //! backend is re-checked with the reference path ([`Work::verify`]: full
 //! SHA-256d of the serialized header, no midstate) before it is used.
 
+pub mod p2p;
 pub mod regtest;
 pub mod rpc;
 

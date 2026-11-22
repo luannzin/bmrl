@@ -32,6 +32,8 @@ const SOURCES: &[(&str, &str)] = &[
     ("crates/experiment-engine/src/quantum_model.rs", include_str!("quantum_model.rs")),
     ("crates/experiment-engine/src/board.rs", include_str!("board.rs")),
     ("crates/experiment-engine/src/work_sharing.rs", include_str!("work_sharing.rs")),
+    ("crates/experiment-engine/src/header_atlas.rs", include_str!("header_atlas.rs")),
+    ("crates/mining-engine/src/p2p.rs", include_str!("../../mining-engine/src/p2p.rs")),
     ("research/differential-cryptanalysis/trail_sat.py", include_str!("../../../research/differential-cryptanalysis/trail_sat.py")),
     ("research/algebraic-models/smt_reduced_round.py", include_str!("../../../research/algebraic-models/smt_reduced_round.py")),
     ("research/algebraic-models/smt_scaling.py", include_str!("../../../research/algebraic-models/smt_scaling.py")),

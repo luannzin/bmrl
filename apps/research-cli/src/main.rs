@@ -148,6 +148,10 @@ enum ResearchCmd {
     Breakthrough(ResearchOpts),
     /// AsicBoost++: exact DAG count of the work a batch of headers can share.
     WorkSharing(ResearchOpts),
+    /// Download (or extend) every main-chain block header from public P2P nodes into experiments/data.
+    SyncHeaders,
+    /// Mainnet header atlas: validate the chain, test hash/target uniformity, miner behaviour, economics.
+    HeaderAtlas(ResearchOpts),
     /// Discovery wave: every kind in Kind::DISCOVERY.
     Discovery(ResearchOpts),
     /// Rebuild the breakthrough research board (research/BOARD.md) from the registry.
@@ -704,6 +708,21 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
         ResearchCmd::TrailSat(o) => single(Kind::TrailSat, &o),
         ResearchCmd::QuantumModel(o) => single(Kind::QuantumModel, &o),
         ResearchCmd::WorkSharing(o) => single(Kind::WorkSharing, &o),
+        ResearchCmd::HeaderAtlas(o) => single(Kind::HeaderAtlas, &o),
+        ResearchCmd::SyncHeaders => {
+            use experiment_engine::header_atlas;
+            let mut chain = header_atlas::load()?;
+            let from = chain.len() - 1;
+            let peer = mining_engine::p2p::sync_headers(&mut chain, &mut |h| {
+                if human && h % 50_000 < 2000 {
+                    println!("headers    {h}");
+                }
+            })?;
+            header_atlas::save(&chain)?;
+            let tip = chain.len() - 1;
+            say!(human, "synced     {from} -> {tip} from {peer}; saved {}", header_atlas::data_path().display());
+            Ok((json!({ "from": from, "tip": tip, "tip_hash": chain[tip].block_hash_hex(), "peer": peer }), true))
+        }
         ResearchCmd::Board => {
             let board = experiment_engine::board::build(&store)?;
             let path = workspace_root().join("research").join("BOARD.md");
