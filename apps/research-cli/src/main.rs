@@ -81,6 +81,19 @@ enum BenchCmd {
     Gpu(BenchOpts),
     /// CPU vs GPU, alone and concurrently.
     Compare(BenchOpts),
+    /// Full mining path on a live regtest template: CPU, GPU and both; every hit verified, a block submitted per backend.
+    Mining {
+        #[command(flatten)]
+        o: BenchOpts,
+        /// Leading zero bits of the measurement target (the real comparison, harder than regtest's).
+        #[arg(long, default_value_t = 24)]
+        bits: u32,
+        /// Seconds of template search per backend.
+        #[arg(long, default_value_t = 10.0)]
+        search_seconds: f64,
+        #[arg(long)]
+        bitcoind: Option<PathBuf>,
+    },
 }
 
 #[derive(Args, Clone)]
@@ -203,6 +216,7 @@ fn dispatch(cli: Cli) -> Result<(Value, bool)> {
         Command::Benchmark(BenchCmd::Cpu(o)) => bench_cpu(human, &o),
         Command::Benchmark(BenchCmd::Gpu(o)) => bench_gpu(human, &o),
         Command::Benchmark(BenchCmd::Compare(o)) => bench_compare(human, &o),
+        Command::Benchmark(BenchCmd::Mining { o, bits, search_seconds, bitcoind }) => bench_mining(human, &o, bits, search_seconds, bitcoind),
         Command::Research(cmd) => research(human, cmd),
         Command::Mine(MineCmd::Regtest { backend, bitcoind, datadir, keep, threads, gpu_backend }) => {
             mine_regtest(human, &backend, bitcoind, datadir, keep, threads, gpu_backend.as_deref())
@@ -332,10 +346,7 @@ fn cpu_measurements(o: &BenchOpts) -> Result<Value> {
     let work = synthetic_work(1, 32);
     let p = Prepared::new(&work);
     let mut kernels = Vec::new();
-    let (n, s) = measure(o.seconds, |done| {
-        Ok(ReferenceBackend.scan(&work, batch_start(done, 1 << 12), 1 << 12, usize::MAX)?.hashes)
-    })?;
-    let reference = n as f64 / s;
+    let reference = rate_of(throughput(&ReferenceBackend, o.seconds, 1 << 12)?);
     kernels.push(json!({ "kernel": "reference", "threads": 1, "hashes_per_second": reference, "compressions_per_nonce": 3.0 }));
     for k in Kernel::ALL.into_iter().filter(|k| k.available()) {
         let (n, s) = measure(o.seconds, |done| {
@@ -348,7 +359,7 @@ fn cpu_measurements(o: &BenchOpts) -> Result<Value> {
     }
     let backend = CpuBackend::new(Kernel::best(), o.threads)?;
     let e0 = rapl_joules();
-    let (n, s) = measure(o.seconds, |done| Ok(backend.scan(&work, batch_start(done, 1 << 24), 1 << 24, usize::MAX)?.hashes))?;
+    let (n, s) = throughput(&backend, o.seconds, 1 << 24)?;
     let energy = match (e0, rapl_joules()) {
         (Some(a), Some(b)) if b > a => json!({ "source": "RAPL package-0", "joules": b - a, "joules_per_hash": (b - a) / n as f64, "watts": (b - a) / s }),
         _ => json!({ "source": null, "note": "no CPU energy counter readable on this platform (RAPL is Linux-only); energy not measured" }),
@@ -414,10 +425,15 @@ fn gpu_parity(g: &GpuBackend, cpu: &CpuBackend) -> Result<Value> {
     }))
 }
 
-fn gpu_throughput(g: &GpuBackend, seconds: f64) -> Result<(u64, f64)> {
+/// Raw SHA-256d throughput of `b` on synthetic work (no template, no coinbase):
+/// (hashes, seconds) over consecutive scans of `slice` nonces.
+fn throughput(b: &dyn Backend, seconds: f64, slice: u64) -> Result<(u64, f64)> {
     let work = synthetic_work(1, 32);
-    let batch = g.batch() as u64;
-    measure(seconds, |done| Ok(g.scan(&work, batch_start(done, batch), batch, usize::MAX)?.hashes))
+    measure(seconds, |done| Ok(b.scan(&work, batch_start(done, slice), slice, usize::MAX)?.hashes))
+}
+
+fn rate_of((n, s): (u64, f64)) -> f64 {
+    n as f64 / s
 }
 
 fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
@@ -427,7 +443,7 @@ fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
     g.calibrate(Duration::from_millis(250))?;
     let cpu = CpuBackend::new(Kernel::best(), o.threads)?;
     let parity = gpu_parity(&g, &cpu)?;
-    let (n, s) = gpu_throughput(&g, o.seconds)?;
+    let (n, s) = throughput(&g, o.seconds, g.batch() as u64)?;
     let v = save_bench("gpu", json!({
         "adapter": adapter_json(a),
         "kernel": "gpu/wgsl/sha256d.wgsl (straightforward midstate kernel, no early reject)",
@@ -452,26 +468,25 @@ fn bench_compare(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
     g.calibrate(Duration::from_millis(250))?;
     let cpu = CpuBackend::new(Kernel::best(), o.threads)?;
     let parity = gpu_parity(&g, &cpu)?;
-    let work = synthetic_work(1, 32);
-    let (cn, cs) = measure(o.seconds, |done| Ok(cpu.scan(&work, batch_start(done, 1 << 24), 1 << 24, usize::MAX)?.hashes))?;
-    let (gn, gs) = gpu_throughput(&g, o.seconds)?;
-    let (cpu_rate, gpu_rate) = (cn as f64 / cs, gn as f64 / gs);
+    let gpu_slice = g.batch() as u64;
+    let cpu_rate = rate_of(throughput(&cpu, o.seconds, 1 << 24)?);
+    let gpu_rate = rate_of(throughput(&g, o.seconds, gpu_slice)?);
     // Concurrent: GPU driven from one thread, CPU backend on the remaining threads.
     let cpu_threads = cpu.threads().saturating_sub(1).max(1);
     let cpu2 = CpuBackend::new(Kernel::best(), cpu_threads)?;
     let (gpu_conc, cpu_conc) = std::thread::scope(|s| {
-        let gh = s.spawn(|| gpu_throughput(&g, o.seconds));
-        let c = measure(o.seconds, |done| Ok(cpu2.scan(&work, batch_start(done, 1 << 24), 1 << 24, usize::MAX)?.hashes));
+        let gh = s.spawn(|| throughput(&g, o.seconds, gpu_slice));
+        let c = throughput(&cpu2, o.seconds, 1 << 24);
         (gh.join().expect("gpu thread"), c)
     });
-    let (gpu_conc, cpu_conc) = (gpu_conc?, cpu_conc?);
-    let combined = gpu_conc.0 as f64 / gpu_conc.1 + cpu_conc.0 as f64 / cpu_conc.1;
+    let (gpu_conc, cpu_conc) = (rate_of(gpu_conc?), rate_of(cpu_conc?));
+    let combined = gpu_conc + cpu_conc;
     let a = g.adapter();
     let v = save_bench("compare", json!({
         "cpu": { "kernel": cpu.kernel().name(), "threads": cpu.threads(), "hashes_per_second": cpu_rate },
         "gpu": { "adapter": adapter_json(a), "hashes_per_second": gpu_rate },
         "gpu_over_cpu": gpu_rate / cpu_rate,
-        "concurrent": { "cpu_threads": cpu_threads, "cpu_hashes_per_second": cpu_conc.0 as f64 / cpu_conc.1, "gpu_hashes_per_second": gpu_conc.0 as f64 / gpu_conc.1, "combined_hashes_per_second": combined },
+        "concurrent": { "cpu_threads": cpu_threads, "cpu_hashes_per_second": cpu_conc, "gpu_hashes_per_second": gpu_conc, "combined_hashes_per_second": combined },
         "parity": parity,
         "expected_work_per_block_factor": 1.0,
     }))?;
@@ -482,6 +497,72 @@ fn bench_compare(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
     say!(human, "parity     {}", if parity["passed"] == true { "identical" } else { "MISMATCH" });
     say!(human, "saved      {}", v["id"].as_str().unwrap_or(""));
     let ok = parity["passed"] == true;
+    Ok((v, ok))
+}
+
+fn bench_mining(human: bool, o: &BenchOpts, bits: u32, search_seconds: f64, bitcoind: Option<PathBuf>) -> Result<(Value, bool)> {
+    anyhow::ensure!((8..=40).contains(&bits), "--bits must be 8..=40");
+    let exe = bitcoind.or_else(|| regtest::find_bitcoind(&workspace_root())).context("bitcoind not found: pass --bitcoind or set BMR_BITCOIND")?;
+    let share = mining_engine::target_with_zero_bits(bits);
+    let p_hit = 0.5f64.powi(bits as i32);
+    let cpu = CpuBackend::new(Kernel::best(), o.threads)?;
+    let gpu = GpuBackend::new(o.gpu_backend.as_deref())?;
+    gpu.calibrate(Duration::from_millis(250))?;
+    let (raw_cpu, raw_gpu) = (rate_of(throughput(&cpu, o.seconds, 1 << 24)?), rate_of(throughput(&gpu, o.seconds, gpu.batch() as u64)?));
+    let cpu_part = CpuBackend::new(Kernel::best(), cpu.threads().saturating_sub(1).max(1))?;
+    let gpu_name = gpu.name();
+    let dir = regtest::temp_datadir("mining")?;
+    let result = (|| -> Result<Value> {
+        let node = regtest::Node::start(&exe, &dir)?;
+        let rpc = &node.rpc;
+        let script = regtest::wallet_script(rpc, "bmrl-bench")?;
+        let check = |h: &[u8; 80]| verification::third_party_sha256d(h);
+        let mut runs = Vec::new();
+        for (label, backend, raw) in [("cpu", &cpu as &dyn Backend, raw_cpu), ("gpu", &gpu as &dyn Backend, raw_gpu)] {
+            say!(human, "{label:<9}  searching live template for {search_seconds} s...");
+            let mut r = regtest::search_and_submit(rpc, backend, &script, share, search_seconds, &check)?;
+            r["label"] = json!(label);
+            r["raw_hashes_per_second"] = json!(raw);
+            runs.push(r);
+        }
+        // Combined: both backends on one template, nonce range split by raw rate.
+        let combined = mining_engine::Split { parts: vec![(Box::new(cpu_part), raw_cpu * (cpu.threads() - 1).max(1) as f64 / cpu.threads() as f64), (Box::new(gpu), raw_gpu)] };
+        let raw_combined = rate_of(throughput(&combined, o.seconds, 1 << 28)?);
+        say!(human, "combined   searching live template for {search_seconds} s...");
+        let mut r = regtest::search_and_submit(rpc, &combined, &script, share, search_seconds, &check)?;
+        r["label"] = json!("combined");
+        r["raw_hashes_per_second"] = json!(raw_combined);
+        runs.push(r);
+        for r in &mut runs {
+            let (h, hits) = (r["hashes"].as_u64().unwrap_or(0), r["hits_verified_independently"].as_u64().unwrap_or(0));
+            let (lo, hi) = statistical_engine::wilson(hits, h, statistical_engine::Z95);
+            r["hits_expected"] = json!(h as f64 * p_hit);
+            r["hit_rate_over_expected"] = json!(hits as f64 / (h as f64 * p_hit));
+            r["hit_rate_ci95_over_expected"] = json!([lo / p_hit, hi / p_hit]);
+            r["end_to_end_over_raw"] = json!(r["end_to_end_hashes_per_second"].as_f64().unwrap_or(0.0) / r["raw_hashes_per_second"].as_f64().unwrap_or(1.0));
+        }
+        let subversion = rpc.call("getnetworkinfo", json!([]))?["subversion"].clone();
+        node.stop()?;
+        Ok(json!({ "node": subversion, "runs": runs }))
+    })();
+    let _ = std::fs::remove_dir_all(&dir);
+    let mut v = result?;
+    v["measurement_target_zero_bits"] = json!(bits);
+    v["gpu"] = json!(gpu_name);
+    v["note"] = json!("raw = synthetic work, no template; end-to-end = live getblocktemplate, coinbase and merkle rebuild per extra nonce, full nonce space, every hit checked by the sha2 crate over the serialized header, one block submitted and accepted per backend; expected_work_per_block_factor 1.0");
+    let v = save_bench("mining", v)?;
+    for r in v["runs"].as_array().into_iter().flatten() {
+        say!(human, "{:<9}  raw {:>14}  end-to-end {:>14} ({:.3}x)  {} hits verified ({:.3}x expected)  block {} accepted",
+            r["label"].as_str().unwrap_or(""),
+            fmt_rate(r["raw_hashes_per_second"].as_f64().unwrap_or(0.0)),
+            fmt_rate(r["end_to_end_hashes_per_second"].as_f64().unwrap_or(0.0)),
+            r["end_to_end_over_raw"].as_f64().unwrap_or(0.0),
+            r["hits_verified_independently"],
+            r["hit_rate_over_expected"].as_f64().unwrap_or(0.0),
+            &r["submitted_block"].as_str().unwrap_or("")[..16]);
+    }
+    say!(human, "saved      {}", v["id"].as_str().unwrap_or(""));
+    let ok = v["runs"].as_array().is_some_and(|rs| rs.iter().all(|r| r["accepted"] == true && r["hits"] == r["hits_verified_independently"]));
     Ok((v, ok))
 }
 

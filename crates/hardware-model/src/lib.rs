@@ -198,6 +198,39 @@ pub fn simulate(a: &Arch, header: [u8; 80], start: u32, count: u32) -> SimResult
     SimResult { stages: n, outputs, cycles, latency }
 }
 
+/// Cycle-level model of one iterative core: a single state register fed back
+/// through `u` round units per cycle. A nonce is loaded, processed for
+/// ceil(active / u) cycles, emitted, and the next nonce is loaded the cycle
+/// after. `active` is the number of stages that run per nonce: with constant
+/// folding, job-constant stages are precomputed once per job and skipped.
+pub fn simulate_iterative(a: &Arch, u: usize, header: [u8; 80], start: u32, count: u32) -> SimResult {
+    assert!(u >= 1);
+    let job = Job::new(header, if a.midstate { a.precompute_rounds } else { 0 });
+    let st = stages(a);
+    let active = resources(a).stages;
+    let skipped = st.len() - active;
+    let mut outputs = Vec::with_capacity(count as usize);
+    let mut cycle = 0u64;
+    for k in 0..count {
+        let nonce = start.wrapping_add(k);
+        let mut x = Slot { nonce, s: [0; 8], cv: [0; 8], w: [0; 64], out: None };
+        // Per-job precomputed stages: their values are the same for every nonce
+        // up to the nonce-dependent words, so they are evaluated without cycles.
+        for &s in &st[..skipped] {
+            x = apply(a, s, x, &job);
+        }
+        for chunk in st[skipped..].chunks(u) {
+            cycle += 1;
+            for &s in chunk {
+                x = apply(a, s, x, &job);
+            }
+        }
+        outputs.push((nonce, x.out.expect("last stage produces output"), cycle));
+    }
+    let latency = outputs.first().map_or(0, |o| o.2);
+    SimResult { stages: active, outputs, cycles: cycle, latency }
+}
+
 /// Software reference for one nonce in the architecture's output format.
 pub fn reference(a: &Arch, header: &[u8; 80], nonce: u32) -> Output {
     let h = HeaderMidstate::new(header).hash_words(nonce);
@@ -390,6 +423,20 @@ mod tests {
             assert_eq!(res.cycles, res.stages as u64 + 299, "{}", a.name);
             for (nonce, out, _) in &res.outputs {
                 assert_eq!(*out, reference(&a, &header(), *nonce), "{} nonce {nonce:#x}", a.name);
+            }
+        }
+    }
+
+    #[test]
+    fn iterative_cores_match_reference_and_take_ceil_cycles() {
+        for a in VARIANTS {
+            for u in [1usize, 2, 4, 8, 16, 32] {
+                let res = simulate_iterative(&a, u, header(), 7, 20);
+                let per = resources(&a).stages.div_ceil(u) as u64;
+                assert_eq!(res.cycles, 20 * per, "{} u={u}", a.name);
+                for (nonce, out, _) in &res.outputs {
+                    assert_eq!(*out, reference(&a, &header(), *nonce), "{} u={u}", a.name);
+                }
             }
         }
     }

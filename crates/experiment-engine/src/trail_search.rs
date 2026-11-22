@@ -21,7 +21,7 @@
 
 use crate::characteristic_audit::{Snapshot, condition_mask, derive};
 use crate::smt::meets;
-use crate::{Definition, FULL_ROUNDS, Outcome, Verification, p_rounds, p_u64};
+use crate::{Definition, FULL_ROUNDS, Outcome, Verification, ci_json as rate, p_rounds, p_u64};
 use anyhow::Result;
 use bitcoin_header::{HeaderMidstate, Target, hash_number_words};
 use differential_engine::characteristic::xor_trail;
@@ -239,11 +239,6 @@ fn scan_header(mid: &HeaderMidstate, deltas: &[Delta], conds: Option<&[crate::ch
         }
     }
     t
-}
-
-fn rate(k: u64, n: u64) -> Value {
-    let (lo, hi) = wilson(k, n, Z95);
-    json!({ "count": k, "of": n, "p": k as f64 / n.max(1) as f64, "ci95": [lo, hi] })
 }
 
 pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {

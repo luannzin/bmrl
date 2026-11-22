@@ -16,13 +16,13 @@
 //! Only the measured round counts are discussed. Nothing is extrapolated.
 
 use crate::smt::run_script;
-use crate::{Definition, Outcome, Verification, hex_words, p_u64};
+use crate::{Definition, Outcome, Verification, ci_json, hex_words, p_u64};
 use anyhow::{Context, Result};
 use differential_engine::characteristic::{Trail, ch_diff, maj_diff, xor_trail};
 use differential_engine::sample;
 use rayon::prelude::*;
 use serde_json::{Value, json};
-use sha256_core::{K, State, big_sigma0, big_sigma1, ch, maj, small_sigma0, small_sigma1};
+use sha256_core::{K, State, big_sigma0, big_sigma1, round, small_sigma0, small_sigma1};
 use statistical_engine::{SplitMix64, Z95, wilson};
 
 pub fn definition() -> Definition {
@@ -344,8 +344,8 @@ fn count(trail: &Trail, delta: &[u32; 16], rounds: usize, conds: Option<&[Cond]>
                         before = s1;
                         prefix_ok = ok;
                     }
-                    s1 = step(&s1, t, w1[t]);
-                    s2 = step(&s2, t, w2[t]);
+                    s1 = round(&s1, K[t], w1[t]);
+                    s2 = round(&s2, K[t], w2[t]);
                     ok &= (w1[t] ^ w2[t]) == trail.delta_w[t] && (0..8).all(|k| s1[k] ^ s2[k] == trail.states[t + 1][k]);
                 }
                 if !prefix_ok {
@@ -388,17 +388,6 @@ fn count(trail: &Trail, delta: &[u32; 16], rounds: usize, conds: Option<&[Cond]>
         })
 }
 
-fn step(s: &State, t: usize, w: u32) -> State {
-    let [a, b, c, d, e, f, g, h] = *s;
-    let t1 = h.wrapping_add(big_sigma1(e)).wrapping_add(ch(e, f, g)).wrapping_add(K[t]).wrapping_add(w);
-    let t2 = big_sigma0(a).wrapping_add(maj(a, b, c));
-    [t1.wrapping_add(t2), a, b, c, d.wrapping_add(t1), e, f, g]
-}
-
-fn ci_json(k: u64, n: u64) -> Value {
-    let (lo, hi) = wilson(k, n, Z95);
-    json!({ "count": k, "of": n, "p": k as f64 / n as f64, "log2_p": if k > 0 { Some((k as f64 / n as f64).log2()) } else { None }, "ci95": [lo, hi], "log2_ci95": [if lo > 0.0 { Some(lo.log2()) } else { None }, if hi > 0.0 { Some(hi.log2()) } else { None }] })
-}
 
 pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     let seeds = p_u64(params, "seeds")?;

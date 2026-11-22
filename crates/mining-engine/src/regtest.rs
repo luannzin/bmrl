@@ -200,64 +200,181 @@ fn str_field<'a>(v: &'a Value, key: &str) -> Result<&'a str> {
     v[key].as_str().with_context(|| format!("template field {key} missing"))
 }
 
+/// A parsed `getblocktemplate` response.
+pub struct Template {
+    pub height: i64,
+    pub value: u64,
+    pub bits: u32,
+    pub target: Target,
+    commitment: Option<Vec<u8>>,
+    txs: Vec<Vec<u8>>,
+    txids: Vec<[u8; 32]>,
+    pub fees: u64,
+    prev_blockhash: [u8; 32],
+    version: i32,
+    time: u32,
+}
+
+impl Template {
+    pub fn fetch(rpc: &Rpc) -> Result<Self> {
+        let t = rpc.call("getblocktemplate", json!([{ "rules": ["segwit"] }]))?;
+        let bits = u32::from_str_radix(str_field(&t, "bits")?, 16)?;
+        let target = Target::from_hex(str_field(&t, "target")?)?;
+        // Independent check of our compact decoder against the node.
+        ensure!(Target::from_compact(bits).target == target, "template target {} disagrees with bits {bits:08x}", target.to_hex());
+        let (mut txs, mut txids, mut fees) = (Vec::new(), Vec::new(), 0u64);
+        for tx in t["transactions"].as_array().context("template transactions")? {
+            txs.push(hex_decode(str_field(tx, "data")?)?);
+            txids.push(parse_display_hex(str_field(tx, "txid")?)?);
+            fees += tx["fee"].as_u64().unwrap_or(0);
+        }
+        Ok(Self {
+            height: t["height"].as_i64().context("template height")?,
+            value: t["coinbasevalue"].as_u64().context("template coinbasevalue")?,
+            bits,
+            target,
+            commitment: t.get("default_witness_commitment").and_then(Value::as_str).map(hex_decode).transpose()?,
+            txs,
+            txids,
+            fees,
+            prev_blockhash: parse_display_hex(str_field(&t, "previousblockhash")?)?,
+            version: t["version"].as_i64().context("template version")? as i32,
+            time: t["curtime"].as_u64().context("template curtime")? as u32,
+        })
+    }
+
+    pub fn transactions(&self) -> usize {
+        self.txs.len() + 1
+    }
+
+    /// Coinbase and header (nonce 0) for `extra_nonce`: the merkle root changes with it.
+    pub fn candidate(&self, payout_script: &[u8], extra_nonce: u64) -> (BlockHeader, Coinbase) {
+        let coinbase = Coinbase {
+            height: self.height,
+            value: self.value,
+            script_pubkey: payout_script.to_vec(),
+            extra_nonce,
+            tag: b"/BMRL/".to_vec(),
+            witness_commitment: self.commitment.clone(),
+        };
+        let mut ids = vec![coinbase.txid()];
+        ids.extend_from_slice(&self.txids);
+        let header = BlockHeader { version: self.version, prev_blockhash: self.prev_blockhash, merkle_root: merkle_root(&ids), time: self.time, bits: self.bits, nonce: 0 };
+        (header, coinbase)
+    }
+
+    /// Serialize and submit a block; `Err` unless the node accepts it.
+    pub fn submit(&self, rpc: &Rpc, header: &BlockHeader, coinbase: &Coinbase) -> Result<()> {
+        let mut all = vec![coinbase.serialize(true)];
+        all.extend(self.txs.iter().cloned());
+        let result = rpc.call("submitblock", json!([hex_encode(&serialize_block(header, &all))]))?;
+        ensure!(result.is_null(), "submitblock rejected {}: {result}", header.block_hash_hex());
+        Ok(())
+    }
+}
+
+/// Payout address of a fresh wallet and its scriptPubKey.
+pub fn wallet_script(rpc: &Rpc, wallet: &str) -> Result<Vec<u8>> {
+    rpc.call("createwallet", json!([wallet]))?;
+    let address = rpc.call("getnewaddress", json!(["", "bech32"]))?;
+    let info = rpc.call("getaddressinfo", json!([address]))?;
+    hex_decode(str_field(&info, "scriptPubKey")?).map_err(Into::into)
+}
+
 /// Fetch a block template, build the coinbase and header, search for proof
 /// of work with `backend`, and submit the block.
 pub fn mine_template(rpc: &Rpc, backend: &dyn Backend, payout_script: &[u8]) -> Result<MinedBlock> {
     let started = Instant::now();
-    let t = rpc.call("getblocktemplate", json!([{ "rules": ["segwit"] }]))?;
-    let height = t["height"].as_i64().context("template height")?;
-    let value = t["coinbasevalue"].as_u64().context("template coinbasevalue")?;
-    let bits = u32::from_str_radix(str_field(&t, "bits")?, 16)?;
-    let target = Target::from_hex(str_field(&t, "target")?)?;
-    // Independent check of our compact decoder against the node.
-    ensure!(Target::from_compact(bits).target == target, "template target {} disagrees with bits {bits:08x}", target.to_hex());
-    let commitment = t.get("default_witness_commitment").and_then(Value::as_str).map(hex_decode).transpose()?;
-    let (mut txs, mut txids, mut fees) = (Vec::new(), Vec::new(), 0u64);
-    for tx in t["transactions"].as_array().context("template transactions")? {
-        txs.push(hex_decode(str_field(tx, "data")?)?);
-        txids.push(parse_display_hex(str_field(tx, "txid")?)?);
-        fees += tx["fee"].as_u64().unwrap_or(0);
-    }
-    let prev_blockhash = parse_display_hex(str_field(&t, "previousblockhash")?)?;
-    let version = t["version"].as_i64().context("template version")? as i32;
-    let time = t["curtime"].as_u64().context("template curtime")? as u32;
-
+    let t = Template::fetch(rpc)?;
     let mut hashes = 0;
     for extra_nonce in 0u64..1_000 {
-        let coinbase = Coinbase {
-            height,
-            value,
-            script_pubkey: payout_script.to_vec(),
-            extra_nonce,
-            tag: b"/BMRL/".to_vec(),
-            witness_commitment: commitment.clone(),
-        };
-        let mut ids = vec![coinbase.txid()];
-        ids.extend_from_slice(&txids);
-        let mut header = BlockHeader { version, prev_blockhash, merkle_root: merkle_root(&ids), time, bits, nonce: 0 };
-        let (nonce, n) = find_nonce(backend, &Work::new(header, target), 1 << 20)?;
+        let (mut header, coinbase) = t.candidate(payout_script, extra_nonce);
+        let (nonce, n) = find_nonce(backend, &Work::new(header, t.target), 1 << 20)?;
         hashes += n;
         let Some(nonce) = nonce else { continue };
         header.nonce = nonce;
-        let mut all = vec![coinbase.serialize(true)];
-        all.extend(txs.iter().cloned());
-        let block = serialize_block(&header, &all);
-        let result = rpc.call("submitblock", json!([hex_encode(&block)]))?;
-        ensure!(result.is_null(), "submitblock rejected {}: {result}", header.block_hash_hex());
+        t.submit(rpc, &header, &coinbase)?;
         return Ok(MinedBlock {
-            height,
+            height: t.height,
             hash: header.block_hash_hex(),
             header_hex: header.to_hex(),
             nonce,
             extra_nonce,
             hashes,
             seconds: started.elapsed().as_secs_f64(),
-            transactions: all.len(),
-            coinbase_value: value,
-            fees,
+            transactions: t.transactions(),
+            coinbase_value: t.value,
+            fees: t.fees,
         });
     }
     bail!("no valid nonce in 1000 extra-nonce rounds")
+}
+
+/// End-to-end header search on a live template: for `seconds`, roll the extra
+/// nonce, rebuild coinbase and merkle root, scan the full nonce space with
+/// `backend` against `share` (the real target comparison, harder than
+/// regtest's so hits are countable), and verify every hit with `check`
+/// (an independent SHA-256d of the serialized header). Then submit one hit
+/// that also meets the template target and confirm the node accepted it.
+pub fn search_and_submit(
+    rpc: &Rpc,
+    backend: &dyn Backend,
+    payout_script: &[u8],
+    share: Target,
+    seconds: f64,
+    check: &dyn Fn(&[u8; 80]) -> [u8; 32],
+) -> Result<Value> {
+    let started = Instant::now();
+    let t = Template::fetch(rpc)?;
+    let (mut hashes, mut hits, mut verified, mut extra_nonce) = (0u64, 0u64, 0u64, 0u64);
+    let mut block: Option<(BlockHeader, Coinbase)> = None;
+    const SLICE: u64 = 1 << 26;
+    'search: loop {
+        let (header, coinbase) = t.candidate(payout_script, extra_nonce);
+        let work = Work::new(header, share);
+        let mut start = 0u64;
+        while start < 1 << 32 {
+            if started.elapsed().as_secs_f64() >= seconds && block.is_some() {
+                break 'search;
+            }
+            let count = SLICE.min((1 << 32) - start);
+            let scan = backend.scan(&work, start as u32, count, usize::MAX)?;
+            hashes += scan.hashes;
+            for nonce in scan.found {
+                hits += 1;
+                let mut h = header;
+                h.nonce = nonce;
+                let independent = check(&h.serialize());
+                ensure!(share.is_met_by(&independent), "backend {} reported nonce {nonce:#010x} that fails the independent check", backend.name());
+                ensure!(independent == h.hash(), "independent hash differs from sha256-core for nonce {nonce:#010x}");
+                verified += 1;
+                if block.is_none() && t.target.is_met_by(&independent) {
+                    block = Some((h, coinbase.clone()));
+                }
+            }
+            start += count;
+        }
+        extra_nonce += 1;
+    }
+    let seconds_used = started.elapsed().as_secs_f64();
+    let (header, coinbase) = block.context("no hit met the template target")?;
+    t.submit(rpc, &header, &coinbase)?;
+    let best = rpc.call("getbestblockhash", json!([]))?;
+    ensure!(best.as_str() == Some(header.block_hash_hex().as_str()), "node tip {best} is not the submitted block");
+    Ok(json!({
+        "backend": backend.name(),
+        "template_height": t.height,
+        "seconds": seconds_used,
+        "hashes": hashes,
+        "extra_nonce_rolls": extra_nonce + 1,
+        "hits": hits,
+        "hits_verified_independently": verified,
+        "end_to_end_hashes_per_second": hashes as f64 / seconds_used,
+        "valid_headers_per_second": verified as f64 / seconds_used,
+        "submitted_block": header.block_hash_hex(),
+        "submitted_nonce": header.nonce,
+        "accepted": true,
+    }))
 }
 
 fn sats(v: &Value) -> Result<u64> {
@@ -306,10 +423,7 @@ pub fn run_session(bitcoind: &Path, backend: &dyn Backend, datadir: &Path) -> Re
     let node = Node::start(bitcoind, datadir)?;
     let rpc = &node.rpc;
     let subversion = rpc.call("getnetworkinfo", json!([]))?["subversion"].clone();
-    rpc.call("createwallet", json!(["bmrl"]))?;
-    let address = rpc.call("getnewaddress", json!(["", "bech32"]))?;
-    let info = rpc.call("getaddressinfo", json!([address]))?;
-    let script = hex_decode(str_field(&info, "scriptPubKey")?)?;
+    let script = wallet_script(rpc, "bmrl")?;
 
     let (mut checks, mut mined) = (Vec::new(), Vec::<MinedBlock>::new());
     let mut mine = |rpc: &Rpc| -> Result<MinedBlock> {

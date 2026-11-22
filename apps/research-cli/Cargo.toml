@@ -21,4 +21,5 @@ mining-engine.workspace = true
 research-storage.workspace = true
 serde_json = "1.0.154"
 sha256-core.workspace = true
+statistical-engine.workspace = true
 verification.workspace = true

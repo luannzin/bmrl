@@ -4,7 +4,7 @@
 
 use crate::{Definition, Outcome, Verification, p_u64};
 use anyhow::Result;
-use hardware_model::{CostModel, DEFAULT_COST, DEVICES, Output, VARIANTS, estimate, reference, resources, simulate};
+use hardware_model::{CostModel, DEFAULT_COST, DEVICES, Output, VARIANTS, estimate, reference, resources, simulate, simulate_iterative};
 use serde_json::{Value, json};
 use statistical_engine::SplitMix64;
 
@@ -13,7 +13,8 @@ pub fn definition() -> Definition {
         hypothesis_id: "H-HW-01",
         primitive: crate::primitive::HARDWARE,
         name: "Pipelined SHA-256d datapaths: correctness, resources, FPGA throughput and energy model",
-        version: 1,
+        // v2: iterative cores simulated too; record split into measured / simulated / estimated + assumptions.
+        version: 2,
         hypothesis: "A fully pipelined SHA-256d datapath using midstate, precomputation, early reject and constant folding fits commodity FPGAs and delivers more hashes per second and per joule than the measured CPU and GPU baselines of this lab.",
         null_hypothesis: "No modelled FPGA configuration exceeds the measured CPU/GPU throughput or their energy efficiency bound.",
         assumptions: &[
@@ -78,7 +79,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     let n = p_u64(params, "sim_nonces")? as u32;
     let headers = p_u64(params, "headers")?;
     let c = cost(params);
-    let mut variants = Vec::new();
+    let (mut simulated, mut estimated) = (Vec::new(), Vec::new());
     let mut det = Vec::new();
     let mut best: Option<(f64, f64, String, String)> = None;
     for a in VARIANTS {
@@ -92,6 +93,18 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
             latency = sim.latency;
             cycles = sim.cycles;
         }
+        // Iterative cores (u round units, state fed back), the fallback when no
+        // full pipeline fits: simulated too, so every modelled design is checked.
+        let header0: [u8; 80] = SplitMix64::stream(seed, 0).bytes();
+        let iterative: Vec<Value> = [1usize, 2, 4, 8, 16, 32]
+            .iter()
+            .map(|&u| {
+                let sim = simulate_iterative(&a, u, header0, 0, 64);
+                let bad = sim.outputs.iter().filter(|(nonce, out, _)| *out != reference(&a, &header0, *nonce)).count();
+                mismatches += bad as u64;
+                json!({ "rounds_per_cycle": u, "nonces": 64, "mismatches": bad, "cycles_per_nonce": sim.cycles as f64 / 64.0 })
+            })
+            .collect();
         let r = resources(&a);
         let estimates: Vec<Value> = DEVICES
             .iter()
@@ -109,19 +122,25 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
             })
             .collect();
         det.push(json!({ "variant": a.name, "mismatches": mismatches, "latency": latency, "resources": [r.stages, r.adders, r.xor3, r.ch, r.maj, r.register_bits], "estimates": estimates }));
-        variants.push(json!({
+        simulated.push(json!({
             "variant": a.name,
-            "simulation": {
-                "headers": headers, "nonces_per_header": n, "mismatches": mismatches,
+            "pipeline": {
+                "headers": headers, "nonces_per_header": n,
                 "latency_cycles": latency, "cycles": cycles,
                 "steady_state_nonces_per_cycle": n as f64 / (cycles - latency + 1) as f64,
                 "output": if a.early_reject { "H7 only (early reject)" } else { "full digest" },
             },
-            "resources": {
-                "pipeline_stages": r.stages, "adders_32bit": r.adders, "xor3_words": r.xor3, "ch_words": r.ch, "maj_words": r.maj,
-                "register_bits": r.register_bits, "luts_estimated": r.luts(&c),
-                "dynamic_pj_per_hash": [r.pj_per_hash(&c).0, r.pj_per_hash(&c).1],
+            "iterative_cores": iterative,
+            "mismatches_total": mismatches,
+            "counted": {
+                "active_stages": r.stages, "adders_32bit": r.adders, "xor3_words": r.xor3, "ch_words": r.ch, "maj_words": r.maj,
+                "register_bits": r.register_bits,
             },
+        }));
+        estimated.push(json!({
+            "variant": a.name,
+            "luts": r.luts(&c),
+            "dynamic_pj_per_hash": [r.pj_per_hash(&c).0, r.pj_per_hash(&c).1],
             "devices": estimates,
         }));
     }
@@ -130,15 +149,32 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     let (cpu_hps, gpu_hps, cpu_id, gpu_id) = measured();
     let pw = &params["reference_power_w"];
     let bound = |hps: Option<f64>, w: Option<f64>| hps.zip(w).map(|(h, w)| w / h * 1e12);
-    let comparison = json!({
-        "cpu": { "benchmark": cpu_id, "hashes_per_second": cpu_hps, "joules_per_terahash_tdp_bound": bound(cpu_hps, pw["cpu"].as_f64()), "power_source": pw["cpu_source"] },
-        "gpu": { "benchmark": gpu_id, "hashes_per_second": gpu_hps, "joules_per_terahash_tdp_bound": bound(gpu_hps, pw["gpu"].as_f64()), "power_source": pw["gpu_source"] },
-        "asic": params["asic_reference"],
-        "best_fpga_model": best.as_ref().map(|b| json!({ "device": b.2, "variant": b.3, "hashes_per_second_high": b.0, "joules_per_terahash_low": b.1 })),
+    let measured = json!({
+        "cpu": { "benchmark": cpu_id, "hashes_per_second": cpu_hps, "kind": "measured" },
+        "gpu": { "benchmark": gpu_id, "hashes_per_second": gpu_hps, "kind": "measured" },
+        "power_note": "No power was measured. The J/TH bounds below divide vendor power ratings by measured hash rates.",
+        "cpu_joules_per_terahash_rating_bound": bound(cpu_hps, pw["cpu"].as_f64()), "cpu_power_source": pw["cpu_source"],
+        "gpu_joules_per_terahash_rating_bound": bound(gpu_hps, pw["gpu"].as_f64()), "gpu_power_source": pw["gpu_source"],
+        "asic_reference": params["asic_reference"],
     });
+    let assumptions = json!([
+        { "quantity": "pipeline depth (stages)", "kind": "simulated, exact", "detail": "from the cycle model of each variant; folded designs skip job-constant stages" },
+        { "quantity": "throughput per pipeline / core", "kind": "simulated, exact", "detail": "1 nonce per cycle for a full pipeline; 1 nonce per ceil(stages / u) cycles for an iterative core with u round units" },
+        { "quantity": "operators and register bits", "kind": "counted from the simulated dataflow", "detail": "32-bit adders, Σ/σ groups, Ch, Maj; per-job constants (midstate, round constants) are not counted as registers" },
+        { "quantity": "area in LUTs", "kind": "assumed", "detail": format!("{} LUTs per 32-bit operator; no routing, control, I/O or carry-chain effects", c.luts_per_word_op) },
+        { "quantity": "memory", "kind": "model choice", "detail": "no block RAM: constants and job values are wired or held in registers" },
+        { "quantity": "clock frequency", "kind": "assumed", "detail": DEVICES.iter().map(|d| format!("{}: {}-{} MHz", d.name, d.mhz.0, d.mhz.1)).collect::<Vec<_>>().join("; ") + "; not from timing analysis" },
+        { "quantity": "utilization", "kind": "assumed", "detail": c.utilization },
+        { "quantity": "dynamic energy", "kind": "assumed", "detail": format!("activity {}, {}-{} pJ per LUT toggle, {}-{} pJ per FF toggle", c.activity, c.pj_per_lut.0, c.pj_per_lut.1, c.pj_per_ff.0, c.pj_per_ff.1) },
+        { "quantity": "static power", "kind": "assumed", "detail": DEVICES.iter().map(|d| format!("{}: {} W", d.name, d.static_w)).collect::<Vec<_>>().join("; ") },
+        { "quantity": "device capacity", "kind": "published datasheet", "detail": DEVICES.iter().map(|d| format!("{}: {} LUTs, {} FFs", d.name, d.luts, d.ffs)).collect::<Vec<_>>().join("; ") },
+        { "quantity": "CPU and GPU hash rates", "kind": "measured", "detail": "latest benchmark records from this lab" },
+        { "quantity": "CPU, GPU and ASIC power", "kind": "vendor specification, not measured", "detail": "TDP / board power / ASIC J/TH rating" },
+    ]);
+    let best_model = best.as_ref().map(|b| json!({ "device": b.2, "variant": b.3, "hashes_per_second_high": b.0, "joules_per_terahash_low": b.1 }));
     let mut summary = vec![
         format!(
-            "All {} variants reproduce the reference on every simulated nonce (mismatches: {}); full pipelines accept one nonce per cycle.",
+            "All {} variants reproduce the reference on every simulated nonce, both as full pipelines (one nonce per cycle) and as iterative cores with 1 to 32 round units (mismatches: {}).",
             VARIANTS.len(),
             det.iter().map(|d| d["mismatches"].as_u64().unwrap_or(0)).sum::<u64>()
         ),
@@ -151,16 +187,31 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
         "Constant folding applied to a design without midstate removes block 1 and the first three second-block rounds automatically, giving exactly the midstate + precompute datapath.".into(),
     ];
     if let Some(b) = &best {
-        summary.push(format!("Best modelled FPGA: {} on {} at up to {:.2} GH/s (model).", b.3, b.2, b.0 / 1e9));
-        if let Some(c) = cpu_hps {
-            summary.push(format!("Measured CPU baseline {:.1} MH/s; model/CPU throughput ratio up to {:.0}x.", c / 1e6, b.0 / c));
-        }
-        if let Some(g) = gpu_hps {
-            summary.push(format!("Measured GPU baseline {:.1} MH/s; model/GPU throughput ratio up to {:.1}x.", g / 1e6, b.0 / g));
-        }
+        summary.push(format!(
+            "ESTIMATE, not synthesized or measured: best modelled FPGA configuration {} on {} at up to {:.2} GH/s under the assumed clock.",
+            b.3, b.2, b.0 / 1e9
+        ));
     }
-    summary.push("Energy figures depend on assumed per-toggle energies; treat them as order-of-magnitude until calibrated with vendor power tools or board measurements.".into());
-    let mut out = Outcome::new(json!({ "variants": variants, "comparison": comparison, "cost_model": params["cost"] }), json!(det), vec![], summary);
+    summary.push(format!(
+        "MEASURED for comparison: CPU {} MH/s, GPU {} MH/s (benchmark records {} and {}).",
+        cpu_hps.map_or("n/a".into(), |c| format!("{:.1}", c / 1e6)),
+        gpu_hps.map_or("n/a".into(), |g| format!("{:.1}", g / 1e6)),
+        cpu_id.as_deref().unwrap_or("none"),
+        gpu_id.as_deref().unwrap_or("none"),
+    ));
+    summary.push("Clock, area per operator, energy per toggle and static power are assumptions; no RTL was synthesized, no timing closed, no board measured.".into());
+    let mut out = Outcome::new(
+        json!({
+            "measured": measured,
+            "simulated": simulated,
+            "estimated": { "status": "estimate: not synthesized, not measured", "variants": estimated, "best": best_model },
+            "assumptions": assumptions,
+            "cost_model": params["cost"],
+        }),
+        json!(det),
+        vec![],
+        summary,
+    );
     out.result = Some("model-estimate");
     Ok(out)
 }
@@ -172,8 +223,9 @@ pub fn verify(_: &Value, _: u64, _: &Outcome) -> Result<Verification> {
     let mut header: [u8; 80] = SplitMix64::stream(0xfeed, 7).bytes();
     let mut problems = Vec::new();
     for a in VARIANTS {
-        let sim = simulate(&a, header, 1000, 256);
-        for (nonce, out, _) in &sim.outputs {
+        let mut outputs = simulate(&a, header, 1000, 256).outputs;
+        outputs.extend(simulate_iterative(&a, 4, header, 5000, 64).outputs);
+        for (nonce, out, _) in &outputs {
             header[76..80].copy_from_slice(&nonce.to_le_bytes());
             let d = ind.sha256d(&header, 64);
             let words: [u32; 8] = std::array::from_fn(|i| u32::from_be_bytes(d[4 * i..4 * i + 4].try_into().expect("4 bytes")));
@@ -188,8 +240,8 @@ pub fn verify(_: &Value, _: u64, _: &Outcome) -> Result<Verification> {
     }
     problems.truncate(10);
     Ok(Verification {
-        method: "every variant re-simulated on an unseen header; outputs compared with the independent SHA-256 over the full serialized header; folding consistency (no-midstate folds to midstate) checked".into(),
+        method: "every variant re-simulated on an unseen header as a full pipeline and as a 4-round-unit iterative core; outputs compared with the independent SHA-256 over the full serialized header; folding consistency (no-midstate folds to midstate) checked".into(),
         passed: problems.is_empty(),
-        detail: if problems.is_empty() { format!("{} variants x 256 nonces identical", VARIANTS.len()) } else { problems.join("; ") },
+        detail: if problems.is_empty() { format!("{} variants x (256 pipelined + 64 iterative) nonces identical", VARIANTS.len()) } else { problems.join("; ") },
     })
 }

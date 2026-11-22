@@ -243,6 +243,14 @@ pub fn digest(v: &Value) -> String {
     bitcoin_header::hex_encode(&sha256_core::sha256(text.as_bytes()))
 }
 
+/// `k` of `n` with its rate and Wilson 95% interval (also in log2 when positive).
+pub(crate) fn ci_json(k: u64, n: u64) -> Value {
+    let (lo, hi) = statistical_engine::wilson(k, n, statistical_engine::Z95);
+    let p = k as f64 / n.max(1) as f64;
+    let log2 = |x: f64| (x > 0.0).then(|| x.log2());
+    json!({ "count": k, "of": n, "p": p, "log2_p": log2(p), "ci95": [lo, hi], "log2_ci95": [log2(lo), log2(hi)] })
+}
+
 pub(crate) fn hex_words(w: &[u32]) -> String {
     w.iter().map(|x| format!("{x:08x}")).collect()
 }

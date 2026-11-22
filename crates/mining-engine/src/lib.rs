@@ -71,6 +71,42 @@ pub fn find_nonce(backend: &dyn Backend, work: &Work, slice: u64) -> anyhow::Res
     Ok((None, hashes))
 }
 
+/// Several backends searching one range together: the range is split in
+/// proportion to `weights` (e.g. measured hash rates) and the parts run
+/// concurrently on their own threads.
+pub struct Split {
+    pub parts: Vec<(Box<dyn Backend>, f64)>,
+}
+
+impl Backend for Split {
+    fn name(&self) -> String {
+        self.parts.iter().map(|(b, _)| b.name()).collect::<Vec<_>>().join(" + ")
+    }
+
+    fn scan(&self, work: &Work, start: u32, count: u64, max_found: usize) -> anyhow::Result<Scan> {
+        let total: f64 = self.parts.iter().map(|(_, w)| w).sum();
+        let mut ranges = Vec::new();
+        let mut s = start as u64;
+        for (i, (_, w)) in self.parts.iter().enumerate() {
+            let n = if i + 1 == self.parts.len() { start as u64 + count - s } else { (count as f64 * w / total) as u64 };
+            ranges.push((s, n));
+            s += n;
+        }
+        let results: Vec<anyhow::Result<Scan>> = std::thread::scope(|sc| {
+            let handles: Vec<_> = self.parts.iter().zip(&ranges).map(|((b, _), &(s, n))| sc.spawn(move || b.scan(work, s as u32, n, max_found))).collect();
+            handles.into_iter().map(|h| h.join().unwrap_or_else(|_| Err(anyhow::anyhow!("backend thread panicked")))).collect()
+        });
+        let mut out = Scan::default();
+        for r in results {
+            let r = r?;
+            out.found.extend(r.found);
+            out.hashes += r.hashes;
+        }
+        out.found.sort_unstable();
+        Ok(out)
+    }
+}
+
 /// Every hit in a range, checked against the reference path.
 pub fn scan_verified(backend: &dyn Backend, work: &Work, start: u32, count: u64) -> anyhow::Result<Scan> {
     let scan = backend.scan(work, start, count, usize::MAX)?;
@@ -145,6 +181,14 @@ mod tests {
         assert_eq!(target_with_zero_bits(12).leading_zeros(), 12);
         assert_eq!(target_with_zero_bits(32).words()[1], u32::MAX);
         assert_eq!(target_with_zero_bits(36).words()[1], 0x0fff_ffff);
+    }
+
+    #[test]
+    fn split_backend_covers_the_range_once() {
+        let work = synthetic_work(2, 6);
+        let split = Split { parts: vec![(Box::new(ReferenceBackend), 1.0), (Box::new(ReferenceBackend), 3.0)] };
+        let whole = ReferenceBackend.scan(&work, 100, 10_007, usize::MAX).unwrap();
+        assert_eq!(scan_verified(&split, &work, 100, 10_007).unwrap(), whole);
     }
 
     #[test]
