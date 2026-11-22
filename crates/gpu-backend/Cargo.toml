@@ -12,4 +12,5 @@ bitcoin-header.workspace = true
 bytemuck = "1.25.2"
 mining-engine.workspace = true
 pollster = "1.0.3"
+sha256-core.workspace = true
 wgpu = "30.0.2"

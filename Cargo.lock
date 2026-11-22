@@ -661,6 +661,7 @@ dependencies = [
  "bytemuck",
  "mining-engine",
  "pollster",
+ "sha256-core",
  "wgpu",
 ]
 

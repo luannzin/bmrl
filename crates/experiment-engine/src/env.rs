@@ -39,6 +39,7 @@ const SOURCES: &[(&str, &str)] = &[
     ("crates/bitcoin-header/src/block.rs", include_str!("../../bitcoin-header/src/block.rs")),
     ("crates/cpu-backend/src/lib.rs", include_str!("../../cpu-backend/src/lib.rs")),
     ("crates/gpu-backend/src/lib.rs", include_str!("../../gpu-backend/src/lib.rs")),
+    ("crates/gpu-backend/src/v2.rs", include_str!("../../gpu-backend/src/v2.rs")),
     ("gpu/wgsl/sha256d.wgsl", include_str!("../../../gpu/wgsl/sha256d.wgsl")),
     ("crates/mining-engine/src/lib.rs", include_str!("../../mining-engine/src/lib.rs")),
     ("crates/mining-engine/src/regtest.rs", include_str!("../../mining-engine/src/regtest.rs")),

@@ -453,30 +453,50 @@ fn rate_of((n, s): (u64, f64)) -> f64 {
     n as f64 / s
 }
 
+/// Every GPU kernel on the same adapter; the top-level rate is the last (fastest) kernel's.
 fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
-    let g = GpuBackend::new(o.gpu_backend.as_deref())?;
-    let a = g.adapter();
-    say!(human, "adapter    {} [{:?}] driver {} {}", a.name, a.backend, a.driver, a.driver_info);
-    g.calibrate(Duration::from_millis(250))?;
     let cpu = CpuBackend::new(Kernel::best(), o.threads)?;
-    let parity = gpu_parity(&g, &cpu)?;
-    let (n, s) = throughput(&g, o.seconds, g.batch() as u64)?;
+    let mut kernels = Vec::new();
+    let mut adapter = Value::Null;
+    for k in gpu_backend::Kernel::ALL {
+        let g = GpuBackend::with_kernel(o.gpu_backend.as_deref(), k)?;
+        let a = g.adapter();
+        say!(human, "{:<10} adapter {} [{:?}] driver {} {}", k.name(), a.name, a.backend, a.driver, a.driver_info);
+        adapter = adapter_json(a);
+        g.calibrate(Duration::from_millis(250))?;
+        let parity = gpu_parity(&g, &cpu)?;
+        let (n, s) = throughput(&g, o.seconds, g.batch() as u64)?;
+        say!(human, "{:<10} {} ({} nonces/dispatch)", k.name(), fmt_rate(n as f64 / s), g.batch());
+        say!(human, "{:<10} parity: {} digest lanes, {} mismatches; search {} vs {} hits, identical: {}", k.name(), parity["digest_lanes"], parity["digest_mismatches"], parity["search_hits_gpu"], parity["search_hits_cpu"], parity["search_identical"]);
+        kernels.push(json!({
+            "kernel": k.name(),
+            "description": k.description(),
+            "batch_nonces": g.batch(),
+            "hashes_per_second": n as f64 / s,
+            "hashes": n,
+            "seconds": s,
+            "parity": parity,
+        }));
+    }
+    let best = kernels.last().expect("at least one kernel").clone();
+    let speedup = best["hashes_per_second"].as_f64().unwrap_or(0.0) / kernels[0]["hashes_per_second"].as_f64().unwrap_or(1.0);
+    let ok = kernels.iter().all(|k| k["parity"]["passed"] == true);
     let v = save_bench("gpu", json!({
-        "adapter": adapter_json(a),
-        "kernel": "gpu/wgsl/sha256d.wgsl (straightforward midstate kernel, no early reject)",
-        "batch_nonces": g.batch(),
-        "hashes_per_second": n as f64 / s,
-        "hashes": n,
-        "seconds": s,
-        "parity": parity,
+        "adapter": adapter,
+        "kernel": best["description"],
+        "batch_nonces": best["batch_nonces"],
+        "hashes_per_second": best["hashes_per_second"],
+        "hashes": best["hashes"],
+        "seconds": best["seconds"],
+        "parity": best["parity"],
+        "kernels": kernels,
+        "speedup_over_v1": speedup,
         "energy": { "source": null, "note": "no GPU power counter exposed through wgpu; energy not measured" },
         "expected_work_per_block_factor": 1.0,
+        "note": "Kernel v2 lowers the cost per nonce (precomputation, unrolling, early reject); every nonce is still evaluated, so the expected number of hashes per block is unchanged (factor 1.0).",
     }))?;
-    say!(human, "batch      {} nonces/dispatch", g.batch());
-    say!(human, "gpu        {}", fmt_rate(v["hashes_per_second"].as_f64().unwrap_or(0.0)));
-    say!(human, "parity     {} digest lanes, {} mismatches; search {} vs {} hits, identical: {}", parity["digest_lanes"], parity["digest_mismatches"], parity["search_hits_gpu"], parity["search_hits_cpu"], parity["search_identical"]);
+    say!(human, "speedup    v2 / v1 = {speedup:.2}x");
     say!(human, "saved      {}", v["id"].as_str().unwrap_or(""));
-    let ok = parity["passed"] == true;
     Ok((v, ok))
 }
 
