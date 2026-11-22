@@ -100,3 +100,57 @@ Current state: MVP complete and verified; research run closed and reported.
 Next (see research/STATUS.md section 5): GPU kernel v2; derive the 5-round
 anti-correlation, SMT scaling v3, second seeds; RTL + synthesis and measured
 power.
+
+## 2026-11-22: Breakthrough lab (structural-shortcut search)
+
+Goal: find out whether SHA256d over the header has structure that lowers the
+expected number of evaluations, not the cost per hash.
+
+Done:
+- `cpu-backend`: `Prepared::hash8`, a round-parameterised 8-lane AVX2
+  evaluator with full output (parity-tested at 3..64 rounds).
+- New kinds:
+  - `nonce-atlas` (H-ATLAS-01): every 2^32 nonce of 16 templates at 64
+    rounds, 4 templates each at 4/5/6/8 rounds; random-function moments,
+    cube and sub-cube sums, and every subspace, byte, weight, linear
+    (2^25 masks) and neighbour strategy, with discovery/held-out templates.
+  - `trail-sat` (H-SAT-01): z3 minimum-weight characteristics from nonce and
+    time words, each round measured; exact proofs of the 4- and 5-round H7
+    identities.
+  - `quantum-model` (H-QUANT-01): speculative model.
+- `bmr research board` / `evolve`: `research/BOARD.md` from the registry and
+  rule-based next experiments (frontier, replicate, escalate, model-gap,
+  solver-budget, unexplored).
+- Final clean run on `49a3e3c`: audit passes; every older kind reproduced its
+  digest bit for bit; atlas digest identical in three full executions.
+- Report: `research/breakthrough/REPORT.md`; STATUS rewritten.
+
+Results that matter:
+- 64 rounds: 0 of 58 atlas tests significant; held-out strategy
+  amplification 0.999 (subspace, 95% CI 0.994..1.004) and no family's CI
+  excludes 1. No mining shortcut.
+- Solver-optimal nonce characteristics: 0, 11, 38, >= 50 bits through
+  rounds 3..6; measured 2^-11.007 and 2^-35.7. Time freedom does not help.
+- New at 5 rounds: H7 bits 1 and 0 lose degree over the nonce's low byte
+  (zero-sum rates 0.5272 and 0.5038). Nothing at 6 or 8.
+
+Caught and fixed before publishing:
+- normal approximation on tiny counts;
+- a solver window bug (late W3 counted for free);
+- W0 unreachable under one midstate (erratum on trail-search-0001/0002);
+- fingerprint missing the new modules;
+- a nonce-atlas-0001 smoke record from uncommitted code (kept as history).
+
+Current state: records and docs committed; BOARD.md held back because its
+summary column showed the neighbour family's point estimate (work 0.831,
+CI including 1) as "best held-out", which reads like a work reduction.
+
+Next:
+1. Fix `board.rs` rendering: work column shows only CIs that exclude 1;
+   readable work line; "run seed(s)" label; `evolve` queue deduplicates
+   commands. This changes the fingerprint, so rerun the full suite, then
+   commit the regenerated board.
+2. GPU kernel v2 in its own worktree. The session started for it never
+   finished setup; restart it.
+3. `evolve` queue: smt at 5-7 rounds, trail-sat 4x budget, new-seed
+   replications, neutral bits (B-15), differential-linear (B-17).

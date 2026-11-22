@@ -1,0 +1,409 @@
+{
+  "assumptions": [
+    "SPECULATIVE MODEL: no error-corrected quantum computer of this size exists; nothing here is measured.",
+    "Oracle = midstate + 3 precomputed rounds + early reject + constant folding (the hardware model's cheapest exact datapath), computed and uncomputed once per Grover iteration.",
+    "Reversible costs: n-bit modular ripple-carry adder 2n - 2 Toffoli (Cuccaro et al. 2004); Ch and Maj 1 Toffoli per bit; Sigma functions CNOT-only; target check over d bits 2d - 3 Toffoli; 7 T gates per Toffoli.",
+    "Toffoli depth: 3 sequential 32-bit adders per round, 2n each; logical Toffoli time 1, 10 or 100 microseconds (assumed range).",
+    "Grover iterations (pi/4) sqrt(N/M) with the number of solutions known (optimistic for the quantum side); P machines split the space, each needing (pi/4) sqrt(N/(M P)).",
+    "Landauer bound kT ln 2 at 300 K per erased bit; erased bits per hash approximated by the datapath's gate outputs (5 per adder bit, 2 per Ch/Maj/XOR3 bit)."
+  ],
+  "baseline": "Classical search: 2^d SHA256d evaluations per block for a target with d leading zero bits.",
+  "candidate_anomaly": false,
+  "conclusion": "MODEL ESTIMATE: figures below come from an analytical model with stated assumptions, validated only where noted; they are not measurements. Grover oracle (one iteration): 1.472e5 Toffoli, 1.030e6 T gates, Toffoli depth 4.685e4, about 82000 logical qubits. At d = 80.0 bits and 1 us per logical Toffoli: one machine needs 1.282e3 years; finishing within 600 s takes 4.546e15 machines and 5.823e19 oracle queries (4.816e-5 of the classical evaluations) at 8.571e24 Toffoli in total. Landauer bound for the same datapath: 6.047e-4 J per terahash; it bounds energy per hash, not the number of hashes.",
+  "configurations": [],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "None (analytical).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 0.2415642,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "49a3e3c1ebd54756223719254e4519fa554ed7ca",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "7176ecb8a9b11485d314a724e966a7b4abfafee8a79778ed85a890d671dc7564"
+  },
+  "finished_at": "2026-11-22T05:43:22Z",
+  "hypothesis": "Grover search with a reversible SHA256d oracle finds a block with fewer oracle queries than classical search needs evaluations, and does so within the 600 s block interval on a feasible number of machines.",
+  "hypothesis_id": "H-QUANT-01",
+  "hypothesis_status": "modelled",
+  "id": "quantum-model-0001",
+  "implementation": [
+    "experiment_engine::quantum_model",
+    "hardware_model::resources"
+  ],
+  "kind": "quantum-model",
+  "methodology": "Operator counts from hardware_model::resources for the cheapest exact variant; reversible gate counts, depth and qubit estimates; Grover iterations, serial time, machines needed to finish within the block interval, and total oracle queries, for each difficulty and Toffoli time.",
+  "name": "Quantum (Grover) and reversible search models for the Bitcoin target",
+  "null_hypothesis": "The query reduction is real but, under the block-interval constraint and the oracle's cost, parallel Grover needs an infeasible number of machines and total gate work far above classical hashing.",
+  "observations": {
+    "landauer": {
+      "erased_bits_per_hash_estimate": 210624.0,
+      "joules_per_hash": 6.046970566908212e-16,
+      "joules_per_terahash": 0.0006046970566908212,
+      "note": "A reversible implementation could approach or beat this bound per hash; it changes energy per hash, never the number of hashes."
+    },
+    "rows": [
+      {
+        "by_toffoli_time": [
+          {
+            "machines_for_block_interval": 16.151736961134056,
+            "queries_over_classical_evaluations": 0.000048163669477316066,
+            "seconds_per_iteration": 0.046848,
+            "serial_seconds": 2411.353417897978,
+            "serial_years": 0.00007640536812097523,
+            "toffoli_time_us": 1.0,
+            "total_oracle_queries": 206861.38526042592,
+            "total_toffoli": 30431171524.275997
+          },
+          {
+            "machines_for_block_interval": 1615.1736961134047,
+            "queries_over_classical_evaluations": 0.0004816366947731606,
+            "seconds_per_iteration": 0.46847999999999995,
+            "serial_seconds": 24113.534178979775,
+            "serial_years": 0.000764053681209752,
+            "toffoli_time_us": 10.0,
+            "total_oracle_queries": 2068613.8526042588,
+            "total_toffoli": 304311715242.7599
+          },
+          {
+            "machines_for_block_interval": 161517.36961134057,
+            "queries_over_classical_evaluations": 0.0048163669477316075,
+            "seconds_per_iteration": 4.6848,
+            "serial_seconds": 241135.3417897978,
+            "serial_years": 0.007640536812097522,
+            "toffoli_time_us": 100.0,
+            "total_oracle_queries": 20686138.526042596,
+            "total_toffoli": 3043117152427.6
+          }
+        ],
+        "classical_evaluations": 4294967296.0,
+        "difficulty_bits": 32.0,
+        "grover_iterations_serial": 51471.85403641517,
+        "oracle": {
+          "adders": 1062,
+          "ch": 120,
+          "datapath": "midstate+precompute3+early-reject+fold",
+          "logical_qubits_estimate": 81952.0,
+          "maj": 120,
+          "register_bits": 81824,
+          "stages": 122,
+          "t_gates": 1029763.0,
+          "toffoli": 147109.0,
+          "toffoli_depth": 46848.0,
+          "xor3": 396
+        }
+      },
+      {
+        "by_toffoli_time": [
+          {
+            "machines_for_block_interval": 69371182021.66519,
+            "queries_over_classical_evaluations": 0.000048163669477316066,
+            "seconds_per_iteration": 0.046848,
+            "serial_seconds": 158030457.5953619,
+            "serial_years": 5.007302205176233,
+            "toffoli_time_us": 1.0,
+            "total_oracle_queries": 888462884498785.8,
+            "total_toffoli": 1.307577481003398e+20
+          },
+          {
+            "machines_for_block_interval": 6937118202166.516,
+            "queries_over_classical_evaluations": 0.0004816366947731606,
+            "seconds_per_iteration": 0.46847999999999995,
+            "serial_seconds": 1580304575.9536185,
+            "serial_years": 50.07302205176231,
+            "toffoli_time_us": 10.0,
+            "total_oracle_queries": 8884628844987856.0,
+            "total_toffoli": 1.3075774810033978e+21
+          },
+          {
+            "machines_for_block_interval": 693711820216652.0,
+            "queries_over_classical_evaluations": 0.0048163669477316075,
+            "seconds_per_iteration": 4.6848,
+            "serial_seconds": 15803045759.536188,
+            "serial_years": 500.7302205176232,
+            "toffoli_time_us": 100.0,
+            "total_oracle_queries": 8.88462884498786e+16,
+            "total_toffoli": 1.3075774810033983e+22
+          }
+        ],
+        "classical_evaluations": 1.8446744073709552e+19,
+        "difficulty_bits": 64.0,
+        "grover_iterations_serial": 3373259426.1305046,
+        "oracle": {
+          "adders": 1062,
+          "ch": 120,
+          "datapath": "midstate+precompute3+early-reject+fold",
+          "logical_qubits_estimate": 81984.0,
+          "maj": 120,
+          "register_bits": 81824,
+          "stages": 122,
+          "t_gates": 1030211.0,
+          "toffoli": 147173.0,
+          "toffoli_depth": 46848.0,
+          "xor3": 396
+        }
+      },
+      {
+        "by_toffoli_time": [
+          {
+            "machines_for_block_interval": 17759022597546.29,
+            "queries_over_classical_evaluations": 0.000048163669477316066,
+            "seconds_per_iteration": 0.046848,
+            "serial_seconds": 2528487321.52579,
+            "serial_years": 80.11683528281972,
+            "toffoli_time_us": 1.0,
+            "total_oracle_queries": 2.2744649843168915e+17,
+            "total_toffoli": 3.3477622657661893e+22
+          },
+          {
+            "machines_for_block_interval": 1775902259754628.0,
+            "queries_over_classical_evaluations": 0.0004816366947731606,
+            "seconds_per_iteration": 0.46847999999999995,
+            "serial_seconds": 25284873215.257896,
+            "serial_years": 801.1683528281969,
+            "toffoli_time_us": 10.0,
+            "total_oracle_queries": 2.2744649843168911e+18,
+            "total_toffoli": 3.347762265766189e+23
+          },
+          {
+            "machines_for_block_interval": 1.775902259754629e+17,
+            "queries_over_classical_evaluations": 0.0048163669477316075,
+            "seconds_per_iteration": 4.6848,
+            "serial_seconds": 252848732152.579,
+            "serial_years": 8011.683528281971,
+            "toffoli_time_us": 100.0,
+            "total_oracle_queries": 2.274464984316892e+19,
+            "total_toffoli": 3.34776226576619e+24
+          }
+        ],
+        "classical_evaluations": 4.722366482869645e+21,
+        "difficulty_bits": 72.0,
+        "grover_iterations_serial": 53972150818.08807,
+        "oracle": {
+          "adders": 1062,
+          "ch": 120,
+          "datapath": "midstate+precompute3+early-reject+fold",
+          "logical_qubits_estimate": 81992.0,
+          "maj": 120,
+          "register_bits": 81824,
+          "stages": 122,
+          "t_gates": 1030323.0,
+          "toffoli": 147189.0,
+          "toffoli_depth": 46848.0,
+          "xor3": 396
+        }
+      },
+      {
+        "by_toffoli_time": [
+          {
+            "machines_for_block_interval": 284144361560740.6,
+            "queries_over_classical_evaluations": 0.000048163669477316066,
+            "seconds_per_iteration": 0.046848,
+            "serial_seconds": 10113949286.10316,
+            "serial_years": 320.4673411312789,
+            "toffoli_time_us": 1.0,
+            "total_oracle_queries": 3.6391439749070264e+18,
+            "total_toffoli": 5.3567107567438956e+23
+          },
+          {
+            "machines_for_block_interval": 2.841443615607405e+16,
+            "queries_over_classical_evaluations": 0.0004816366947731606,
+            "seconds_per_iteration": 0.46847999999999995,
+            "serial_seconds": 101139492861.03159,
+            "serial_years": 3204.6734113127877,
+            "toffoli_time_us": 10.0,
+            "total_oracle_queries": 3.639143974907026e+19,
+            "total_toffoli": 5.356710756743894e+24
+          },
+          {
+            "machines_for_block_interval": 2.8414436156074066e+18,
+            "queries_over_classical_evaluations": 0.0048163669477316075,
+            "seconds_per_iteration": 4.6848,
+            "serial_seconds": 1011394928610.316,
+            "serial_years": 32046.734113127884,
+            "toffoli_time_us": 100.0,
+            "total_oracle_queries": 3.639143974907027e+20,
+            "total_toffoli": 5.356710756743897e+25
+          }
+        ],
+        "classical_evaluations": 7.555786372591432e+22,
+        "difficulty_bits": 76.0,
+        "grover_iterations_serial": 215888603272.3523,
+        "oracle": {
+          "adders": 1062,
+          "ch": 120,
+          "datapath": "midstate+precompute3+early-reject+fold",
+          "logical_qubits_estimate": 81996.0,
+          "maj": 120,
+          "register_bits": 81824,
+          "stages": 122,
+          "t_gates": 1030379.0,
+          "toffoli": 147197.0,
+          "toffoli_depth": 46848.0,
+          "xor3": 396
+        }
+      },
+      {
+        "by_toffoli_time": [
+          {
+            "machines_for_block_interval": 1136577446242962.5,
+            "queries_over_classical_evaluations": 0.000048163669477316066,
+            "seconds_per_iteration": 0.046848,
+            "serial_seconds": 20227898572.20632,
+            "serial_years": 640.9346822625578,
+            "toffoli_time_us": 1.0,
+            "total_oracle_queries": 1.4556575899628106e+19,
+            "total_toffoli": 2.1427425290011568e+24
+          },
+          {
+            "machines_for_block_interval": 1.136577446242962e+17,
+            "queries_over_classical_evaluations": 0.0004816366947731606,
+            "seconds_per_iteration": 0.46847999999999995,
+            "serial_seconds": 202278985722.06317,
+            "serial_years": 6409.346822625575,
+            "toffoli_time_us": 10.0,
+            "total_oracle_queries": 1.4556575899628103e+20,
+            "total_toffoli": 2.1427425290011566e+25
+          },
+          {
+            "machines_for_block_interval": 1.1365774462429626e+19,
+            "queries_over_classical_evaluations": 0.0048163669477316075,
+            "seconds_per_iteration": 4.6848,
+            "serial_seconds": 2022789857220.632,
+            "serial_years": 64093.46822625577,
+            "toffoli_time_us": 100.0,
+            "total_oracle_queries": 1.4556575899628109e+21,
+            "total_toffoli": 2.1427425290011572e+26
+          }
+        ],
+        "classical_evaluations": 3.022314549036573e+23,
+        "difficulty_bits": 78.0,
+        "grover_iterations_serial": 431777206544.7046,
+        "oracle": {
+          "adders": 1062,
+          "ch": 120,
+          "datapath": "midstate+precompute3+early-reject+fold",
+          "logical_qubits_estimate": 81998.0,
+          "maj": 120,
+          "register_bits": 81824,
+          "stages": 122,
+          "t_gates": 1030407.0,
+          "toffoli": 147201.0,
+          "toffoli_depth": 46848.0,
+          "xor3": 396
+        }
+      },
+      {
+        "by_toffoli_time": [
+          {
+            "machines_for_block_interval": 4546309784971850.0,
+            "queries_over_classical_evaluations": 0.000048163669477316066,
+            "seconds_per_iteration": 0.046848,
+            "serial_seconds": 40455797144.41264,
+            "serial_years": 1281.8693645251155,
+            "toffoli_time_us": 1.0,
+            "total_oracle_queries": 5.822630359851242e+19,
+            "total_toffoli": 8.571203021219021e+24
+          },
+          {
+            "machines_for_block_interval": 4.546309784971848e+17,
+            "queries_over_classical_evaluations": 0.0004816366947731606,
+            "seconds_per_iteration": 0.46847999999999995,
+            "serial_seconds": 404557971444.12634,
+            "serial_years": 12818.69364525115,
+            "toffoli_time_us": 10.0,
+            "total_oracle_queries": 5.822630359851241e+20,
+            "total_toffoli": 8.57120302121902e+25
+          },
+          {
+            "machines_for_block_interval": 4.5463097849718505e+19,
+            "queries_over_classical_evaluations": 0.0048163669477316075,
+            "seconds_per_iteration": 4.6848,
+            "serial_seconds": 4045579714441.264,
+            "serial_years": 128186.93645251154,
+            "toffoli_time_us": 100.0,
+            "total_oracle_queries": 5.822630359851243e+21,
+            "total_toffoli": 8.571203021219022e+26
+          }
+        ],
+        "classical_evaluations": 1.2089258196146292e+24,
+        "difficulty_bits": 80.0,
+        "grover_iterations_serial": 863554413089.4092,
+        "oracle": {
+          "adders": 1062,
+          "ch": 120,
+          "datapath": "midstate+precompute3+early-reject+fold",
+          "logical_qubits_estimate": 82000.0,
+          "maj": 120,
+          "register_bits": 81824,
+          "stages": 122,
+          "t_gates": 1030435.0,
+          "toffoli": 147205.0,
+          "toffoli_depth": 46848.0,
+          "xor3": 396
+        }
+      }
+    ],
+    "status": "speculative model, not a measurement"
+  },
+  "params": {
+    "block_seconds": 600.0,
+    "difficulty_bits": [
+      32.0,
+      64.0,
+      72.0,
+      76.0,
+      78.0,
+      80.0
+    ],
+    "reproduce": true,
+    "toffoli_time_us": [
+      1.0,
+      10.0,
+      100.0
+    ]
+  },
+  "primitive": "bitcoin-header-sha256d-datapath",
+  "reproduction": {
+    "digest": "ee98529528d100c62f7cab9250c258f9bcee2d0c60601b550fa45aaaba80bec4",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research quantum-model --seed 1112363596 --params '{\"block_seconds\":600.0,\"difficulty_bits\":[32.0,64.0,72.0,76.0,78.0,80.0],\"reproduce\":true,\"toffoli_time_us\":[1.0,10.0,100.0]}'",
+  "result": "model-estimate",
+  "result_digest": "ee98529528d100c62f7cab9250c258f9bcee2d0c60601b550fa45aaaba80bec4",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "bitcoin-header-sha256d-datapath",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T05:43:22Z",
+  "status": "completed",
+  "verification": {
+    "detail": "operator count and Grover iteration count confirmed",
+    "method": "hardware-model adder count vs a direct count of the midstate datapath; Grover iteration formula vs brute-force maximisation of the success probability",
+    "passed": true
+  }
+}

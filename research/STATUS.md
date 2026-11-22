@@ -1,83 +1,75 @@
-# Research status, 2026-11-21
+# Research status, 2026-11-22
 
-Final run on commit `480c36f`; `bmr research audit` passes. Details and
-record ids: [README.md](README.md). The characteristic and the mining
-question in full: [differential-cryptanalysis/REPORT.md](differential-cryptanalysis/REPORT.md).
+Final run on commit `49a3e3c`; `bmr research audit` passes; every older
+experiment kind reproduced its previous result digest bit for bit. Details:
+[README.md](README.md) (structural run), [breakthrough/REPORT.md](breakthrough/REPORT.md)
+(structural-shortcut search), [BOARD.md](BOARD.md) (every hypothesis, generated).
 
 ## 1. Experimentally demonstrated
 
-- **The pipeline is correct.** SHA-256 and SHA-256d pass the NIST vectors.
-  Three implementations agree on every round count. The header engine
-  reproduces real mainnet blocks. Bitcoin Core accepted 204 regtest blocks
-  from CPU and GPU, and one block from each backend on the end-to-end
-  benchmark.
-- **The real mining path is measured.** On a live template: 116.7 MH/s CPU,
-  508.1 MH/s GPU, 622.1 MH/s combined. That is within run-to-run variation of
-  raw SHA256d throughput, so the template work is too small to see. All
-  1,504 hits were independently verified.
-- **One reduced-round characteristic is fully explained.** A single-bit MSB
-  difference passes the round after it enters with probability exactly
-  2^-11. That is 11 independent bit conditions from signed differences,
-  measured at 2^-11.010 (CI 2^-11.024 to 2^-10.996) over 83.9M pairs, five
-  seeds and an independent implementation, with 0 counterexamples. The four
-  measured trails are this same property at different rounds.
-- **The 4-round header hash is affine in the nonce:** H7 = K + bswap(nonce).
-  Solvers and neighbour search exploit it, at 4 rounds only.
-- **Every result reproduces.** Each deterministic experiment repeated its
-  digest bit for bit across runs. Out-of-process reproductions match.
+- **The pipeline is correct.** NIST vectors, three SHA-256 implementations
+  on every round count, real mainnet headers, 204 regtest blocks accepted in
+  the final run (102 per backend), one live-template block per backend.
+- **Throughput (cost per hash only):** CPU 116.6 MH/s, GPU 496.6 MH/s,
+  CPU + GPU 574.6 MH/s concurrent [bench-compare-0003].
+- **Every nonce of 16 templates behaves like a random function at 64
+  rounds** [nonce-atlas-0002]: image size, top-word zeros, leading zeros,
+  cube and sub-cube sums all at the null; the four mainnet winning nonces
+  found. No input-selection strategy (2^25 linear half-spaces, 3k class
+  strategies, 1,555 neighbour strategies, all 2^32 differences among hits)
+  lowers the held-out work per hit; a fixed-bit strategy saves < 0.4% (95%).
+- **Solver-optimal nonce characteristics** cost 0, 11, 38 and >= 50 bits
+  through rounds 3, 4, 5, 6 of the second block; measured 2^-11.007 and
+  2^-35.7 [trail-sat-0001]. Time freedom does not help. No nonce pair per
+  template follows past round 5.
+- **Exact reduced-round identities, proved for all templates:** 4-round
+  H7 = K + bswap(nonce); 5-round H7 = K + bswap(n) + Σ1(X) + Ch(X, IV4, IV5).
+- **New 5-round structure:** H7 bits 1 and 0 sum to zero over the nonce's
+  low byte too often (0.5272, z = 445; 0.5038, z = 63). Nothing at 6 or 8
+  rounds.
 
 ## 2. Disproven or invalidated
 
-- **Mining shortcuts from the characteristic: none.** At 64 rounds,
-  neighbours of share hits are target hits at 1.004x the chance rate (CI
-  0.983 to 1.026). Inputs meeting the trail conditions hit at 1.010x
-  (0.990 to 1.031). The two strategies cost 0.9997x and about 81x the
-  exhaustive work.
-- **Statistical bias in full-round SHA-256 / SHA256d / header hashing:
-  none.** This holds across 32 seeds and a calibrated control.
-- **Invalidated by our own reruns, kept with errata:**
-  - the schedule-folding timing in schedule-0001 (wrong constant);
-  - the sequential and grouped trail estimators (15.9 and 6.9 bits off);
-  - the SMT scaling interpretation (heavy-tailed solve times; "the encoding
-    is the bottleneck" withdrawn);
-  - two hardware register counts.
-- A registry id bug was found and fixed before it overwrote anything.
+- **Mining shortcuts: none.** Every candidate algorithm (class selection,
+  linear selection, neighbours, trail filters, early abort, SAT/SMT, Grover)
+  either measures at the exhaustive work at 64 rounds, is cost per hash
+  only, or is a speculative model.
+- **Invalidated by our own checks, before publication:** a normal
+  approximation on tiny expected counts (false significance); a solver
+  window that let a late W3 difference count for free; W0 trails, which no
+  miner can reach under one midstate (errata on trail-search-0001/0002); an
+  incomplete provenance fingerprint.
+- Earlier corrections (schedule-0001, estimators, SMT scaling, register
+  counts, registry ids) stand as recorded.
 
 ## 3. Still uncertain
 
-- **Solver scaling with target size.** The current data can't measure it.
-  It needs fixed generous timeouts and more instances.
-- **The 5-round anti-correlation** (A = 0.69). It is measured but not yet
+- **Characteristics past round 5:** the solver bound is >= 50 bits (nonce)
+  and >= 39 (nonce + time) after the time budget; the optima are unknown.
+- **Why H7 bits 0 and 1 lose degree at 5 rounds:** located and reduced to
+  c ^ X0 ^ X6 ^ X11 ^ X25 for bit 0; the condition on the fixed bits is not
   derived.
-- **One header-specific trail (W3[10]) runs 0.09 bits above its estimate**,
-  probably early-round non-uniformity with fixed padding.
-- **FPGA throughput and every energy figure are estimates.** No RTL was
-  synthesized and no power was measured.
-- **Three hypotheses rest on one seed** (H-STAT-01, H-STAT-02, H-SCHED-01).
+- **Solver scaling with target size**, the W3[10] trail offset, FPGA
+  throughput and every energy figure (unchanged from 2026-11-21).
+- **Every hypothesis rests on one run seed** (kinds use several seeds or
+  templates inside); the board queues reruns on a new seed.
 
 ## 4. Does any result change the expected work of Bitcoin mining?
 
-**No.** Every engineering optimisation lowers the cost per hash and leaves
-the number of hashes per block at exactly the exhaustive value
-(`expected_work_per_block_factor` 1.0). Every structure found vanishes long
-before 64 rounds. The only measured work reduction is at 4 rounds per
-compression (0.045x), where the function is affine in the nonce; Bitcoin
-uses 64. Measured directly on full SHA256d with the real target comparison,
-no trail-based strategy changes the probability of SHA256d(header) ≤ target.
+**No.** At 64 rounds nothing departs from the random-function null, over the
+full nonce space of every tested template, and no held-out strategy beats
+exhaustive search. Work reductions exist only at 4 rounds per compression;
+measurable structure stops at 5. Grover cuts queries in a model but needs
+about 4.5 × 10^15 machines to meet the block interval at 80 bits.
 
-## 5. The three most promising next directions
+## 5. Next
 
-1. **GPU kernel v2 (engineering, measurable now).** Port the CPU kernel's
-   host precompute, early reject and folded schedule to WGSL, and put
-   several nonces in each thread. Today it does 491.8 MH/s; my rough ALU
-   ceiling estimate for the RX 7600 is about 1.4 GH/s. Every change is gated
-   by the existing GPU/CPU parity checks and the end-to-end benchmark.
-2. **Close the open reduced-round questions properly.** Derive the 5-round
-   anti-correlation as was done for 4 rounds. Rerun the SMT scaling study
-   with fixed timeouts, 10+ instances and a native SAT solver. Add second
-   seeds for the single-seed hypotheses. This is where the lab's methodology
-   is strongest, and each item ends in an exact, reproducible statement.
-3. **Real hardware numbers.** Emit RTL for one round stage from the
-   hardware model, check it against the Rust simulator, and synthesize it.
-   Measure power with a wall-plug meter. That replaces the two largest
-   groups of assumptions (area/clock, energy) with measurements.
+1. **GPU kernel v2** (engineering, cost per hash): CPU tricks in WGSL,
+   target about 3x. A separate session was set up for it in its own worktree;
+   merging it changes the source fingerprint, so the full suite must be
+   rerun afterwards.
+2. **`bmr research evolve` queue:** smt at 5-7 rounds (frontier), trail-sat
+   with 4x the solver budget, new-seed replications, and first experiments
+   for the untested families (probabilistic neutral bits, differential-linear).
+3. **Derive the 5-round degree condition** and check it with z3 over all
+   templates.

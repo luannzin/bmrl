@@ -1,0 +1,2019 @@
+{
+  "assumptions": [
+    "Template = 80-byte header with the nonce field enumerated. Real templates are mainnet blocks 0, 1, 100000 and 125552; synthetic ones have a BIP320 version, a previous hash with 80 leading zero bits, a random merkle root, a 2023-2026 time and a 0x17 difficulty exponent.",
+    "Real templates contain a known block-level hit, so their count of top-word zeros is size-biased (1 + Poisson); they are excluded from that test and serve as positive controls.",
+    "A hit at k bits means the hash, read as Bitcoin's 256-bit number, has >= k leading zero bits: the real target comparison for a target of that form.",
+    "Random-function expectations: image size and zero-preimage counts of n balls in 2^32 bins (exact moments); cube sums and sub-cube zero bits uniform; hits in a class of fraction f binomial.",
+    "Discovery templates choose each family's best strategy; held-out templates measure it once. A family is flagged only when the discovery maximum (Bonferroni over the family) and the held-out test are both significant.",
+    "Reduced-round variants cut all three compressions to r rounds; they are positive controls, never evidence about 64 rounds.",
+    "Significance: Bonferroni over every p-value of every round count."
+  ],
+  "baseline": "Exhaustive search: every nonce costs one SHA256d evaluation and hits with probability 2^-k, so a strategy with held-out amplification A needs 1/A of the exhaustive work per hit.",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. 64 p-values, Bonferroni threshold 1.563e-4. 4 rounds: 18 significant tests; image z range [11.32, 11.32]; best held-out amplification 1.0000 (linear). 64 rounds: 0 significant tests; image z range [-1.77, 0.71]; best held-out amplification 1.0723 (neighbour).",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [
+    {
+      "p": 1.104961080527432e-29,
+      "rounds": 4,
+      "test": "synthetic-0 image size"
+    },
+    {
+      "p": 1.104961080527432e-29,
+      "rounds": 4,
+      "test": "synthetic-1 image size"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "leading-zero histogram (pooled)"
+    },
+    {
+      "p": 8.262281242584787e-306,
+      "rounds": 4,
+      "test": "cube-sum zero bits (pooled)"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "cube-sum zero words (pooled)"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 8"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 9"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 10"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 11"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 12"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 13"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 14"
+    },
+    {
+      "p": 0.0,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 15"
+    },
+    {
+      "p": 7.704131855910047e-219,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 16"
+    },
+    {
+      "p": 1.7906405408978128e-144,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 17"
+    },
+    {
+      "p": 2.462102329600502e-72,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 18"
+    },
+    {
+      "p": 1.6354280474595431e-35,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 19"
+    },
+    {
+      "p": 1.473810355317646e-14,
+      "rounds": 4,
+      "test": "sub-cube zero rate, dimension 20"
+    }
+  ],
+  "dataset": {
+    "description": "Synthetic template i: SplitMix64::stream(seed ^ 0xa71a5, i). The same synthetic templates are used at every round count. Discovery = first half of the synthetic templates, held-out = second half plus the real templates.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 3.1046565,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": false,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "9708022171a858b505250023d8c55c8994bbe202",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "ea831c438cd631170fa6dca29c2c8cd604b18d31e5475885402077a04183112b"
+  },
+  "finished_at": "2026-11-22T01:29:20Z",
+  "hypothesis": "For a fixed block template, the map nonce -> SHA256d(header) over all 2^32 nonces departs from a random function, or some input-selection strategy (fixed-bit subspace, linear half-space, byte class, Hamming class, nonce neighbour or nonce difference) selects nonces whose hash meets a share target more often than 2^-k, on held-out templates.",
+  "hypothesis_id": "H-ATLAS-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "nonce-atlas-0001",
+  "implementation": [
+    "experiment_engine::nonce_atlas",
+    "cpu_backend::Prepared::hash8",
+    "bitcoin_header::HeaderMidstate::with_rounds"
+  ],
+  "kind": "nonce-atlas",
+  "methodology": "Enumerate all 2^nonce_bits nonces of each template with an 8-lane AVX2 evaluator; accumulate a 2^32-bit image bitmap, top-word zeros, the leading-zero histogram, a binary XOR tree over the nonce index (sub-cube sums and halves) and the hit list. Score all strategies on discovery templates, then the selected ones on held-out templates.",
+  "name": "Exhaustive nonce-space atlas: random-function tests and every input-selection strategy",
+  "null_hypothesis": "Every random-function statistic matches its exact expectation, and every strategy's held-out hit rate equals 2^-k: no selection rule computed without SHA256d raises P(hash <= target) per evaluation.",
+  "observations": {
+    "bonferroni_threshold": 0.00015625,
+    "configurations": [
+      {
+        "all_differences": {
+          "discovery": [
+            {
+              "differences": [
+                {
+                  "difference": 0,
+                  "expected_per_difference": -0.0,
+                  "kind": "xor",
+                  "max_multiplicity": 0,
+                  "p_max": 1.0
+                },
+                {
+                  "difference": 0,
+                  "expected_per_difference": -0.0,
+                  "kind": "modular",
+                  "max_multiplicity": 0,
+                  "p_max": 1.0
+                }
+              ],
+              "pair_hits": 0,
+              "template": "synthetic-0"
+            }
+          ],
+          "held_out": [
+            {
+              "difference": 0,
+              "held_out": null,
+              "held_out_expected": 0.0,
+              "held_out_pairs": 0,
+              "kind": "xor",
+              "p_discovery_best": 1.0,
+              "p_held_out": 1.0
+            },
+            {
+              "difference": 0,
+              "held_out": null,
+              "held_out_expected": 0.0,
+              "held_out_pairs": 0,
+              "kind": "modular",
+              "p_discovery_best": 1.0,
+              "p_held_out": 1.0
+            }
+          ],
+          "k_pair": 8
+        },
+        "deviation_detected": true,
+        "pooled": {
+          "cube_zero_bits": {
+            "bits": 10752,
+            "z": 37.37998652831676,
+            "zero_words": 84,
+            "zeros": 7314
+          },
+          "lz_chi2": {
+            "df": 18,
+            "p": 0.0,
+            "stat": 1048576.0
+          },
+          "sub_cube_levels": [
+            {
+              "dimension": 8,
+              "nodes": 8192,
+              "z": 599.6721256879484,
+              "zero_rate": 0.7070469856262207,
+              "zero_rate_per_word": [
+                0.5010337829589844,
+                0.4990425109863281,
+                0.6943206787109375,
+                1.0,
+                0.5001602172851562,
+                0.5256309509277344,
+                0.936187744140625,
+                1.0
+              ]
+            },
+            {
+              "dimension": 9,
+              "nodes": 4096,
+              "z": 400.091796875,
+              "zero_rate": 0.6953573226928711,
+              "zero_rate_per_word": [
+                0.49779510498046875,
+                0.5000381469726562,
+                0.6409759521484375,
+                1.0,
+                0.5022125244140625,
+                0.5071640014648438,
+                0.9146728515625,
+                1.0
+              ]
+            },
+            {
+              "dimension": 10,
+              "nodes": 2048,
+              "z": 273.7469990744342,
+              "zero_rate": 0.6890316009521484,
+              "zero_rate_per_word": [
+                0.4999847412109375,
+                0.5005340576171875,
+                0.630218505859375,
+                1.0,
+                0.49859619140625,
+                0.4939727783203125,
+                0.888946533203125,
+                1.0
+              ]
+            },
+            {
+              "dimension": 11,
+              "nodes": 1024,
+              "z": 191.88671875,
+              "zero_rate": 0.6873893737792969,
+              "zero_rate_per_word": [
+                0.500946044921875,
+                0.502105712890625,
+                0.6304931640625,
+                1.0,
+                0.4993896484375,
+                0.499664306640625,
+                0.86651611328125,
+                1.0
+              ]
+            },
+            {
+              "dimension": 12,
+              "nodes": 512,
+              "z": 135.89156023756158,
+              "zero_rate": 0.6876754760742188,
+              "zero_rate_per_word": [
+                0.50030517578125,
+                0.50653076171875,
+                0.63037109375,
+                1.0,
+                0.4947509765625,
+                0.50787353515625,
+                0.861572265625,
+                1.0
+              ]
+            },
+            {
+              "dimension": 13,
+              "nodes": 256,
+              "z": 93.8828125,
+              "zero_rate": 0.6833648681640625,
+              "zero_rate_per_word": [
+                0.5001220703125,
+                0.5008544921875,
+                0.634521484375,
+                1.0,
+                0.509765625,
+                0.5020751953125,
+                0.819580078125,
+                1.0
+              ]
+            },
+            {
+              "dimension": 14,
+              "nodes": 128,
+              "z": 64.60083358746473,
+              "zero_rate": 0.678436279296875,
+              "zero_rate_per_word": [
+                0.497802734375,
+                0.510986328125,
+                0.63330078125,
+                1.0,
+                0.49462890625,
+                0.492431640625,
+                0.79833984375,
+                1.0
+              ]
+            },
+            {
+              "dimension": 15,
+              "nodes": 64,
+              "z": 44.515625,
+              "zero_rate": 0.67388916015625,
+              "zero_rate_per_word": [
+                0.51513671875,
+                0.49072265625,
+                0.634765625,
+                1.0,
+                0.4853515625,
+                0.48681640625,
+                0.7783203125,
+                1.0
+              ]
+            },
+            {
+              "dimension": 16,
+              "nodes": 32,
+              "z": 31.576737197361762,
+              "zero_rate": 0.6744384765625,
+              "zero_rate_per_word": [
+                0.4873046875,
+                0.4697265625,
+                0.65625,
+                1.0,
+                0.48828125,
+                0.5205078125,
+                0.7734375,
+                1.0
+              ]
+            },
+            {
+              "dimension": 17,
+              "nodes": 16,
+              "z": 25.59375,
+              "zero_rate": 0.699951171875,
+              "zero_rate_per_word": [
+                0.548828125,
+                0.505859375,
+                0.66015625,
+                1.0,
+                0.54296875,
+                0.509765625,
+                0.83203125,
+                1.0
+              ]
+            },
+            {
+              "dimension": 18,
+              "nodes": 8,
+              "z": 17.987028746432802,
+              "zero_rate": 0.69873046875,
+              "zero_rate_per_word": [
+                0.50390625,
+                0.48828125,
+                0.6953125,
+                1.0,
+                0.5,
+                0.53515625,
+                0.8671875,
+                1.0
+              ]
+            },
+            {
+              "dimension": 19,
+              "nodes": 4,
+              "z": 12.4375,
+              "zero_rate": 0.6943359375,
+              "zero_rate_per_word": [
+                0.5234375,
+                0.4765625,
+                0.6875,
+                1.0,
+                0.515625,
+                0.5078125,
+                0.84375,
+                1.0
+              ]
+            },
+            {
+              "dimension": 20,
+              "nodes": 2,
+              "z": 7.689786245403703,
+              "zero_rate": 0.669921875,
+              "zero_rate_per_word": [
+                0.484375,
+                0.421875,
+                0.59375,
+                1.0,
+                0.4375,
+                0.546875,
+                0.875,
+                1.0
+              ]
+            }
+          ],
+          "zero_preimages_synthetic": {
+            "count": 0,
+            "expected": 0.00048828125
+          }
+        },
+        "rounds": 4,
+        "significant": [
+          {
+            "p": 1.104961080527432e-29,
+            "test": "synthetic-0 image size"
+          },
+          {
+            "p": 1.104961080527432e-29,
+            "test": "synthetic-1 image size"
+          },
+          {
+            "p": 0.0,
+            "test": "leading-zero histogram (pooled)"
+          },
+          {
+            "p": 8.262281242584787e-306,
+            "test": "cube-sum zero bits (pooled)"
+          },
+          {
+            "p": 0.0,
+            "test": "cube-sum zero words (pooled)"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 8"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 9"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 10"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 11"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 12"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 13"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 14"
+          },
+          {
+            "p": 0.0,
+            "test": "sub-cube zero rate, dimension 15"
+          },
+          {
+            "p": 7.704131855910047e-219,
+            "test": "sub-cube zero rate, dimension 16"
+          },
+          {
+            "p": 1.7906405408978128e-144,
+            "test": "sub-cube zero rate, dimension 17"
+          },
+          {
+            "p": 2.462102329600502e-72,
+            "test": "sub-cube zero rate, dimension 18"
+          },
+          {
+            "p": 1.6354280474595431e-35,
+            "test": "sub-cube zero rate, dimension 19"
+          },
+          {
+            "p": 1.473810355317646e-14,
+            "test": "sub-cube zero rate, dimension 20"
+          }
+        ],
+        "strategies": {
+          "byte": {
+            "best_structure": {
+              "df": 1,
+              "discovery_chi2": 0.0,
+              "held_out": null,
+              "held_out_chi2": 0.0,
+              "held_out_df": 1,
+              "p_family": 1.0,
+              "p_held_out": 1.0,
+              "strategy": "nonce byte 2 = 0xff"
+            },
+            "best_usable": {
+              "discovery": null,
+              "discovery_z": 0.0,
+              "held_out": null,
+              "p_family": 1.0,
+              "p_held_out": 0.5000000150000002,
+              "strategy": "nonce byte 0 = 0x00"
+            },
+            "discovery_templates": 1,
+            "strategies": 768
+          },
+          "linear": {
+            "best_structure": {
+              "df": 1,
+              "discovery_chi2": 0.0,
+              "held_out_chi2": 0.0,
+              "held_out_df": 1,
+              "p_family": 1.0,
+              "p_held_out": 1.0,
+              "strategy": "mask 0x00000001"
+            },
+            "best_usable": {
+              "discovery": {
+                "A": 1.0,
+                "work_factor": 1.0,
+                "z": 0.0
+              },
+              "held_out": {
+                "A": 1.0,
+                "work_factor": 1.0,
+                "z": 0.0
+              },
+              "p_family": 1.0,
+              "p_held_out": 0.5000000150000002,
+              "strategy": "parity(nonce & 0x00000001) = 0"
+            },
+            "projections": [
+              {
+                "shift": 0,
+                "width": 20
+              }
+            ],
+            "strategies": 1048575
+          },
+          "neighbour": {
+            "best_structure": {
+              "df": 1,
+              "discovery_chi2": 0.0,
+              "held_out": null,
+              "held_out_chi2": 0.0,
+              "held_out_df": 1,
+              "p_family": 1.0,
+              "p_held_out": 1.0,
+              "strategy": "x + 1024"
+            },
+            "best_usable": {
+              "discovery": null,
+              "discovery_z": 0.0,
+              "held_out": null,
+              "p_family": 1.0,
+              "p_held_out": 0.5000000150000002,
+              "strategy": "x ^ 0x00000001"
+            },
+            "discovery_templates": 1,
+            "strategies": 1234
+          },
+          "subspace": {
+            "best_structure": {
+              "df": 1,
+              "discovery_chi2": 0.0,
+              "held_out": null,
+              "held_out_chi2": 0.0,
+              "held_out_df": 1,
+              "p_family": 1.0,
+              "p_held_out": 1.0,
+              "strategy": "nonce bits 18,19 = 1,1"
+            },
+            "best_usable": {
+              "discovery": null,
+              "discovery_z": 0.0,
+              "held_out": null,
+              "p_family": 1.0,
+              "p_held_out": 0.5000000150000002,
+              "strategy": "nonce bit 0 = 0"
+            },
+            "discovery_templates": 1,
+            "strategies": 800
+          },
+          "weight": {
+            "best_structure": {
+              "df": 1,
+              "discovery_chi2": 0.0,
+              "held_out": null,
+              "held_out_chi2": 0.0,
+              "held_out_df": 1,
+              "p_family": 1.0,
+              "p_held_out": 1.0,
+              "strategy": "nonce Hamming weight 20"
+            },
+            "best_usable": {
+              "discovery": null,
+              "discovery_z": 0.0,
+              "held_out": null,
+              "p_family": 1.0,
+              "p_held_out": 0.5000000150000002,
+              "strategy": "nonce Hamming weight 0"
+            },
+            "discovery_templates": 1,
+            "strategies": 21
+          }
+        },
+        "templates": [
+          {
+            "cube": {
+              "full_cube_xor": "4def05240dd95fce1d72780000000000172da02af68429460398000000000000",
+              "full_cube_zero_bits": 178,
+              "half_cube_bits": 5120,
+              "half_cubes_zero_bits": 3511,
+              "zero_words": [
+                "full cube H3",
+                "full cube H7",
+                "bit 0 = 0 H3",
+                "bit 0 = 0 H7",
+                "bit 1 = 0 H3",
+                "bit 1 = 0 H7",
+                "bit 2 = 0 H3",
+                "bit 2 = 0 H7",
+                "bit 3 = 0 H3",
+                "bit 3 = 0 H7",
+                "bit 4 = 0 H3",
+                "bit 4 = 0 H7",
+                "bit 5 = 0 H3",
+                "bit 5 = 0 H7",
+                "bit 6 = 0 H3",
+                "bit 6 = 0 H7",
+                "bit 7 = 0 H3",
+                "bit 7 = 0 H7",
+                "bit 8 = 0 H3",
+                "bit 8 = 0 H7",
+                "bit 9 = 0 H3",
+                "bit 9 = 0 H7",
+                "bit 10 = 0 H3",
+                "bit 10 = 0 H7",
+                "bit 11 = 0 H3",
+                "bit 11 = 0 H7",
+                "bit 12 = 0 H3",
+                "bit 12 = 0 H7",
+                "bit 13 = 0 H3",
+                "bit 13 = 0 H7",
+                "bit 14 = 0 H3",
+                "bit 14 = 0 H7",
+                "bit 15 = 0 H3",
+                "bit 15 = 0 H7",
+                "bit 16 = 0 H3",
+                "bit 16 = 0 H7",
+                "bit 17 = 0 H3",
+                "bit 17 = 0 H7",
+                "bit 18 = 0 H3",
+                "bit 18 = 0 H7",
+                "bit 19 = 0 H3",
+                "bit 19 = 0 H7"
+              ]
+            },
+            "expected_hits_at_k_store": 16384.0,
+            "hit_sample": [],
+            "hits_at_k_store": 0,
+            "hits_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "image": {
+              "expected": 1048448.0105380714,
+              "observed": 1048576,
+              "sd": 11.31140157411557,
+              "z": 11.315084261661308
+            },
+            "known_block": null,
+            "lz_histogram": [
+              0,
+              1048576,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonces": 1048576,
+            "role": "discovery",
+            "template": "synthetic-0",
+            "top_word_zero_preimages": {
+              "count": 0,
+              "expected": 0.000244140625,
+              "nonces": []
+            }
+          },
+          {
+            "cube": {
+              "full_cube_xor": "e26dd43e75ec1d6cf8b3e400000000009cffced7a3025b762060000000000000",
+              "full_cube_zero_bits": 165,
+              "half_cube_bits": 5120,
+              "half_cubes_zero_bits": 3460,
+              "zero_words": [
+                "full cube H3",
+                "full cube H7",
+                "bit 0 = 0 H3",
+                "bit 0 = 0 H7",
+                "bit 1 = 0 H3",
+                "bit 1 = 0 H7",
+                "bit 2 = 0 H3",
+                "bit 2 = 0 H7",
+                "bit 3 = 0 H3",
+                "bit 3 = 0 H7",
+                "bit 4 = 0 H3",
+                "bit 4 = 0 H7",
+                "bit 5 = 0 H3",
+                "bit 5 = 0 H7",
+                "bit 6 = 0 H3",
+                "bit 6 = 0 H7",
+                "bit 7 = 0 H3",
+                "bit 7 = 0 H7",
+                "bit 8 = 0 H3",
+                "bit 8 = 0 H7",
+                "bit 9 = 0 H3",
+                "bit 9 = 0 H7",
+                "bit 10 = 0 H3",
+                "bit 10 = 0 H7",
+                "bit 11 = 0 H3",
+                "bit 11 = 0 H7",
+                "bit 12 = 0 H3",
+                "bit 12 = 0 H7",
+                "bit 13 = 0 H3",
+                "bit 13 = 0 H7",
+                "bit 14 = 0 H3",
+                "bit 14 = 0 H7",
+                "bit 15 = 0 H3",
+                "bit 15 = 0 H7",
+                "bit 16 = 0 H3",
+                "bit 16 = 0 H7",
+                "bit 17 = 0 H3",
+                "bit 17 = 0 H7",
+                "bit 18 = 0 H3",
+                "bit 18 = 0 H7",
+                "bit 19 = 0 H3",
+                "bit 19 = 0 H7"
+              ]
+            },
+            "expected_hits_at_k_store": 16384.0,
+            "hit_sample": [],
+            "hits_at_k_store": 0,
+            "hits_digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+            "image": {
+              "expected": 1048448.0105380714,
+              "observed": 1048576,
+              "sd": 11.31140157411557,
+              "z": 11.315084261661308
+            },
+            "known_block": null,
+            "lz_histogram": [
+              1048576,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonces": 1048576,
+            "role": "held-out",
+            "template": "synthetic-1",
+            "top_word_zero_preimages": {
+              "count": 0,
+              "expected": 0.000244140625,
+              "nonces": []
+            }
+          }
+        ],
+        "tests": 31
+      },
+      {
+        "all_differences": {
+          "discovery": [
+            {
+              "differences": [
+                {
+                  "difference": 789450,
+                  "expected_per_difference": 8.293669980688076,
+                  "kind": "xor",
+                  "max_multiplicity": 27,
+                  "p_max": 0.19567103640559083
+                },
+                {
+                  "difference": 43280,
+                  "expected_per_difference": 16.587339961376152,
+                  "kind": "modular",
+                  "max_multiplicity": 41,
+                  "p_max": 0.1517605073327962
+                }
+              ],
+              "pair_hits": 4171,
+              "template": "synthetic-0"
+            },
+            {
+              "differences": [
+                {
+                  "difference": 497230,
+                  "expected_per_difference": 7.873557923849034,
+                  "kind": "xor",
+                  "max_multiplicity": 24,
+                  "p_max": 0.9503670390449181
+                },
+                {
+                  "difference": 367067,
+                  "expected_per_difference": 15.747115847698067,
+                  "kind": "modular",
+                  "max_multiplicity": 37,
+                  "p_max": 0.8417719779923132
+                }
+              ],
+              "pair_hits": 4064,
+              "template": "synthetic-1"
+            }
+          ],
+          "held_out": [
+            {
+              "difference": 789450,
+              "held_out": {
+                "A": 1.3790860805126124,
+                "ci95": [
+                  0.9107719504460454,
+                  2.0882048646010736
+                ],
+                "expected": 15.952593758195647,
+                "observed": 22.0,
+                "work_factor": 0.7251178980998021,
+                "work_factor_ci95": [
+                  0.47888021762224847,
+                  1.0979696942909316
+                ]
+              },
+              "held_out_expected": 15.952593758195647,
+              "held_out_pairs": 22,
+              "kind": "xor",
+              "p_discovery_best": 0.19567103640559083,
+              "p_held_out": 0.08722181755382041
+            },
+            {
+              "difference": 43280,
+              "held_out": {
+                "A": 1.1283431567830464,
+                "ci95": [
+                  0.8150750152165108,
+                  1.5620136253605288
+                ],
+                "expected": 31.905187516391294,
+                "observed": 36.0,
+                "work_factor": 0.886255208788647,
+                "work_factor_ci95": [
+                  0.6401992810844974,
+                  1.226880938970221
+                ]
+              },
+              "held_out_expected": 31.905187516391294,
+              "held_out_pairs": 36,
+              "kind": "modular",
+              "p_discovery_best": 0.1517605073327962,
+              "p_held_out": 0.2565322584246239
+            }
+          ],
+          "k_pair": 8
+        },
+        "deviation_detected": false,
+        "pooled": {
+          "cube_zero_bits": {
+            "bits": 21504,
+            "z": 2.00487686654318,
+            "zero_words": 0,
+            "zeros": 10899
+          },
+          "lz_chi2": {
+            "df": 19,
+            "p": 0.04213890404245134,
+            "stat": 30.83015203475952
+          },
+          "sub_cube_levels": [
+            {
+              "dimension": 8,
+              "nodes": 16384,
+              "z": 2.0654296875,
+              "zero_rate": 0.5005042552947998,
+              "zero_rate_per_word": [
+                0.5001029968261719,
+                0.4997711181640625,
+                0.500274658203125,
+                0.5003795623779297,
+                0.5012531280517578,
+                0.5008258819580078,
+                0.5010166168212891,
+                0.5004100799560547
+              ]
+            },
+            {
+              "dimension": 9,
+              "nodes": 8192,
+              "z": 1.2388179350084632,
+              "zero_rate": 0.5004277229309082,
+              "zero_rate_per_word": [
+                0.5008621215820312,
+                0.4995574951171875,
+                0.5013961791992188,
+                0.4998359680175781,
+                0.5008049011230469,
+                0.4997062683105469,
+                0.5001335144042969,
+                0.5011253356933594
+              ]
+            },
+            {
+              "dimension": 10,
+              "nodes": 4096,
+              "z": 0.283203125,
+              "zero_rate": 0.5001382827758789,
+              "zero_rate_per_word": [
+                0.4994964599609375,
+                0.503387451171875,
+                0.502349853515625,
+                0.49739837646484375,
+                0.5003585815429688,
+                0.49816131591796875,
+                0.49755096435546875,
+                0.5024032592773438
+              ]
+            },
+            {
+              "dimension": 11,
+              "nodes": 2048,
+              "z": -1.8865387951187966,
+              "zero_rate": 0.49869728088378906,
+              "zero_rate_per_word": [
+                0.49981689453125,
+                0.497344970703125,
+                0.501983642578125,
+                0.4983062744140625,
+                0.4989776611328125,
+                0.4975128173828125,
+                0.4983673095703125,
+                0.4972686767578125
+              ]
+            },
+            {
+              "dimension": 12,
+              "nodes": 1024,
+              "z": 0.01171875,
+              "zero_rate": 0.5000114440917969,
+              "zero_rate_per_word": [
+                0.50201416015625,
+                0.50128173828125,
+                0.5018310546875,
+                0.498382568359375,
+                0.501007080078125,
+                0.496856689453125,
+                0.503326416015625,
+                0.495391845703125
+              ]
+            },
+            {
+              "dimension": 13,
+              "nodes": 512,
+              "z": -0.6573883356343684,
+              "zero_rate": 0.49909210205078125,
+              "zero_rate_per_word": [
+                0.5040283203125,
+                0.5030517578125,
+                0.4962158203125,
+                0.49432373046875,
+                0.49896240234375,
+                0.49871826171875,
+                0.49871826171875,
+                0.49871826171875
+              ]
+            },
+            {
+              "dimension": 14,
+              "nodes": 256,
+              "z": 0.3828125,
+              "zero_rate": 0.5007476806640625,
+              "zero_rate_per_word": [
+                0.498779296875,
+                0.510986328125,
+                0.501953125,
+                0.5050048828125,
+                0.4940185546875,
+                0.5003662109375,
+                0.4984130859375,
+                0.4964599609375
+              ]
+            },
+            {
+              "dimension": 15,
+              "nodes": 128,
+              "z": 2.3754368430485577,
+              "zero_rate": 0.506561279296875,
+              "zero_rate_per_word": [
+                0.5087890625,
+                0.51708984375,
+                0.5078125,
+                0.488037109375,
+                0.505615234375,
+                0.505615234375,
+                0.500244140625,
+                0.519287109375
+              ]
+            },
+            {
+              "dimension": 16,
+              "nodes": 64,
+              "z": -1.140625,
+              "zero_rate": 0.49554443359375,
+              "zero_rate_per_word": [
+                0.513671875,
+                0.490234375,
+                0.49609375,
+                0.48388671875,
+                0.52197265625,
+                0.48193359375,
+                0.50244140625,
+                0.47412109375
+              ]
+            },
+            {
+              "dimension": 17,
+              "nodes": 32,
+              "z": 0.508232998977831,
+              "zero_rate": 0.5028076171875,
+              "zero_rate_per_word": [
+                0.49609375,
+                0.478515625,
+                0.51171875,
+                0.5068359375,
+                0.5224609375,
+                0.4814453125,
+                0.5087890625,
+                0.5166015625
+              ]
+            },
+            {
+              "dimension": 18,
+              "nodes": 16,
+              "z": 0.15625,
+              "zero_rate": 0.501220703125,
+              "zero_rate_per_word": [
+                0.51171875,
+                0.4921875,
+                0.47265625,
+                0.474609375,
+                0.548828125,
+                0.505859375,
+                0.501953125,
+                0.501953125
+              ]
+            },
+            {
+              "dimension": 19,
+              "nodes": 8,
+              "z": 1.1932426932522988,
+              "zero_rate": 0.51318359375,
+              "zero_rate_per_word": [
+                0.5234375,
+                0.4921875,
+                0.4921875,
+                0.49609375,
+                0.55078125,
+                0.51953125,
+                0.55078125,
+                0.48046875
+              ]
+            },
+            {
+              "dimension": 20,
+              "nodes": 4,
+              "z": -0.4375,
+              "zero_rate": 0.4931640625,
+              "zero_rate_per_word": [
+                0.5,
+                0.4375,
+                0.484375,
+                0.5078125,
+                0.5078125,
+                0.4921875,
+                0.5234375,
+                0.4921875
+              ]
+            }
+          ],
+          "zero_preimages_synthetic": {
+            "count": 0,
+            "expected": 0.0009765625
+          }
+        },
+        "rounds": 64,
+        "significant": [],
+        "strategies": {
+          "byte": {
+            "best_structure": {
+              "df": 2,
+              "discovery_chi2": 14.343233497762373,
+              "held_out": {
+                "A": 1.0287958906179182,
+                "ci95": [
+                  0.8681788966992423,
+                  1.219127749564474
+                ],
+                "expected": 129.27734375,
+                "observed": 133.0,
+                "work_factor": 0.9720101033834586,
+                "work_factor_ci95": [
+                  0.8202585827098464,
+                  1.1518363367295987
+                ]
+              },
+              "held_out_chi2": 0.4798780978661751,
+              "held_out_df": 2,
+              "p_family": 0.5898853896790688,
+              "p_held_out": 0.7866758083351523,
+              "strategy": "nonce byte 1 = 0xa9"
+            },
+            "best_usable": {
+              "discovery": {
+                "A": 1.306162353731936,
+                "ci95": [
+                  1.1225150631564436,
+                  1.5198549670319923
+                ],
+                "expected": 127.85546875,
+                "observed": 167.0,
+                "work_factor": 0.7656016092814372,
+                "work_factor_ci95": [
+                  0.657957516797029,
+                  0.8908566422156164
+                ]
+              },
+              "discovery_z": 3.4686568269756,
+              "held_out": {
+                "A": 1.0287958906179182,
+                "ci95": [
+                  0.8681788966992423,
+                  1.219127749564474
+                ],
+                "expected": 129.27734375,
+                "observed": 133.0,
+                "work_factor": 0.9720101033834586,
+                "work_factor_ci95": [
+                  0.8202585827098464,
+                  1.1518363367295987
+                ]
+              },
+              "p_family": 0.20085779706337686,
+              "p_held_out": 0.3714364862412015,
+              "strategy": "nonce byte 1 = 0xa9"
+            },
+            "discovery_templates": 2,
+            "strategies": 768
+          },
+          "linear": {
+            "best_structure": {
+              "df": 2,
+              "discovery_chi2": 27.357792288261166,
+              "held_out_chi2": 0.7012084734629689,
+              "held_out_df": 2,
+              "p_family": 1.0,
+              "p_held_out": 0.7042624199062851,
+              "strategy": "mask 0x0006e121"
+            },
+            "best_usable": {
+              "discovery": {
+                "A": 1.0279551495524122,
+                "work_factor": 0.9728050882720085,
+                "z": 5.0575648132729905
+              },
+              "held_out": {
+                "A": 1.0040187339477262,
+                "work_factor": 0.9959973516311544,
+                "z": 0.7310893345191067
+              },
+              "p_family": 0.4452712071310134,
+              "p_held_out": 0.23236228166061235,
+              "strategy": "parity(nonce & 0x0008c38a) = 0"
+            },
+            "projections": [
+              {
+                "shift": 0,
+                "width": 20
+              }
+            ],
+            "strategies": 1048575
+          },
+          "neighbour": {
+            "best_structure": {
+              "df": 2,
+              "discovery_chi2": 13.260936521764204,
+              "held_out": {
+                "A": 0.9899684864644381,
+                "ci95": [
+                  0.9082327313775027,
+                  1.0790599923725301
+                ],
+                "expected": 522.2388460529767,
+                "observed": 517.0,
+                "work_factor": 1.0101331645125273,
+                "work_factor_ci95": [
+                  0.9267325330089379,
+                  1.101039376199661
+                ]
+              },
+              "held_out_chi2": 0.4499644744607605,
+              "held_out_df": 2,
+              "p_family": 1.0,
+              "p_held_out": 0.7985304027449815,
+              "strategy": "x + 89"
+            },
+            "best_usable": {
+              "discovery": {
+                "A": 1.147188305113785,
+                "ci95": [
+                  1.057989838863019,
+                  1.2439070386575144
+                ],
+                "expected": 510.8141334668479,
+                "observed": 586.0,
+                "work_factor": 0.8716964734929146,
+                "work_factor_ci95": [
+                  0.8039185959420643,
+                  0.9451886618066783
+                ]
+              },
+              "discovery_z": 3.3266319699548825,
+              "held_out": {
+                "A": 1.0723062909479406,
+                "ci95": [
+                  0.9870957832721586,
+                  1.1648725494448797
+                ],
+                "expected": 522.2388460529767,
+                "observed": 560.0,
+                "work_factor": 0.932569367951744,
+                "work_factor_ci95": [
+                  0.8584630142383819,
+                  1.013072912423012
+                ]
+              },
+              "p_family": 0.5423577555547088,
+              "p_held_out": 0.04922826622178396,
+              "strategy": "x + 336"
+            },
+            "discovery_templates": 2,
+            "strategies": 1234
+          },
+          "subspace": {
+            "best_structure": {
+              "df": 2,
+              "discovery_chi2": 15.4752873623945,
+              "held_out": {
+                "A": 0.9956791056050763,
+                "ci95": [
+                  0.9744091021697393,
+                  1.0174134038064737
+                ],
+                "expected": 8273.75,
+                "observed": 8238.0,
+                "work_factor": 1.0043396455450353,
+                "work_factor_ci95": [
+                  0.9828846329905577,
+                  1.026262991358842
+                ]
+              },
+              "held_out_chi2": 2.7130800824218375,
+              "held_out_df": 2,
+              "p_family": 0.3488783609371077,
+              "p_held_out": 0.2575503507214302,
+              "strategy": "nonce bits 0,16 = 0,0"
+            },
+            "best_usable": {
+              "discovery": {
+                "A": 1.0271607955760593,
+                "ci95": [
+                  1.0054350118553816,
+                  1.0493560374643083
+                ],
+                "expected": 8182.75,
+                "observed": 8405.0,
+                "work_factor": 0.9735574063057704,
+                "work_factor_ci95": [
+                  0.9529654038265473,
+                  0.9945943678196046
+                ]
+              },
+              "discovery_z": 2.8370141150581065,
+              "held_out": {
+                "A": 1.0047439190210001,
+                "ci95": [
+                  0.9833762692929432,
+                  1.026575863515118
+                ],
+                "expected": 8273.75,
+                "observed": 8313.0,
+                "work_factor": 0.9952784794899555,
+                "work_factor_ci95": [
+                  0.974112129010983,
+                  1.0169047507308768
+                ]
+              },
+              "p_family": 1.0,
+              "p_held_out": 0.3091496457780058,
+              "strategy": "nonce bits 7,15 = 0,1"
+            },
+            "discovery_templates": 2,
+            "strategies": 800
+          },
+          "weight": {
+            "best_structure": {
+              "df": 2,
+              "discovery_chi2": 3.8993288460033355,
+              "held_out": {
+                "A": 0.9801057623930608,
+                "ci95": [
+                  0.926176817453227,
+                  1.0371748540602992
+                ],
+                "expected": 1223.3373641967773,
+                "observed": 1199.0,
+                "work_factor": 1.020298051873876,
+                "work_factor_ci95": [
+                  0.9641575825765846,
+                  1.079707439395611
+                ]
+              },
+              "held_out_chi2": 0.5613963507415567,
+              "held_out_df": 2,
+              "p_family": 1.0,
+              "p_held_out": 0.7552562560219024,
+              "strategy": "nonce Hamming weight 14"
+            },
+            "best_usable": {
+              "discovery": {
+                "A": 1.0554745552442228,
+                "ci95": [
+                  0.9991507439896926,
+                  1.1149734346587066
+                ],
+                "expected": 1209.8823165893555,
+                "observed": 1277.0,
+                "work_factor": 0.9474411249720873,
+                "work_factor_ci95": [
+                  0.8968823551442731,
+                  1.000849977859113
+                ]
+              },
+              "discovery_z": 1.9662748598586273,
+              "held_out": {
+                "A": 0.9801057623930608,
+                "ci95": [
+                  0.926176817453227,
+                  1.0371748540602992
+                ],
+                "expected": 1223.3373641967773,
+                "observed": 1199.0,
+                "work_factor": 1.020298051873876,
+                "work_factor_ci95": [
+                  0.9641575825765846,
+                  1.079707439395611
+                ]
+              },
+              "p_family": 0.5173020812325545,
+              "p_held_out": 0.7608545019770747,
+              "strategy": "nonce Hamming weight 14"
+            },
+            "discovery_templates": 2,
+            "strategies": 21
+          }
+        },
+        "templates": [
+          {
+            "cube": {
+              "full_cube_xor": "663533d92c89b375d519fc4741866a3e11a3b88f8b751f67501b29c21f7f964a",
+              "full_cube_zero_bits": 126,
+              "half_cube_bits": 5120,
+              "half_cubes_zero_bits": 2605,
+              "zero_words": []
+            },
+            "expected_hits_at_k_store": 16384.0,
+            "hit_sample": [
+              [
+                108,
+                6
+              ],
+              [
+                157,
+                7
+              ],
+              [
+                159,
+                9
+              ],
+              [
+                312,
+                6
+              ]
+            ],
+            "hits_at_k_store": 16381,
+            "hits_digest": "7ab0914a4cb2058cd220cc516f0bbf303d0741fe514da8ac5c56d04aa1919ef2",
+            "image": {
+              "expected": 1048448.0105380714,
+              "observed": 1048428,
+              "sd": 11.31140157411557,
+              "z": -1.76905911617399
+            },
+            "known_block": null,
+            "lz_histogram": [
+              525108,
+              261702,
+              130621,
+              65492,
+              32827,
+              16445,
+              8164,
+              4046,
+              2073,
+              1011,
+              534,
+              249,
+              153,
+              83,
+              33,
+              17,
+              11,
+              2,
+              4,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonces": 1048576,
+            "role": "discovery",
+            "template": "synthetic-0",
+            "top_word_zero_preimages": {
+              "count": 0,
+              "expected": 0.000244140625,
+              "nonces": []
+            }
+          },
+          {
+            "cube": {
+              "full_cube_xor": "fc5c0d63d1ace8ee9eec7207f82fc3edf39bcecbf7c44e0da9a9cc3a733331a6",
+              "full_cube_zero_bits": 114,
+              "half_cube_bits": 5120,
+              "half_cubes_zero_bits": 2581,
+              "zero_words": []
+            },
+            "expected_hits_at_k_store": 16384.0,
+            "hit_sample": [
+              [
+                35,
+                6
+              ],
+              [
+                128,
+                6
+              ],
+              [
+                241,
+                7
+              ],
+              [
+                261,
+                6
+              ]
+            ],
+            "hits_at_k_store": 16350,
+            "hits_digest": "f7f1604fc7cdaf9b2ae07bd74ee18d11dfff68a302bcb46752472a05d8c7f3cd",
+            "image": {
+              "expected": 1048448.0105380714,
+              "observed": 1048449,
+              "sd": 11.31140157411557,
+              "z": 0.08747474149182956
+            },
+            "known_block": null,
+            "lz_histogram": [
+              525009,
+              262079,
+              130707,
+              65634,
+              32529,
+              16268,
+              8187,
+              4099,
+              2021,
+              1006,
+              519,
+              229,
+              148,
+              69,
+              40,
+              17,
+              7,
+              6,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonces": 1048576,
+            "role": "discovery",
+            "template": "synthetic-1",
+            "top_word_zero_preimages": {
+              "count": 0,
+              "expected": 0.000244140625,
+              "nonces": []
+            }
+          },
+          {
+            "cube": {
+              "full_cube_xor": "910fd9b0bff115f65edf0054231f9d42138b4216f8a3a3f22c2d9b4eb4b8d057",
+              "full_cube_zero_bits": 128,
+              "half_cube_bits": 5120,
+              "half_cubes_zero_bits": 2606,
+              "zero_words": []
+            },
+            "expected_hits_at_k_store": 16384.0,
+            "hit_sample": [
+              [
+                35,
+                9
+              ],
+              [
+                88,
+                8
+              ],
+              [
+                158,
+                6
+              ],
+              [
+                265,
+                6
+              ]
+            ],
+            "hits_at_k_store": 16557,
+            "hits_digest": "1aa8445e82a65ad51d9884e537e5021496abedbc2596f607f7763eaafdf617c1",
+            "image": {
+              "expected": 1048448.0105380714,
+              "observed": 1048448,
+              "sd": 11.31140157411557,
+              "z": -0.0009316326827332747
+            },
+            "known_block": null,
+            "lz_histogram": [
+              524358,
+              261779,
+              130868,
+              65853,
+              32922,
+              16239,
+              8207,
+              4201,
+              2183,
+              989,
+              493,
+              238,
+              133,
+              56,
+              29,
+              15,
+              10,
+              1,
+              1,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonces": 1048576,
+            "role": "held-out",
+            "template": "synthetic-2",
+            "top_word_zero_preimages": {
+              "count": 0,
+              "expected": 0.000244140625,
+              "nonces": []
+            }
+          },
+          {
+            "cube": {
+              "full_cube_xor": "82bef054b6074be634ddc02f0b97264a249b89dc4934b101f06944fd6787042e",
+              "full_cube_zero_bits": 137,
+              "half_cube_bits": 5120,
+              "half_cubes_zero_bits": 2602,
+              "zero_words": []
+            },
+            "expected_hits_at_k_store": 16384.0,
+            "hit_sample": [
+              [
+                95,
+                7
+              ],
+              [
+                142,
+                7
+              ],
+              [
+                202,
+                7
+              ],
+              [
+                245,
+                6
+              ]
+            ],
+            "hits_at_k_store": 16538,
+            "hits_digest": "15218811669007f3bc063f3387c2682eb16524154e63a9c2829bc60ef1877672",
+            "image": {
+              "expected": 1048448.0105380714,
+              "observed": 1048456,
+              "sd": 11.31140157411557,
+              "z": 0.7063193607137693
+            },
+            "known_block": null,
+            "lz_histogram": [
+              524692,
+              261843,
+              130688,
+              65676,
+              32462,
+              16677,
+              8224,
+              4283,
+              2018,
+              1031,
+              507,
+              235,
+              127,
+              62,
+              25,
+              14,
+              7,
+              4,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ],
+            "nonces": 1048576,
+            "role": "held-out",
+            "template": "synthetic-3",
+            "top_word_zero_preimages": {
+              "count": 0,
+              "expected": 0.000244140625,
+              "nonces": []
+            }
+          }
+        ],
+        "tests": 33
+      }
+    ],
+    "k_pair": 8,
+    "k_store": 6,
+    "nonce_bits": 20
+  },
+  "params": {
+    "alpha": 0.01,
+    "k_pair": 8,
+    "k_store": 6,
+    "modular_neighbours": 1024,
+    "nonce_bits": 20,
+    "real_templates": false,
+    "reduced_templates": 2,
+    "reproduce": false,
+    "rounds": [
+      4,
+      64
+    ],
+    "synthetic_templates": 4
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "matched": null,
+    "method": "not run in-process for this kind; use `bmr research reproduce <id>`"
+  },
+  "reproduction_command": "bmr research nonce-atlas --seed 1112363596 --params '{\"alpha\":0.01,\"k_pair\":8,\"k_store\":6,\"modular_neighbours\":1024,\"nonce_bits\":20,\"real_templates\":false,\"reduced_templates\":2,\"reproduce\":false,\"rounds\":[4,64],\"synthetic_templates\":4}'",
+  "result": "reduced-round-only",
+  "result_digest": "536628ee53446f258a9e20c871605f2eec6241c8b42354fcf93b7ec9ef68f981",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T01:29:17Z",
+  "status": "completed",
+  "verification": {
+    "detail": "enumerator, XOR tree, bitmap and hit list identical to the definitions; known blocks and hit samples reproduced",
+    "method": "independent SHA-256 over serialized headers: every statistic of the first synthetic template recomputed from its definition over nonces 0..2^16 at every round count; known mainnet block hashes; stored hit samples rehashed",
+    "passed": true
+  }
+}

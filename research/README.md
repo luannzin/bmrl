@@ -1,10 +1,17 @@
 # Research report
 
 Every result below is a record in `experiments/results/`, cited by id in
-brackets, and comes from the final run on commit `480c36f`. `bmr research
-audit` confirms that every experiment and benchmark kind has a current record
-from that exact code, with earlier records kept as history. The default seed
-is 1112363596.
+brackets, and comes from the final run on commit `480c36f`. The final run on
+`49a3e3c` (2026-11-22) gave the identical result digest for every one of these
+kinds; its records (the next id of each kind) are the audit's current ones.
+`bmr research audit` confirms that every experiment and benchmark kind has a
+current record from that exact code, with earlier records kept as history.
+The default seed is 1112363596.
+
+The structural-shortcut search (exhaustive nonce atlas, solver-optimal
+characteristics, exact identities, quantum model, hypothesis board) is
+reported in [breakthrough/REPORT.md](breakthrough/REPORT.md); the board of
+every hypothesis is [BOARD.md](BOARD.md).
 
 "Deviation" means distinguishable from the random baseline at the record's
 stated power. A round count below 64 always means a reduced-round variant;
@@ -125,7 +132,15 @@ cargo build --release
 .\target\release\bmr research trail-search
 .\target\release\bmr research audit
 .\target\release\bmr research reproduce characteristic-audit-0001
+.\target\release\bmr research breakthrough
+.\target\release\bmr research board
+.\target\release\bmr research evolve
 ```
+
+`research breakthrough` runs nonce-atlas (about 63 minutes with its
+in-process rerun), trail-sat (up to 80 minutes of solver budget) and
+quantum-model. `research board` rewrites `research/BOARD.md`;
+`research evolve --run N` executes the top N proposed experiments.
 
 `research all` runs reduced-round, differential, statistical and smt.
 `research structural` runs characteristic, algebraic, schedule, smt-scaling,

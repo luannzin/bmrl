@@ -1,0 +1,878 @@
+{
+  "assumptions": [
+    "Every architecture variant is simulated cycle by cycle and must reproduce the software SHA-256d for every nonce; resource counts come from the same stage list.",
+    "One SHA-256 round per pipeline stage; 32 LUTs per 32-bit operator (adder, Σ/σ group, Ch, Maj); registers counted bit by bit; 80% utilization.",
+    "Clock ranges per device family and per-toggle energies (activity 0.5) are ASSUMPTIONS, not vendor power-tool output or measurements.",
+    "Device LUT/FF counts are published datasheet figures.",
+    "CPU/GPU energy bounds use vendor TDP/board power (specification, not measured) divided by measured hash rate; the ASIC point is a vendor specification."
+  ],
+  "baseline": "Measured CPU (best kernel, all threads) and GPU (WGSL) hash rates from the benchmark registry.",
+  "candidate_anomaly": false,
+  "conclusion": "MODEL ESTIMATE: figures below come from an analytical model with stated assumptions, validated only where noted; they are not measurements. All 6 variants reproduce the reference on every simulated nonce, both as full pipelines (one nonce per cycle) and as iterative cores with 1 to 32 round units (mismatches: 0). Midstate pipeline: 128 stages, 1201 adders, 93696 register bits; with precompute + early reject + constant folding: 122 stages, 1062 adders (11.6% fewer), 81824 register bits (12.7% fewer). Constant folding applied to a design without midstate removes block 1 and the first three second-block rounds automatically, giving exactly the midstate + precompute datapath. ESTIMATE, not synthesized or measured: best modelled FPGA configuration midstate+precompute3+early-reject+fold on Xilinx Virtex UltraScale+ XCVU9P at up to 6.80 GH/s under the assumed clock. MEASURED for comparison: CPU 116.0 MH/s, GPU 502.1 MH/s (benchmark records bench-cpu-0002 and bench-gpu-0002). Clock, area per operator, energy per toggle and static power are assumptions; no RTL was synthesized, no timing closed, no board measured.",
+  "configurations": [],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Random 80-byte headers from SplitMix64::stream(seed, i); consecutive nonces.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 2,
+  "duration_seconds": 2.0813032,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "49a3e3c1ebd54756223719254e4519fa554ed7ca",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "7176ecb8a9b11485d314a724e966a7b4abfafee8a79778ed85a890d671dc7564"
+  },
+  "finished_at": "2026-11-22T03:14:39Z",
+  "hypothesis": "A fully pipelined SHA-256d datapath using midstate, precomputation, early reject and constant folding fits commodity FPGAs and delivers more hashes per second and per joule than the measured CPU and GPU baselines of this lab.",
+  "hypothesis_id": "H-HW-01",
+  "hypothesis_status": "modelled",
+  "id": "hardware-0005",
+  "implementation": [
+    "hardware_model::{simulate, resources, estimate}"
+  ],
+  "kind": "hardware",
+  "methodology": "Simulate each variant on random headers, compare every output with the reference, record latency and steady-state throughput. Count operators/registers with and without constant folding. Map to devices under the cost model; when no full pipeline fits, choose the best iterative core (u rounds per cycle). Compare with measured baselines.",
+  "name": "Pipelined SHA-256d datapaths: correctness, resources, FPGA throughput and energy model",
+  "null_hypothesis": "No modelled FPGA configuration exceeds the measured CPU/GPU throughput or their energy efficiency bound.",
+  "observations": {
+    "assumptions": [
+      {
+        "detail": "from the cycle model of each variant; folded designs skip job-constant stages",
+        "kind": "simulated, exact",
+        "quantity": "pipeline depth (stages)"
+      },
+      {
+        "detail": "1 nonce per cycle for a full pipeline; 1 nonce per ceil(stages / u) cycles for an iterative core with u round units",
+        "kind": "simulated, exact",
+        "quantity": "throughput per pipeline / core"
+      },
+      {
+        "detail": "32-bit adders, Σ/σ groups, Ch, Maj; per-job constants (midstate, round constants) are not counted as registers",
+        "kind": "counted from the simulated dataflow",
+        "quantity": "operators and register bits"
+      },
+      {
+        "detail": "32 LUTs per 32-bit operator; no routing, control, I/O or carry-chain effects",
+        "kind": "assumed",
+        "quantity": "area in LUTs"
+      },
+      {
+        "detail": "no block RAM: constants and job values are wired or held in registers",
+        "kind": "model choice",
+        "quantity": "memory"
+      },
+      {
+        "detail": "Xilinx Artix-7 XC7A100T: 150-200 MHz; Xilinx Kintex-7 XC7K325T: 200-250 MHz; Xilinx Virtex UltraScale+ XCVU9P: 300-400 MHz; not from timing analysis",
+        "kind": "assumed",
+        "quantity": "clock frequency"
+      },
+      {
+        "detail": 0.8,
+        "kind": "assumed",
+        "quantity": "utilization"
+      },
+      {
+        "detail": "activity 0.5, 0.3-1.5 pJ per LUT toggle, 0.05-0.3 pJ per FF toggle",
+        "kind": "assumed",
+        "quantity": "dynamic energy"
+      },
+      {
+        "detail": "Xilinx Artix-7 XC7A100T: 0.2 W; Xilinx Kintex-7 XC7K325T: 0.4 W; Xilinx Virtex UltraScale+ XCVU9P: 3 W",
+        "kind": "assumed",
+        "quantity": "static power"
+      },
+      {
+        "detail": "Xilinx Artix-7 XC7A100T: 63400 LUTs, 126800 FFs; Xilinx Kintex-7 XC7K325T: 203800 LUTs, 407600 FFs; Xilinx Virtex UltraScale+ XCVU9P: 1182240 LUTs, 2364480 FFs",
+        "kind": "published datasheet",
+        "quantity": "device capacity"
+      },
+      {
+        "detail": "latest benchmark records from this lab",
+        "kind": "measured",
+        "quantity": "CPU and GPU hash rates"
+      },
+      {
+        "detail": "TDP / board power / ASIC J/TH rating",
+        "kind": "vendor specification, not measured",
+        "quantity": "CPU, GPU and ASIC power"
+      }
+    ],
+    "cost_model": {
+      "activity": 0.5,
+      "luts_per_word_op": 32.0,
+      "pj_per_ff": [
+        0.05,
+        0.3
+      ],
+      "pj_per_lut": [
+        0.3,
+        1.5
+      ],
+      "utilization": 0.8
+    },
+    "estimated": {
+      "best": {
+        "device": "Xilinx Virtex UltraScale+ XCVU9P",
+        "hashes_per_second_high": 6800000000.0,
+        "joules_per_terahash_low": 10637.176470588236,
+        "variant": "midstate+precompute3+early-reject+fold"
+      },
+      "status": "estimate: not synthesized, not measured",
+      "variants": [
+        {
+          "devices": [
+            {
+              "device": "Xilinx Artix-7 XC7A100T",
+              "full_pipelines": 0,
+              "hashes_per_second": [
+                100000000.0,
+                133333333.33333331
+              ],
+              "iterative_cores": {
+                "cores": 16,
+                "rounds_per_cycle": 8
+              },
+              "joules_per_terahash": [
+                19136.8,
+                94107.2
+              ]
+            },
+            {
+              "device": "Xilinx Kintex-7 XC7K325T",
+              "full_pipelines": 1,
+              "hashes_per_second": [
+                200000000.0,
+                250000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                19236.8,
+                94107.2
+              ]
+            },
+            {
+              "device": "Xilinx Virtex UltraScale+ XCVU9P",
+              "full_pipelines": 10,
+              "hashes_per_second": [
+                3000000000.0,
+                4000000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                18386.8,
+                93107.2
+              ]
+            }
+          ],
+          "dynamic_pj_per_hash": [
+            17636.8,
+            92107.2
+          ],
+          "luts": 91424.0,
+          "variant": "no-midstate"
+        },
+        {
+          "devices": [
+            {
+              "device": "Xilinx Artix-7 XC7A100T",
+              "full_pipelines": 0,
+              "hashes_per_second": [
+                150000000.0,
+                200000000.0
+              ],
+              "iterative_cores": {
+                "cores": 16,
+                "rounds_per_cycle": 8
+              },
+              "joules_per_terahash": [
+                12486.4,
+                61107.73333333334
+              ]
+            },
+            {
+              "device": "Xilinx Kintex-7 XC7K325T",
+              "full_pipelines": 2,
+              "hashes_per_second": [
+                400000000.0,
+                500000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                12286.4,
+                60774.4
+              ]
+            },
+            {
+              "device": "Xilinx Virtex UltraScale+ XCVU9P",
+              "full_pipelines": 15,
+              "hashes_per_second": [
+                4500000000.0,
+                6000000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                11986.4,
+                60441.066666666666
+              ]
+            }
+          ],
+          "dynamic_pj_per_hash": [
+            11486.4,
+            59774.4
+          ],
+          "luts": 60960.0,
+          "variant": "midstate"
+        },
+        {
+          "devices": [
+            {
+              "device": "Xilinx Artix-7 XC7A100T",
+              "full_pipelines": 0,
+              "hashes_per_second": [
+                150000000.0,
+                200000000.0
+              ],
+              "iterative_cores": {
+                "cores": 16,
+                "rounds_per_cycle": 8
+              },
+              "joules_per_terahash": [
+                12268.0,
+                59955.73333333334
+              ]
+            },
+            {
+              "device": "Xilinx Kintex-7 XC7K325T",
+              "full_pipelines": 2,
+              "hashes_per_second": [
+                400000000.0,
+                500000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                12068.0,
+                59622.4
+              ]
+            },
+            {
+              "device": "Xilinx Virtex UltraScale+ XCVU9P",
+              "full_pipelines": 15,
+              "hashes_per_second": [
+                4500000000.0,
+                6000000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                11768.0,
+                59289.066666666666
+              ]
+            }
+          ],
+          "dynamic_pj_per_hash": [
+            11268.0,
+            58622.4
+          ],
+          "luts": 59904.0,
+          "variant": "midstate+precompute3"
+        },
+        {
+          "devices": [
+            {
+              "device": "Xilinx Artix-7 XC7A100T",
+              "full_pipelines": 0,
+              "hashes_per_second": [
+                150000000.0,
+                200000000.0
+              ],
+              "iterative_cores": {
+                "cores": 31,
+                "rounds_per_cycle": 4
+              },
+              "joules_per_terahash": [
+                11944.0,
+                58275.73333333334
+              ]
+            },
+            {
+              "device": "Xilinx Kintex-7 XC7K325T",
+              "full_pipelines": 2,
+              "hashes_per_second": [
+                400000000.0,
+                500000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                11744.0,
+                57942.4
+              ]
+            },
+            {
+              "device": "Xilinx Virtex UltraScale+ XCVU9P",
+              "full_pipelines": 16,
+              "hashes_per_second": [
+                4800000000.0,
+                6400000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                11412.75,
+                57567.4
+              ]
+            }
+          ],
+          "dynamic_pj_per_hash": [
+            10944.0,
+            56942.4
+          ],
+          "luts": 58144.0,
+          "variant": "midstate+precompute3+early-reject"
+        },
+        {
+          "devices": [
+            {
+              "device": "Xilinx Artix-7 XC7A100T",
+              "full_pipelines": 0,
+              "hashes_per_second": [
+                150000000.0,
+                200000000.0
+              ],
+              "iterative_cores": {
+                "cores": 31,
+                "rounds_per_cycle": 4
+              },
+              "joules_per_terahash": [
+                11196.0,
+                54358.933333333334
+              ]
+            },
+            {
+              "device": "Xilinx Kintex-7 XC7K325T",
+              "full_pipelines": 3,
+              "hashes_per_second": [
+                600000000.0,
+                750000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                10729.333333333334,
+                53692.26666666666
+              ]
+            },
+            {
+              "device": "Xilinx Virtex UltraScale+ XCVU9P",
+              "full_pipelines": 17,
+              "hashes_per_second": [
+                5100000000.0,
+                6800000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                10637.176470588236,
+                53613.83529411765
+              ]
+            }
+          ],
+          "dynamic_pj_per_hash": [
+            10196.0,
+            53025.6
+          ],
+          "luts": 54336.0,
+          "variant": "midstate+precompute3+early-reject+fold"
+        },
+        {
+          "devices": [
+            {
+              "device": "Xilinx Artix-7 XC7A100T",
+              "full_pipelines": 0,
+              "hashes_per_second": [
+                150000000.0,
+                200000000.0
+              ],
+              "iterative_cores": {
+                "cores": 31,
+                "rounds_per_cycle": 4
+              },
+              "joules_per_terahash": [
+                11196.0,
+                54358.933333333334
+              ]
+            },
+            {
+              "device": "Xilinx Kintex-7 XC7K325T",
+              "full_pipelines": 3,
+              "hashes_per_second": [
+                600000000.0,
+                750000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                10729.333333333334,
+                53692.26666666666
+              ]
+            },
+            {
+              "device": "Xilinx Virtex UltraScale+ XCVU9P",
+              "full_pipelines": 17,
+              "hashes_per_second": [
+                5100000000.0,
+                6800000000.0
+              ],
+              "iterative_cores": null,
+              "joules_per_terahash": [
+                10637.176470588236,
+                53613.83529411765
+              ]
+            }
+          ],
+          "dynamic_pj_per_hash": [
+            10196.0,
+            53025.6
+          ],
+          "luts": 54336.0,
+          "variant": "no-midstate+early-reject+fold"
+        }
+      ]
+    },
+    "measured": {
+      "asic_reference": {
+        "joules_per_terahash": 17.5,
+        "name": "Bitmain Antminer S21 (vendor specification)"
+      },
+      "cpu": {
+        "benchmark": "bench-cpu-0002",
+        "hashes_per_second": 115977234.9583462,
+        "kind": "measured"
+      },
+      "cpu_joules_per_terahash_rating_bound": 1034685.8160836357,
+      "cpu_power_source": "Intel Xeon E5-2680 v4 TDP (specification)",
+      "gpu": {
+        "benchmark": "bench-gpu-0002",
+        "hashes_per_second": 502092455.15948755,
+        "kind": "measured"
+      },
+      "gpu_joules_per_terahash_rating_bound": 328624.7349556138,
+      "gpu_power_source": "AMD Radeon RX 7600 total board power (specification)",
+      "power_note": "No power was measured. The J/TH bounds below divide vendor power ratings by measured hash rates."
+    },
+    "simulated": [
+      {
+        "counted": {
+          "active_stages": 192,
+          "adders_32bit": 1801,
+          "ch_words": 192,
+          "maj_words": 192,
+          "register_bits": 156928,
+          "xor3_words": 672
+        },
+        "iterative_cores": [
+          {
+            "cycles_per_nonce": 192.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 1
+          },
+          {
+            "cycles_per_nonce": 96.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 2
+          },
+          {
+            "cycles_per_nonce": 48.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 4
+          },
+          {
+            "cycles_per_nonce": 24.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 8
+          },
+          {
+            "cycles_per_nonce": 12.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 16
+          },
+          {
+            "cycles_per_nonce": 6.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 32
+          }
+        ],
+        "mismatches_total": 0,
+        "pipeline": {
+          "cycles": 4287,
+          "headers": 4,
+          "latency_cycles": 192,
+          "nonces_per_header": 4096,
+          "output": "full digest",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "no-midstate"
+      },
+      {
+        "counted": {
+          "active_stages": 128,
+          "adders_32bit": 1201,
+          "ch_words": 128,
+          "maj_words": 128,
+          "register_bits": 93696,
+          "xor3_words": 448
+        },
+        "iterative_cores": [
+          {
+            "cycles_per_nonce": 128.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 1
+          },
+          {
+            "cycles_per_nonce": 64.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 2
+          },
+          {
+            "cycles_per_nonce": 32.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 4
+          },
+          {
+            "cycles_per_nonce": 16.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 8
+          },
+          {
+            "cycles_per_nonce": 8.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 16
+          },
+          {
+            "cycles_per_nonce": 4.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 32
+          }
+        ],
+        "mismatches_total": 0,
+        "pipeline": {
+          "cycles": 4223,
+          "headers": 4,
+          "latency_cycles": 128,
+          "nonces_per_header": 4096,
+          "output": "full digest",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate"
+      },
+      {
+        "counted": {
+          "active_stages": 125,
+          "adders_32bit": 1180,
+          "ch_words": 125,
+          "maj_words": 125,
+          "register_bits": 91296,
+          "xor3_words": 442
+        },
+        "iterative_cores": [
+          {
+            "cycles_per_nonce": 125.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 1
+          },
+          {
+            "cycles_per_nonce": 63.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 2
+          },
+          {
+            "cycles_per_nonce": 32.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 4
+          },
+          {
+            "cycles_per_nonce": 16.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 8
+          },
+          {
+            "cycles_per_nonce": 8.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 16
+          },
+          {
+            "cycles_per_nonce": 4.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 32
+          }
+        ],
+        "mismatches_total": 0,
+        "pipeline": {
+          "cycles": 4220,
+          "headers": 4,
+          "latency_cycles": 125,
+          "nonces_per_header": 4096,
+          "output": "full digest",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate+precompute3"
+      },
+      {
+        "counted": {
+          "active_stages": 122,
+          "adders_32bit": 1143,
+          "ch_words": 122,
+          "maj_words": 122,
+          "register_bits": 88896,
+          "xor3_words": 430
+        },
+        "iterative_cores": [
+          {
+            "cycles_per_nonce": 122.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 1
+          },
+          {
+            "cycles_per_nonce": 61.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 2
+          },
+          {
+            "cycles_per_nonce": 31.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 4
+          },
+          {
+            "cycles_per_nonce": 16.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 8
+          },
+          {
+            "cycles_per_nonce": 8.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 16
+          },
+          {
+            "cycles_per_nonce": 4.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 32
+          }
+        ],
+        "mismatches_total": 0,
+        "pipeline": {
+          "cycles": 4217,
+          "headers": 4,
+          "latency_cycles": 122,
+          "nonces_per_header": 4096,
+          "output": "H7 only (early reject)",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate+precompute3+early-reject"
+      },
+      {
+        "counted": {
+          "active_stages": 122,
+          "adders_32bit": 1062,
+          "ch_words": 120,
+          "maj_words": 120,
+          "register_bits": 81824,
+          "xor3_words": 396
+        },
+        "iterative_cores": [
+          {
+            "cycles_per_nonce": 122.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 1
+          },
+          {
+            "cycles_per_nonce": 61.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 2
+          },
+          {
+            "cycles_per_nonce": 31.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 4
+          },
+          {
+            "cycles_per_nonce": 16.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 8
+          },
+          {
+            "cycles_per_nonce": 8.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 16
+          },
+          {
+            "cycles_per_nonce": 4.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 32
+          }
+        ],
+        "mismatches_total": 0,
+        "pipeline": {
+          "cycles": 4217,
+          "headers": 4,
+          "latency_cycles": 122,
+          "nonces_per_header": 4096,
+          "output": "H7 only (early reject)",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "midstate+precompute3+early-reject+fold"
+      },
+      {
+        "counted": {
+          "active_stages": 122,
+          "adders_32bit": 1062,
+          "ch_words": 120,
+          "maj_words": 120,
+          "register_bits": 81824,
+          "xor3_words": 396
+        },
+        "iterative_cores": [
+          {
+            "cycles_per_nonce": 122.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 1
+          },
+          {
+            "cycles_per_nonce": 61.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 2
+          },
+          {
+            "cycles_per_nonce": 31.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 4
+          },
+          {
+            "cycles_per_nonce": 16.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 8
+          },
+          {
+            "cycles_per_nonce": 8.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 16
+          },
+          {
+            "cycles_per_nonce": 4.0,
+            "mismatches": 0,
+            "nonces": 64,
+            "rounds_per_cycle": 32
+          }
+        ],
+        "mismatches_total": 0,
+        "pipeline": {
+          "cycles": 4284,
+          "headers": 4,
+          "latency_cycles": 189,
+          "nonces_per_header": 4096,
+          "output": "H7 only (early reject)",
+          "steady_state_nonces_per_cycle": 1.0
+        },
+        "variant": "no-midstate+early-reject+fold"
+      }
+    ]
+  },
+  "params": {
+    "asic_reference": {
+      "joules_per_terahash": 17.5,
+      "name": "Bitmain Antminer S21 (vendor specification)"
+    },
+    "cost": {
+      "activity": 0.5,
+      "luts_per_word_op": 32.0,
+      "pj_per_ff": [
+        0.05,
+        0.3
+      ],
+      "pj_per_lut": [
+        0.3,
+        1.5
+      ],
+      "utilization": 0.8
+    },
+    "headers": 4,
+    "reference_power_w": {
+      "cpu": 120.0,
+      "cpu_source": "Intel Xeon E5-2680 v4 TDP (specification)",
+      "gpu": 165.0,
+      "gpu_source": "AMD Radeon RX 7600 total board power (specification)"
+    },
+    "reproduce": true,
+    "sim_nonces": 4096
+  },
+  "primitive": "bitcoin-header-sha256d-datapath",
+  "reproduction": {
+    "digest": "f58e3200d9594cb29dfa796fc3a7f9279032ec0d43de2e88748b8c02816dd0aa",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research hardware --seed 1112363596 --params '{\"asic_reference\":{\"joules_per_terahash\":17.5,\"name\":\"Bitmain Antminer S21 (vendor specification)\"},\"cost\":{\"activity\":0.5,\"luts_per_word_op\":32.0,\"pj_per_ff\":[0.05,0.3],\"pj_per_lut\":[0.3,1.5],\"utilization\":0.8},\"headers\":4,\"reference_power_w\":{\"cpu\":120.0,\"cpu_source\":\"Intel Xeon E5-2680 v4 TDP (specification)\",\"gpu\":165.0,\"gpu_source\":\"AMD Radeon RX 7600 total board power (specification)\"},\"reproduce\":true,\"sim_nonces\":4096}'",
+  "result": "model-estimate",
+  "result_digest": "f58e3200d9594cb29dfa796fc3a7f9279032ec0d43de2e88748b8c02816dd0aa",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "bitcoin-header-sha256d-datapath",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T03:14:37Z",
+  "status": "completed",
+  "verification": {
+    "detail": "6 variants x (256 pipelined + 64 iterative) nonces identical",
+    "method": "every variant re-simulated on an unseen header as a full pipeline and as a 4-round-unit iterative core; outputs compared with the independent SHA-256 over the full serialized header; folding consistency (no-midstate folds to midstate) checked",
+    "passed": true
+  }
+}

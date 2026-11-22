@@ -1,0 +1,1616 @@
+{
+  "assumptions": [
+    "Chaining value and message block uniform (SplitMix64 streams); the same samples are used for all configurations.",
+    "A repeated 256-bit output difference among n << 2^128 samples is evidence of a non-random differential, not chance.",
+    "Weight chi-square with Bonferroni correction over all configurations.",
+    "XOR differences only; modular-difference characteristics are out of scope for version 1."
+  ],
+  "baseline": "Random function: no repeated output difference among n samples; weight ~ Binomial(256, 1/2).",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. Delta W15[31]: repeated output differences observed up to 17 rounds (2 rounds after entry). Delta W15[0]: repeated output differences observed up to 17 rounds (2 rounds after entry). Delta W0[31]: repeated output differences observed up to 2 rounds (2 rounds after entry). With n = 131072, differentials with probability below about 2^-16.0 cannot be observed, so absence of repeats does not exclude lower-probability characteristics.",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 17
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 18
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 19
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 20
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 21
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 22
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 23
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 17
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 18
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 19
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 20
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 21
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 22
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 23
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 1
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 2
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 3
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 5
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 6
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 7
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 8
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "n random (chaining value, message block) pairs; sample i from SplitMix64::stream(seed, i).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 3.0020339,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "49a3e3c1ebd54756223719254e4519fa554ed7ca",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "7176ecb8a9b11485d314a724e966a7b4abfafee8a79778ed85a890d671dc7564"
+  },
+  "finished_at": "2026-11-22T02:57:26Z",
+  "hypothesis": "For a single-bit difference in message word W[i], some output difference of the r-round compression function occurs with probability far above 2^-256 for r up to some bound beyond the round where W[i] enters (round i).",
+  "hypothesis_id": "H-DIFF-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "differential-0003",
+  "implementation": [
+    "differential_engine::differential",
+    "differential_engine::analyze_differential",
+    "sha256_core::compress_traced"
+  ],
+  "kind": "differential",
+  "methodology": "For each difference and round count, compress n random (cv, M) and (cv, M xor delta) with tracing; record the full 256-bit output difference, its weight, and the state-difference weight after every round. Report the most frequent differences with Wilson 95% intervals. Round counts start one round after the difference enters and always include 64.",
+  "name": "Single-bit XOR differentials through reduced-round SHA-256 compression",
+  "null_hypothesis": "Output differences are uniformly distributed: among n samples no output difference repeats (probability about n^2 / 2^257) and output-difference weight follows Binomial(256, 1/2).",
+  "observations": [
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 1,
+      "mean_output_weight": 2.0,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0
+      ],
+      "repeated_differences": [
+        {
+          "ci95": [
+            0.9999706928540154,
+            1.0
+          ],
+          "count": 131072,
+          "difference": "8000000000000000000000000000000080000000000000000000000000000000",
+          "log2_probability": 0.0,
+          "probability": 1.0,
+          "weight": 2
+        }
+      ],
+      "rounds": 16,
+      "rounds_since_entry": 1,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 83782,
+      "mean_output_weight": 18.95435333251953,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844
+      ],
+      "repeated_differences": [
+        {
+          "ci95": [
+            0.00048368822288684117,
+            0.0007510279309021764
+          ],
+          "count": 79,
+          "difference": "a214024080000000000000000000000082100040800000000000000000000000",
+          "log2_probability": -10.696219251822898,
+          "probability": 0.00060272216796875,
+          "weight": 13
+        },
+        {
+          "ci95": [
+            0.00040257025627896787,
+            0.0006490457950587529
+          ],
+          "count": 67,
+          "difference": "2214024080000000000000000000000082100040800000000000000000000000",
+          "log2_probability": -10.933910809542228,
+          "probability": 0.00051116943359375,
+          "weight": 12
+        },
+        {
+          "ci95": [
+            0.00040257025627896787,
+            0.0006490457950587529
+          ],
+          "count": 67,
+          "difference": "a214024080000000000000000000000002100040800000000000000000000000",
+          "log2_probability": -10.933910809542228,
+          "probability": 0.00051116943359375,
+          "weight": 12
+        }
+      ],
+      "rounds": 17,
+      "rounds_since_entry": 2,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 48.44010925292969,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406
+      ],
+      "repeated_differences": [],
+      "rounds": 18,
+      "rounds_since_entry": 3,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 80.4267349243164,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406,
+        80.42707061767578
+      ],
+      "repeated_differences": [],
+      "rounds": 19,
+      "rounds_since_entry": 4,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2015306710.5027912
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 110.42562866210938,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406,
+        80.42707061767578,
+        110.42412567138672
+      ],
+      "repeated_differences": [],
+      "rounds": 20,
+      "rounds_since_entry": 5,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 9359516.023159102
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 125.46744537353516,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406,
+        80.42707061767578,
+        110.42412567138672,
+        125.44780731201172
+      ],
+      "repeated_differences": [],
+      "rounds": 21,
+      "rounds_since_entry": 6,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 14844.39308661862
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 128.00070190429688,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406,
+        80.42707061767578,
+        110.42412567138672,
+        125.44780731201172,
+        127.98178100585938
+      ],
+      "repeated_differences": [],
+      "rounds": 22,
+      "rounds_since_entry": 7,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.23644505647557398,
+        "statistic": 69.62414618935733
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 127.99393463134766,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406,
+        80.42707061767578,
+        110.42412567138672,
+        125.44780731201172,
+        127.98178100585938,
+        128.00454711914062
+      ],
+      "repeated_differences": [],
+      "rounds": 23,
+      "rounds_since_entry": 8,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.7273411036202292,
+        "statistic": 54.88365790588195
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 15
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 128.00884246826172,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        2.0,
+        18.967124938964844,
+        48.446510314941406,
+        80.42707061767578,
+        110.42412567138672,
+        125.44780731201172,
+        127.98178100585938,
+        128.00454711914062,
+        128.0058364868164,
+        128.01342010498047,
+        128.01268005371094,
+        127.99668884277344,
+        127.9991683959961,
+        127.99044036865234,
+        127.98362731933594,
+        128.01505279541016,
+        127.98905944824219,
+        127.99726867675781,
+        127.9935302734375,
+        127.96515655517578,
+        127.98966217041016,
+        128.0034408569336,
+        128.00621032714844,
+        128.0022964477539,
+        128.01294708251953,
+        128.00812530517578,
+        127.98902893066406,
+        128.0087661743164,
+        128.0064697265625,
+        127.99705505371094,
+        127.9931869506836,
+        127.97720336914062,
+        127.97438049316406,
+        127.97339630126953,
+        127.9769058227539,
+        128.00445556640625,
+        128.00936889648438,
+        128.0013885498047,
+        128.02588653564453,
+        127.99504089355469,
+        127.98152923583984,
+        127.98905181884766,
+        127.98607635498047,
+        128.0119400024414,
+        128.0186004638672,
+        128.03459930419922,
+        128.0269012451172,
+        128.00557708740234,
+        128.0108871459961
+      ],
+      "repeated_differences": [],
+      "rounds": 64,
+      "rounds_since_entry": 49,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.9508016909718284,
+        "statistic": 44.81896144678225
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 147,
+      "mean_output_weight": 4.0085601806640625,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625
+      ],
+      "repeated_differences": [
+        {
+          "ci95": [
+            0.24482643579507163,
+            0.24949685626005963
+          ],
+          "count": 32395,
+          "difference": "0000000100000000000000000000000000000001000000000000000000000000",
+          "log2_probability": -2.0165164626448795,
+          "probability": 0.24715423583984375,
+          "weight": 2
+        },
+        {
+          "ci95": [
+            0.12337980369208768,
+            0.12696260184669061
+          ],
+          "count": 16405,
+          "difference": "0000000100000000000000000000000000000003000000000000000000000000",
+          "log2_probability": -2.9981520265942176,
+          "probability": 0.12516021728515625,
+          "weight": 3
+        },
+        {
+          "ci95": [
+            0.1232433210929068,
+            0.12682443429219453
+          ],
+          "count": 16387,
+          "difference": "0000000300000000000000000000000000000001000000000000000000000000",
+          "log2_probability": -2.999735858830383,
+          "probability": 0.12502288818359375,
+          "weight": 3
+        }
+      ],
+      "rounds": 16,
+      "rounds_since_entry": 1,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 130391,
+      "mean_output_weight": 25.41297149658203,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922
+      ],
+      "repeated_differences": [
+        {
+          "ci95": [
+            0.000025870470513489377,
+            0.00011024506856774756
+          ],
+          "count": 7,
+          "difference": "4418048000000001000000000000000004200080000000010000000000000000",
+          "log2_probability": -14.192645077942396,
+          "probability": 0.00005340576171875,
+          "weight": 11
+        },
+        {
+          "ci95": [
+            0.000020979883177237957,
+            0.0000998773140330576
+          ],
+          "count": 6,
+          "difference": "c4280c8000000001000000000000000004200080000000010000000000000000",
+          "log2_probability": -14.415037499278844,
+          "probability": 0.0000457763671875,
+          "weight": 13
+        },
+        {
+          "ci95": [
+            0.00001629421315285535,
+            0.00008930464218649881
+          ],
+          "count": 5,
+          "difference": "4428048000000001000000000000000004200180000000010000000000000000",
+          "log2_probability": -14.678071905112638,
+          "probability": 0.00003814697265625,
+          "weight": 12
+        }
+      ],
+      "rounds": 17,
+      "rounds_since_entry": 2,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 56.196861267089844,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297
+      ],
+      "repeated_differences": [],
+      "rounds": 18,
+      "rounds_since_entry": 3,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 88.14285278320312,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297,
+        88.19723510742188
+      ],
+      "repeated_differences": [],
+      "rounds": 19,
+      "rounds_since_entry": 4,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 1541156364.6014225
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 116.18762969970703,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297,
+        88.19723510742188,
+        116.19661712646484
+      ],
+      "repeated_differences": [],
+      "rounds": 20,
+      "rounds_since_entry": 5,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 1657485.754535539
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 126.76082611083984,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297,
+        88.19723510742188,
+        116.19661712646484,
+        126.75819396972656
+      ],
+      "repeated_differences": [],
+      "rounds": 21,
+      "rounds_since_entry": 6,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 3477.8452060460677
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 127.95089721679688,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297,
+        88.19723510742188,
+        116.19661712646484,
+        126.75819396972656,
+        127.99736022949219
+      ],
+      "repeated_differences": [],
+      "rounds": 22,
+      "rounds_since_entry": 7,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.447453773818866,
+        "statistic": 62.80799584055851
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 128.02239227294922,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297,
+        88.19723510742188,
+        116.19661712646484,
+        126.75819396972656,
+        127.99736022949219,
+        128.00204467773438
+      ],
+      "repeated_differences": [],
+      "rounds": 23,
+      "rounds_since_entry": 8,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.25228265123904164,
+        "statistic": 69.01849949817749
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 0,
+        "word": 15
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 128.00271606445312,
+      "mean_state_weight_per_round": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        4.0016021728515625,
+        25.44768524169922,
+        56.21080780029297,
+        88.19723510742188,
+        116.19661712646484,
+        126.75819396972656,
+        127.99736022949219,
+        128.00204467773438,
+        128.0023651123047,
+        127.97854614257812,
+        127.99187469482422,
+        128.0147247314453,
+        127.99488067626953,
+        127.99464416503906,
+        127.98372650146484,
+        127.98857879638672,
+        128.01780700683594,
+        128.03376007080078,
+        128.03883361816406,
+        128.0165557861328,
+        128.00570678710938,
+        127.99857330322266,
+        127.98035430908203,
+        127.99019622802734,
+        127.99222564697266,
+        127.98341369628906,
+        127.98814392089844,
+        127.99053192138672,
+        127.97785186767578,
+        127.99394226074219,
+        128.0125732421875,
+        127.9861831665039,
+        128.0293426513672,
+        128.01995849609375,
+        128.01173400878906,
+        128.03009033203125,
+        127.99775695800781,
+        127.99530029296875,
+        127.9949951171875,
+        127.99739074707031,
+        127.99909210205078,
+        128.02335357666016,
+        128.0136947631836,
+        128.02965545654297,
+        128.02550506591797,
+        128.01839447021484,
+        128.0281753540039,
+        128.02014923095703,
+        128.0248794555664
+      ],
+      "repeated_differences": [],
+      "rounds": 64,
+      "rounds_since_entry": 49,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.17153096003823246,
+        "statistic": 72.43340713062864
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 1,
+      "mean_output_weight": 2.0,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0
+      ],
+      "repeated_differences": [
+        {
+          "ci95": [
+            0.9999706928540154,
+            1.0
+          ],
+          "count": 131072,
+          "difference": "8000000000000000000000000000000080000000000000000000000000000000",
+          "log2_probability": 0.0,
+          "probability": 1.0,
+          "weight": 2
+        }
+      ],
+      "rounds": 1,
+      "rounds_since_entry": 1,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 83948,
+      "mean_output_weight": 18.97259521484375,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094
+      ],
+      "repeated_differences": [
+        {
+          "ci95": [
+            0.0004633307325652759,
+            0.0007256103956109175
+          ],
+          "count": 76,
+          "difference": "a214024080000000000000000000000002100040800000000000000000000000",
+          "log2_probability": -10.752072486556415,
+          "probability": 0.000579833984375,
+          "weight": 12
+        },
+        {
+          "ci95": [
+            0.0004160293239663983,
+            0.0006661034111132055
+          ],
+          "count": 69,
+          "difference": "6214024080000000000000000000000082100040800000000000000000000000",
+          "log2_probability": -10.891475543221832,
+          "probability": 0.00052642822265625,
+          "weight": 13
+        },
+        {
+          "ci95": [
+            0.00040257025627896787,
+            0.0006490457950587529
+          ],
+          "count": 67,
+          "difference": "6214024080000000000000000000000002100040800000000000000000000000",
+          "log2_probability": -10.933910809542228,
+          "probability": 0.00051116943359375,
+          "weight": 12
+        }
+      ],
+      "rounds": 2,
+      "rounds_since_entry": 2,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 48.301910400390625,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953
+      ],
+      "repeated_differences": [],
+      "rounds": 3,
+      "rounds_since_entry": 3,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2042685519.6572573
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 80.21305084228516,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953,
+        80.18434143066406
+      ],
+      "repeated_differences": [],
+      "rounds": 4,
+      "rounds_since_entry": 4,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 2018153779.4255486
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 110.1628646850586,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953,
+        80.18434143066406,
+        110.19728088378906
+      ],
+      "repeated_differences": [],
+      "rounds": 5,
+      "rounds_since_entry": 5,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 10778413.564598454
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": true,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 125.2505111694336,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953,
+        80.18434143066406,
+        110.19728088378906,
+        125.22377014160156
+      ],
+      "repeated_differences": [],
+      "rounds": 6,
+      "rounds_since_entry": 6,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0,
+        "statistic": 18421.061499997966
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 127.8890380859375,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953,
+        80.18434143066406,
+        110.19728088378906,
+        125.22377014160156,
+        127.87369537353516
+      ],
+      "repeated_differences": [],
+      "rounds": 7,
+      "rounds_since_entry": 7,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.0012369547963671666,
+        "statistic": 101.18526318147293
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 127.98963928222656,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953,
+        80.18434143066406,
+        110.19728088378906,
+        125.22377014160156,
+        127.87369537353516,
+        127.98235321044922
+      ],
+      "repeated_differences": [],
+      "rounds": 8,
+      "rounds_since_entry": 8,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.20482542830120282,
+        "statistic": 70.91661192131001
+      }
+    },
+    {
+      "alpha_per_configuration": 0.00037037037037037035,
+      "delta": {
+        "bit": 31,
+        "word": 0
+      },
+      "deviation_detected": false,
+      "distinct_output_differences": 131072,
+      "mean_output_weight": 127.9834976196289,
+      "mean_state_weight_per_round": [
+        0.0,
+        2.0,
+        18.962547302246094,
+        48.30933380126953,
+        80.18434143066406,
+        110.19728088378906,
+        125.22377014160156,
+        127.87369537353516,
+        127.98235321044922,
+        127.97339630126953,
+        127.97911071777344,
+        127.99475860595703,
+        128.00762176513672,
+        128.0135040283203,
+        128.0169219970703,
+        128.01036834716797,
+        128.01368713378906,
+        127.98446655273438,
+        127.98635864257812,
+        127.98760223388672,
+        127.98136901855469,
+        127.99324035644531,
+        128.00746154785156,
+        128.00016021728516,
+        128.0211181640625,
+        128.02040100097656,
+        128.0205078125,
+        128.03260803222656,
+        128.00884246826172,
+        128.01343536376953,
+        128.00418853759766,
+        127.99162292480469,
+        128.01109313964844,
+        128.00965881347656,
+        127.99852752685547,
+        127.99116516113281,
+        127.98666381835938,
+        127.98957824707031,
+        127.9793701171875,
+        127.98155975341797,
+        127.96843719482422,
+        127.9714126586914,
+        127.97681427001953,
+        127.97977447509766,
+        127.98190307617188,
+        127.97461700439453,
+        127.99024200439453,
+        127.98739624023438,
+        127.99291229248047,
+        128.0055923461914,
+        127.99955749511719,
+        128.02599334716797,
+        128.0395965576172,
+        128.0310287475586,
+        128.0455551147461,
+        128.0201187133789,
+        128.00995635986328,
+        128.03780364990234,
+        128.04315948486328,
+        128.04074096679688,
+        128.02556610107422,
+        128.00685119628906,
+        127.96722412109375,
+        127.97824096679688,
+        127.99806213378906
+      ],
+      "repeated_differences": [],
+      "rounds": 64,
+      "rounds_since_entry": 64,
+      "samples": 131072,
+      "weight_chi_square": {
+        "df": 62,
+        "p_value": 0.7632896582652601,
+        "statistic": 53.74004897665182
+      }
+    }
+  ],
+  "params": {
+    "alpha": 0.01,
+    "deltas": [
+      {
+        "bit": 31,
+        "word": 15
+      },
+      {
+        "bit": 0,
+        "word": 15
+      },
+      {
+        "bit": 31,
+        "word": 0
+      }
+    ],
+    "reproduce": true,
+    "rounds_after_entry": 8,
+    "samples": 131072,
+    "top_k": 3
+  },
+  "primitive": "sha256-compression",
+  "reproduction": {
+    "digest": "2be4814e6e722f7fdfa5bfa0c0abb6d2ba35337fb6df300f6a7268651be693d3",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research differential --seed 1112363596 --params '{\"alpha\":0.01,\"deltas\":[{\"bit\":31,\"word\":15},{\"bit\":0,\"word\":15},{\"bit\":31,\"word\":0}],\"reproduce\":true,\"rounds_after_entry\":8,\"samples\":131072,\"top_k\":3}'",
+  "result": "reduced-round-only",
+  "result_digest": "2be4814e6e722f7fdfa5bfa0c0abb6d2ba35337fb6df300f6a7268651be693d3",
+  "samples": 131072,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "sha256-compression",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 17
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 18
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 19
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 20
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 21
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 22
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 23
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 17
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 18
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 19
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 20
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 21
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 22
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 23
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 1
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 2
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 3
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 5
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 6
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 7
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 8
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T02:57:23Z",
+  "status": "completed",
+  "verification": {
+    "detail": "256 samples x 27 configurations; mismatches: []",
+    "method": "independent SHA-256 recomputes every output difference (full multiset) and weight histogram for the first samples of every configuration",
+    "passed": true
+  }
+}

@@ -25,13 +25,18 @@ cargo build --release
 .\target\release\bmr research structural
 .\target\release\bmr research characteristic-audit
 .\target\release\bmr research trail-search
+.\target\release\bmr research breakthrough
 .\target\release\bmr research hypotheses
 .\target\release\bmr research audit
+.\target\release\bmr research board
+.\target\release\bmr research evolve
 ```
 
 Where things stand: [research/STATUS.md](research/STATUS.md). Every result
-with its record id: [research/README.md](research/README.md). Progress log:
-[NOTES.md](NOTES.md).
+with its record id: [research/README.md](research/README.md). The search for
+structural shortcuts: [research/breakthrough/REPORT.md](research/breakthrough/REPORT.md)
+and the hypothesis board [research/BOARD.md](research/BOARD.md). Progress
+log: [NOTES.md](NOTES.md).
 
 Add `--json` to any command for one machine-readable JSON document.
 Exit status is non-zero when any check fails.

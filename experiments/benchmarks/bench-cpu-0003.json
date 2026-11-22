@@ -1,0 +1,73 @@
+{
+  "created_at": "2026-11-22T05:43:39Z",
+  "energy": {
+    "note": "no CPU energy counter readable on this platform (RAPL is Linux-only); energy not measured",
+    "source": null
+  },
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "49a3e3c1ebd54756223719254e4519fa554ed7ca",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "7176ecb8a9b11485d314a724e966a7b4abfafee8a79778ed85a890d671dc7564"
+  },
+  "expected_work_per_block_factor": 1.0,
+  "id": "bench-cpu-0003",
+  "kernels": [
+    {
+      "compressions_per_nonce": 3.0,
+      "hashes_per_second": 927011.0893322915,
+      "kernel": "reference",
+      "threads": 1
+    },
+    {
+      "compressions_per_nonce": 2.0,
+      "hashes_per_second": 1482346.860705967,
+      "kernel": "midstate",
+      "speedup_vs_reference": 1.5990605482116438,
+      "threads": 1
+    },
+    {
+      "compressions_per_nonce": 1.90625,
+      "hashes_per_second": 1509277.6969159192,
+      "kernel": "scalar",
+      "speedup_vs_reference": 1.6281118039300082,
+      "threads": 1
+    },
+    {
+      "compressions_per_nonce": 1.90625,
+      "hashes_per_second": 8633650.831404272,
+      "kernel": "avx2",
+      "speedup_vs_reference": 9.313427779621199,
+      "threads": 1
+    }
+  ],
+  "kind": "cpu",
+  "note": "Midstate, precomputation and early reject lower the cost per nonce; every nonce is still evaluated, so the expected number of hashes per block is unchanged (factor 1.0).",
+  "parallel": {
+    "hashes": 352321536,
+    "hashes_per_second": 116343186.33512437,
+    "kernel": "avx2",
+    "seconds": 3.0282954,
+    "threads": 28
+  },
+  "parity": {
+    "hits": 248,
+    "matches_reference": true,
+    "nonces": 1048576,
+    "zero_bits": 12
+  },
+  "work": "synthetic header, target with 32 leading zero bits"
+}

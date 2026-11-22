@@ -1,0 +1,742 @@
+{
+  "assumptions": [
+    "Model: signed carry-free sums with at most two digits per bit (cancellation allowed), free Ch/Maj choices where undetermined, round independence. It is an estimate; the measurements decide.",
+    "Only rounds below 16 are searched, so the schedule words W16+ never enter; W2 (bits) and the padding never differ.",
+    "W0 (the merkle root's last 4 bytes) never differs: the root's other 28 bytes are in block 1, so a W0 difference under one midstate needs a 224-bit merkle-root collision. Free words are W3 (nonce) and, for time-nonce, W1 (time). Time differences are not restricted to the consensus-valid window (about 2^13 s around the median of past blocks), so the time-nonce start is optimistic for the miner.",
+    "A one-round transition is measured on uniform states with the characteristic's input differences: the Markov assumption made explicit. End-to-end following is measured on header-structured pairs where the weight allows.",
+    "A solver timeout is reported as a lower bound on the weight, never as an optimum."
+  ],
+  "baseline": "One template offers 2^31 nonce pairs per difference: a characteristic below 2^-32 is followed by no pair in expectation.",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. Start nonce: optimal weights by rounds after entry [\"0\", \"11\", \"38\", \">=50\"]; last round reached at measured probability >= 2^-32: round 4; largest searched: 4 rounds, weight 50 (timeout). Start time-nonce: optimal weights by rounds after entry [\"0\", \"11\", \"38\", \">=39\"]; last round reached at measured probability >= 2^-32: round 4; largest searched: 4 rounds, weight 39 (timeout). Identities (all templates): 4-round H7 - bswap(nonce) constant: proved; 5-round H7 formula: proved.",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 5
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 6
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 5
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 6
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "One-round samples: SplitMix64::stream(seed ^ round tag, chunk); end-to-end pairs: SplitMix64::stream(seed ^ 0xe2e, i).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 4831.2796756,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "49a3e3c1ebd54756223719254e4519fa554ed7ca",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "7176ecb8a9b11485d314a724e966a7b4abfafee8a79778ed85a890d671dc7564"
+  },
+  "finished_at": "2026-11-22T05:43:21Z",
+  "hypothesis": "An optimal XOR characteristic found by a SAT solver over all differences in the nonce (or the nonce and time words) follows the second header block beyond round 5 with probability at least 2^-32, so that one template's nonce space contains a conforming pair.",
+  "hypothesis_id": "H-SAT-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "trail-sat-0001",
+  "implementation": [
+    "research/differential-cryptanalysis/trail_sat.py (z3)",
+    "experiment_engine::trail_sat"
+  ],
+  "kind": "trail-sat",
+  "methodology": "For each start and each number of rounds after entry R = 1.., the solver tightens a pseudo-Boolean weight bound from the previous optimum until the first satisfiable bound (the optimum) or a timeout. Each round of the result is measured with min(2^33, 2^(cost + 10)) samples. Identities are proved by asking z3 for a counterexample.",
+  "name": "Solver-optimal XOR characteristics from miner-controlled header words, measured",
+  "null_hypothesis": "Every solver-optimal characteristic costs more than 32 bits once it covers round 5 of the second block, and the measured transitions are no more likely than the model says.",
+  "observations": {
+    "characteristics": [
+      {
+        "characteristics": [
+          {
+            "end_to_end": {
+              "ci95": [
+                0.999999985689451,
+                1.0
+              ],
+              "count": 268435456,
+              "log2_ci95": [
+                -2.0645758176337775e-8,
+                0.0
+              ],
+              "log2_p": 0.0,
+              "of": 268435456,
+              "p": 1.0
+            },
+            "last_round": 3,
+            "measured_markov_log2": 0.0,
+            "message_difference": [
+              {
+                "word": 3,
+                "xor": "0x80000000"
+              }
+            ],
+            "model_weight": 0,
+            "per_round": [
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 3
+              }
+            ],
+            "rounds_after_entry": 1,
+            "solver_seconds": 0.006167600004118867,
+            "states": [
+              [
+                "0x80000000",
+                "0x80000000"
+              ]
+            ],
+            "status": "optimal"
+          },
+          {
+            "end_to_end": {
+              "ci95": [
+                0.00048335706787759614,
+                0.0004886301711143042
+              ],
+              "count": 130456,
+              "log2_ci95": [
+                -11.014623041966626,
+                -10.998969432086074
+              ],
+              "log2_p": -11.006796226703472,
+              "of": 268435456,
+              "p": 0.00048598647117614746
+            },
+            "last_round": 4,
+            "measured_markov_log2": -10.973999479497067,
+            "message_difference": [
+              {
+                "word": 3,
+                "xor": "0x01000000"
+              }
+            ],
+            "model_weight": 11,
+            "per_round": [
+              {
+                "measured": {
+                  "ci95": [
+                    0.24908162015202948,
+                    0.25073901413526717
+                  ],
+                  "count": 262049,
+                  "log2_ci95": [
+                    -2.005309526515471,
+                    -1.995741602822684
+                  ],
+                  "log2_p": -2.0005229220168332,
+                  "of": 1048576,
+                  "p": 0.2499094009399414
+                },
+                "model_cost": 2,
+                "round": 3
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.0019058846720501382,
+                    0.0020764934871667306
+                  ],
+                  "count": 2086,
+                  "log2_ci95": [
+                    -9.035323462421202,
+                    -8.911634937843754
+                  ],
+                  "log2_p": -8.973476557480234,
+                  "of": 1048576,
+                  "p": 0.0019893646240234375
+                },
+                "model_cost": 9,
+                "round": 4
+              }
+            ],
+            "rounds_after_entry": 2,
+            "solver_seconds": 0.1726176999945892,
+            "states": [
+              [
+                "0x01000000",
+                "0x01000000"
+              ],
+              [
+                "0x80442804",
+                "0x80042000"
+              ]
+            ],
+            "status": "optimal"
+          },
+          {
+            "end_to_end": null,
+            "last_round": 5,
+            "measured_markov_log2": -35.677317145447034,
+            "message_difference": [
+              {
+                "word": 3,
+                "xor": "0x00200000"
+              }
+            ],
+            "model_weight": 38,
+            "per_round": [
+              {
+                "measured": {
+                  "ci95": [
+                    0.2494760038209585,
+                    0.251134269907478
+                  ],
+                  "count": 262463,
+                  "log2_ci95": [
+                    -2.0030270401801182,
+                    -1.9934691819607717
+                  ],
+                  "log2_p": -1.9982454684182014,
+                  "of": 1048576,
+                  "p": 0.2503042221069336
+                },
+                "model_cost": 2,
+                "round": 3
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.0009019396294760454,
+                    0.0010205095528543961
+                  ],
+                  "count": 1006,
+                  "log2_ci95": [
+                    -10.114681508341869,
+                    -9.936494597351563
+                  ],
+                  "log2_p": -10.025585410194473,
+                  "of": 1048576,
+                  "p": 0.0009593963623046875
+                },
+                "model_cost": 10,
+                "round": 4
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    7.018399915418628e-8,
+                    8.183595446139483e-8
+                  ],
+                  "count": 651,
+                  "log2_ci95": [
+                    -23.76428260281605,
+                    -23.542689931497858
+                  ],
+                  "log2_p": -23.653486266834364,
+                  "of": 8589934592,
+                  "p": 7.578637450933456e-8
+                },
+                "model_cost": 26,
+                "round": 5
+              }
+            ],
+            "rounds_after_entry": 3,
+            "solver_seconds": 70.31905570000526,
+            "states": [
+              [
+                "0x00200000",
+                "0x00200000"
+              ],
+              [
+                "0x90088500",
+                "0x10008400"
+              ],
+              [
+                "0xae12214c",
+                "0x80000208"
+              ]
+            ],
+            "status": "optimal"
+          },
+          {
+            "rounds_after_entry": 4,
+            "solver_seconds": 2329.1463193999953,
+            "status": "timeout",
+            "weight_at_least": 50
+          }
+        ],
+        "start": "nonce",
+        "z3_version": "5.4.1"
+      },
+      {
+        "characteristics": [
+          {
+            "end_to_end": {
+              "ci95": [
+                0.999999985689451,
+                1.0
+              ],
+              "count": 268435456,
+              "log2_ci95": [
+                -2.0645758176337775e-8,
+                0.0
+              ],
+              "log2_p": 0.0,
+              "of": 268435456,
+              "p": 1.0
+            },
+            "last_round": 3,
+            "measured_markov_log2": 0.0,
+            "message_difference": [
+              {
+                "word": 3,
+                "xor": "0x80000000"
+              }
+            ],
+            "model_weight": 0,
+            "per_round": [
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 1
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 2
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 3
+              }
+            ],
+            "rounds_after_entry": 1,
+            "solver_seconds": 0.027445300002000295,
+            "states": [
+              [
+                "0x00000000",
+                "0x00000000"
+              ],
+              [
+                "0x00000000",
+                "0x00000000"
+              ],
+              [
+                "0x80000000",
+                "0x80000000"
+              ]
+            ],
+            "status": "optimal"
+          },
+          {
+            "end_to_end": {
+              "ci95": [
+                0.00048576080396344693,
+                0.0004910469606056789
+              ],
+              "count": 131103,
+              "log2_ci95": [
+                -11.007466295934096,
+                -10.99185137824116
+              ],
+              "log2_p": -10.99965882676475,
+              "of": 268435456,
+              "p": 0.0004883967339992523
+            },
+            "last_round": 4,
+            "measured_markov_log2": -10.974661524615234,
+            "message_difference": [
+              {
+                "word": 3,
+                "xor": "0x00000400"
+              }
+            ],
+            "model_weight": 11,
+            "per_round": [
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 1
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 2
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.2494464726448664,
+                    0.2511046734925668
+                  ],
+                  "count": 262432,
+                  "log2_ci95": [
+                    -2.0031978261573355,
+                    -1.9936392149764548
+                  ],
+                  "log2_p": -1.9984158779146513,
+                  "of": 1048576,
+                  "p": 0.250274658203125
+                },
+                "model_cost": 2,
+                "round": 3
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.0019021516150027383,
+                    0.0020725971776330695
+                  ],
+                  "count": 2082,
+                  "log2_ci95": [
+                    -9.038152040832166,
+                    -8.914344537873488
+                  ],
+                  "log2_p": -8.976245646700583,
+                  "of": 1048576,
+                  "p": 0.0019855499267578125
+                },
+                "model_cost": 9,
+                "round": 4
+              }
+            ],
+            "rounds_after_entry": 2,
+            "solver_seconds": 1.8626666000054684,
+            "states": [
+              [
+                "0x00000000",
+                "0x00000000"
+              ],
+              [
+                "0x00000000",
+                "0x00000000"
+              ],
+              [
+                "0x00000400",
+                "0x00000400"
+              ],
+              [
+                "0xa0120110",
+                "0x80020010"
+              ]
+            ],
+            "status": "optimal"
+          },
+          {
+            "end_to_end": null,
+            "last_round": 5,
+            "measured_markov_log2": -35.533284668609035,
+            "message_difference": [
+              {
+                "word": 3,
+                "xor": "0x00000020"
+              }
+            ],
+            "model_weight": 38,
+            "per_round": [
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 1
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.9999963365128064,
+                    1.0
+                  ],
+                  "count": 1048576,
+                  "log2_ci95": [
+                    -5.285304487903985e-6,
+                    0.0
+                  ],
+                  "log2_p": 0.0,
+                  "of": 1048576,
+                  "p": 1.0
+                },
+                "model_cost": 0,
+                "round": 2
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.24868152171689198,
+                    0.2503380290793932
+                  ],
+                  "count": 261629,
+                  "log2_ci95": [
+                    -2.007628782820322,
+                    -1.9980506260872815
+                  ],
+                  "log2_p": -2.0028370618015576,
+                  "of": 1048576,
+                  "p": 0.24950885772705078
+                },
+                "model_cost": 2,
+                "round": 3
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    0.0018359031942615195,
+                    0.002003424341560458
+                  ],
+                  "count": 2011,
+                  "log2_ci95": [
+                    -9.08929429608514,
+                    -8.963316256608646
+                  ],
+                  "log2_p": -9.026302633694648,
+                  "of": 1048576,
+                  "p": 0.0019178390502929688
+                },
+                "model_cost": 9,
+                "round": 4
+              },
+              {
+                "measured": {
+                  "ci95": [
+                    3.790854401296328e-8,
+                    4.65905229731913e-8
+                  ],
+                  "count": 361,
+                  "log2_ci95": [
+                    -24.652901712392918,
+                    -24.355388234477918
+                  ],
+                  "log2_p": -24.50414497311283,
+                  "of": 8589934592,
+                  "p": 4.202593117952347e-8
+                },
+                "model_cost": 27,
+                "round": 5
+              }
+            ],
+            "rounds_after_entry": 3,
+            "solver_seconds": 1619.7737264000025,
+            "states": [
+              [
+                "0x00000000",
+                "0x00000000"
+              ],
+              [
+                "0x00000000",
+                "0x00000000"
+              ],
+              [
+                "0x00000020",
+                "0x00000020"
+              ],
+              [
+                "0x85009008",
+                "0x84001000"
+              ],
+              [
+                "0x214c2e12",
+                "0x82088000"
+              ]
+            ],
+            "status": "optimal"
+          },
+          {
+            "rounds_after_entry": 4,
+            "solver_seconds": 777.6787593999907,
+            "status": "timeout",
+            "weight_at_least": 39
+          }
+        ],
+        "start": "time-nonce",
+        "z3_version": "5.4.1"
+      }
+    ],
+    "identities": {
+      "five_round": {
+        "seconds": 0.0065559999929973856,
+        "status": "proved"
+      },
+      "four_round": {
+        "seconds": 0.0030254000012064353,
+        "status": "proved"
+      },
+      "z3_version": "5.4.1"
+    },
+    "z3_version": "5.4.1"
+  },
+  "params": {
+    "budget_ms": 2400000,
+    "end_to_end_samples_log2": 28,
+    "max_rounds_after_entry": 5,
+    "reproduce": false,
+    "round_samples_max_log2": 33,
+    "starts": [
+      "nonce",
+      "time-nonce"
+    ],
+    "timeout_ms": 600000
+  },
+  "primitive": "sha256-compression",
+  "reproduction": {
+    "matched": null,
+    "method": "not run in-process for this kind; use `bmr research reproduce <id>`"
+  },
+  "reproduction_command": "bmr research trail-sat --seed 1112363596 --params '{\"budget_ms\":2400000,\"end_to_end_samples_log2\":28,\"max_rounds_after_entry\":5,\"reproduce\":false,\"round_samples_max_log2\":33,\"starts\":[\"nonce\",\"time-nonce\"],\"timeout_ms\":600000}'",
+  "result": "reduced-round-only",
+  "result_digest": "25a87d92055b6577900e5546b27d592b05f552e34df0fa05989598c77668fcac",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "sha256-compression",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 5
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 6
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 5
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 6
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T04:22:50Z",
+  "status": "completed",
+  "verification": {
+    "detail": "identities hold on 4096 headers; MSB control 2^-10.988",
+    "method": "4- and 5-round identities rechecked with the independent SHA-256 over 4096 random headers (the 5-round formula re-derived in Rust); measurement positive control: MSB template at 2^-11",
+    "passed": true
+  }
+}
