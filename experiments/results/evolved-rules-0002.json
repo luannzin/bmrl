@@ -1,0 +1,1484 @@
+{
+  "assumptions": [
+    "Rule language: terminals nonce, bswap(nonce), midstate words, second-block state after round 2, probe digest words (reduced-round SHA256d of the template at nonce 0) and constants; operations not, bswap, rotr, shr, shl, Sigma0, Sigma1, sigma0, sigma1, xor, and, or, add, sub, Ch, Maj; at most max_size nodes.",
+    "Predicate: the expression has j leading zero bits (keeps 2^-j of nonces) or bit b is clear (keeps half).",
+    "Hit level: the hash number's top k bits are zero; fitness uses k = fitness_k on the first 2^fitness_bits nonces of each discovery template; held-out tests use all 2^nonce_bits nonces at k = fitness_k and k = 8.",
+    "Templates are synthetic (as in the nonce atlas) and every round count cuts all three compressions; reduced-round results say nothing about 64 rounds.",
+    "Held-out p-values are one-sided binomial normal approximations with a Bonferroni correction over every held-out test of the run (alpha 0.001)."
+  ],
+  "baseline": "A = 1: a selection rule that ignores the hash keeps hits at the overall rate.",
+  "candidate_anomaly": false,
+  "conclusion": "NEGATIVE RESULT: no deviation from the baseline was detected in any tested configuration at the stated sample size and significance level. 5 rounds: 450000 rules evolved; best discovery fitness 4.1; best held-out amplification at k = 6 is 1.0009 (`keep if bit 12 of maj((((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), 0xc6ae1234, n) is 0`); no held-out rule beats A = 1. 6 rounds: 450000 rules evolved; best discovery fitness 4.9; best held-out amplification at k = 6 is 1.0118 (`keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa831c66d, (ch(n, 0x923f82a4, bswap(n)) + 0x243185be)) has 5 leading zero bits`); no held-out rule beats A = 1. 8 rounds: 450000 rules evolved; best discovery fitness 4.9; best held-out amplification at k = 6 is 1.0032 (`keep if not((n & maj((bswap(n) & mid5), (bswap(n) << 8), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits`); no held-out rule beats A = 1. 64 rounds: 450000 rules evolved; best discovery fitness 4.7; best held-out amplification at k = 6 is 0.9994 (`keep if (maj(n, ch(0x391c0cb3, mid5, (n >> 23)), (pre3 + 0xae8beb2b)) << 23) has 6 leading zero bits`); no held-out rule beats A = 1. Held-out tests: 80 (rules x hit levels x round counts), Bonferroni threshold 1.3e-5. Work per hit with a rule is 1/A of exhaustive search.",
+  "configurations": [
+    {
+      "deviation_detected": false,
+      "rounds": 5
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 6
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 8
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Templates: nonce_atlas::synthetic(seed, i), discovery i < discovery_templates, held-out after; GP randomness SplitMix64::stream(seed ^ rounds, 0).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 1332.3540107,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "7c300b437700e53472bdc478ce4d6978573c762f",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5aa67a81517c4de27805ea51556e61acf4a27a4fb5459d706f074804f1207e97"
+  },
+  "finished_at": "2026-11-22T19:18:07Z",
+  "hypothesis": "A cheap expression over the nonce, template constants and a one-hash template probe selects nonces that meet a leading-zero target more often than the rest, on templates the search never saw.",
+  "hypothesis_id": "H-EVOLVE-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "evolved-rules-0002",
+  "implementation": [
+    "experiment_engine::evolved_rules",
+    "cpu_backend::Prepared::hash8"
+  ],
+  "kind": "evolved-rules",
+  "methodology": "Per round count: compute the top 16 bits of the hash number for every nonce of each template; evolve a population of rules (tournament selection, subtree crossover and mutation, elitism, parsimony penalty) for a fixed number of generations; keep the best distinct rules; measure each once on the held-out templates.",
+  "name": "Evolved cheap nonce-selection rules (genetic programming), held-out tested",
+  "null_hypothesis": "Every evolved rule's held-out amplification is 1 within its confidence interval (at 64 rounds, and at every round count where the header map behaves like a random function).",
+  "observations": {
+    "bonferroni_threshold": 0.0000125,
+    "by_rounds": [
+      {
+        "deviation": false,
+        "evaluations": 450000,
+        "rounds": 5,
+        "rules": [
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj((((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), 0xc6ae1234, n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x11e21054, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x12835b01, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 0.9996189908446546,
+                "amplification_ci95": [
+                  0.9976658001264769,
+                  1.0015759446675425
+                ],
+                "expected": 988940.795497179,
+                "hits": 988564,
+                "k": 6,
+                "kept": 63307521,
+                "p_one_sided": 1.0,
+                "z": -0.3788964688647141
+              },
+              {
+                "amplification": 0.9996404913125743,
+                "amplification_ci95": [
+                  0.9957145030236353,
+                  1.0035818984271707
+                ],
+                "expected": 247195.8690624237,
+                "hits": 247107,
+                "k": 8,
+                "kept": 63307521,
+                "p_one_sided": 1.0,
+                "z": -0.17874339144344878
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x12835b01, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + probe1) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x1a22ba77, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x1c5afe33, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x1df692c4, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x2541f5b0, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x257b9b12, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.108191110085772,
+            "heldout": [
+              {
+                "amplification": 1.0009207654746723,
+                "amplification_ci95": [
+                  0.9985780082858811,
+                  1.0032689314859002
+                ],
+                "expected": 688011.5027620792,
+                "hits": 688645,
+                "k": 6,
+                "kept": 44043615,
+                "p_one_sided": 0.22251038822001049,
+                "z": 0.7637423551026424
+              },
+              {
+                "amplification": 1.0040231426175978,
+                "amplification_ci95": [
+                  0.999306963562595,
+                  1.008761491459327
+                ],
+                "expected": 171916.35598158836,
+                "hits": 172608,
+                "k": 8,
+                "kept": 44043615,
+                "p_one_sided": 0.047647195742190555,
+                "z": 1.6681074685638293
+              }
+            ],
+            "rule": "keep if bit 12 of maj(0x2b0a5399, (((bigs0(ch(mid7, pre3, probe6)) | bswap(n)) + 0xa26a3f18) << 8), n) is 0",
+            "size": 13
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 450000,
+        "rounds": 6,
+        "rules": [
+          {
+            "discovery_fitness": 4.854604057255309,
+            "heldout": [
+              {
+                "amplification": 1.0073631149731443,
+                "amplification_ci95": [
+                  0.9928629112947498,
+                  1.0220716497939588
+                ],
+                "expected": 17858.50576877594,
+                "hits": 17990,
+                "k": 6,
+                "kept": 1142624,
+                "p_one_sided": 0.16256386676807946,
+                "z": 0.9839751738778731
+              },
+              {
+                "amplification": 1.0061318996094362,
+                "amplification_ci95": [
+                  0.9771844486719804,
+                  1.0359333874784085
+                ],
+                "expected": 4462.635566711426,
+                "hits": 4490,
+                "k": 8,
+                "kept": 1142624,
+                "p_one_sided": 0.3410390324514504,
+                "z": 0.409629049012217
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), (n << 26)) + 0x6ca6351), 0xa831c66d, (ch(n, 0x90befffa, bswap(n)) + 0x23eeab15)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.822580435230245,
+            "heldout": [
+              {
+                "amplification": 1.0100191331478325,
+                "amplification_ci95": [
+                  0.9960391798751062,
+                  1.0241921120921096
+                ],
+                "expected": 19272.90222644806,
+                "hits": 19466,
+                "k": 6,
+                "kept": 1233120,
+                "p_one_sided": 0.08212409145580235,
+                "z": 1.3909249813584155
+              },
+              {
+                "amplification": 1.010365904964753,
+                "amplification_ci95": [
+                  0.9824265334821645,
+                  1.0390966112778441
+                ],
+                "expected": 4816.077003479004,
+                "hits": 4866,
+                "k": 8,
+                "kept": 1233120,
+                "p_one_sided": 0.23595565216214934,
+                "z": 0.7193726694088007
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa831c66d, (ch(n, 0x90befffa, bswap(n)) + 0x23eeab15)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.822580435230245,
+            "heldout": [
+              {
+                "amplification": 1.0100191331478325,
+                "amplification_ci95": [
+                  0.9960391798751062,
+                  1.0241921120921096
+                ],
+                "expected": 19272.90222644806,
+                "hits": 19466,
+                "k": 6,
+                "kept": 1233120,
+                "p_one_sided": 0.08212409145580235,
+                "z": 1.3909249813584155
+              },
+              {
+                "amplification": 1.010365904964753,
+                "amplification_ci95": [
+                  0.9824265334821645,
+                  1.0390966112778441
+                ],
+                "expected": 4816.077003479004,
+                "hits": 4866,
+                "k": 8,
+                "kept": 1233120,
+                "p_one_sided": 0.23595565216214934,
+                "z": 0.7193726694088007
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa9dfaeb8, (ch(n, 0x90befffa, bswap(n)) + 0x23eeab15)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.822580435230245,
+            "heldout": [
+              {
+                "amplification": 1.0100191331478325,
+                "amplification_ci95": [
+                  0.9960391798751062,
+                  1.0241921120921096
+                ],
+                "expected": 19272.90222644806,
+                "hits": 19466,
+                "k": 6,
+                "kept": 1233120,
+                "p_one_sided": 0.08212409145580235,
+                "z": 1.3909249813584155
+              },
+              {
+                "amplification": 1.010365904964753,
+                "amplification_ci95": [
+                  0.9824265334821645,
+                  1.0390966112778441
+                ],
+                "expected": 4816.077003479004,
+                "hits": 4866,
+                "k": 8,
+                "kept": 1233120,
+                "p_one_sided": 0.23595565216214934,
+                "z": 0.7193726694088007
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xab1c5ed5, (ch(n, 0x90befffa, bswap(n)) + 0x23eeab15)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.7807110037644795,
+            "heldout": [
+              {
+                "amplification": 1.0097995317979218,
+                "amplification_ci95": [
+                  0.9958204544541527,
+                  1.0239716537149692
+                ],
+                "expected": 19271.151735782623,
+                "hits": 19460,
+                "k": 6,
+                "kept": 1233008,
+                "p_one_sided": 0.08685538926730124,
+                "z": 1.3603766280631666
+              },
+              {
+                "amplification": 1.0092117409000487,
+                "amplification_ci95": [
+                  0.9812872437955732,
+                  1.0379276519071376
+                ],
+                "expected": 4815.639575958252,
+                "hits": 4860,
+                "k": 8,
+                "kept": 1233008,
+                "p_one_sided": 0.26133110830907186,
+                "z": 0.6392470042861963
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa831c66d, (ch(n, 0x923f82a4, bswap(n)) + 0x23eeab15)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.7807110037644795,
+            "heldout": [
+              {
+                "amplification": 1.0097995317979218,
+                "amplification_ci95": [
+                  0.9958204544541527,
+                  1.0239716537149692
+                ],
+                "expected": 19271.151735782623,
+                "hits": 19460,
+                "k": 6,
+                "kept": 1233008,
+                "p_one_sided": 0.08685538926730124,
+                "z": 1.3603766280631666
+              },
+              {
+                "amplification": 1.0092117409000487,
+                "amplification_ci95": [
+                  0.9812872437955732,
+                  1.0379276519071376
+                ],
+                "expected": 4815.639575958252,
+                "hits": 4860,
+                "k": 8,
+                "kept": 1233008,
+                "p_one_sided": 0.26133110830907186,
+                "z": 0.6392470042861963
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xabd7a33c, (ch(n, 0x923f82a4, bswap(n)) + 0x23eeab15)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.727503912460405,
+            "heldout": [
+              {
+                "amplification": 1.00980658476899,
+                "amplification_ci95": [
+                  0.995972093485936,
+                  1.023830119581722
+                ],
+                "expected": 19679.016060829163,
+                "hits": 19872,
+                "k": 6,
+                "kept": 1259104,
+                "p_one_sided": 0.08445935951977676,
+                "z": 1.3756865044523887
+              },
+              {
+                "amplification": 1.0137140795687845,
+                "amplification_ci95": [
+                  0.986014256055626,
+                  1.0421888868364633
+                ],
+                "expected": 4917.560188293457,
+                "hits": 4985,
+                "k": 8,
+                "kept": 1259104,
+                "p_one_sided": 0.16809911525883495,
+                "z": 0.9617041872880502
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa81a664b, (ch(n, 0x9143fe3c, bswap(n)) + 0x243185be)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.727503912460405,
+            "heldout": [
+              {
+                "amplification": 1.00980658476899,
+                "amplification_ci95": [
+                  0.995972093485936,
+                  1.023830119581722
+                ],
+                "expected": 19679.016060829163,
+                "hits": 19872,
+                "k": 6,
+                "kept": 1259104,
+                "p_one_sided": 0.08445935951977676,
+                "z": 1.3756865044523887
+              },
+              {
+                "amplification": 1.0137140795687845,
+                "amplification_ci95": [
+                  0.986014256055626,
+                  1.0421888868364633
+                ],
+                "expected": 4917.560188293457,
+                "hits": 4985,
+                "k": 8,
+                "kept": 1259104,
+                "p_one_sided": 0.16809911525883495,
+                "z": 0.9617041872880502
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa831c66d, (ch(n, 0x9143fe3c, bswap(n)) + 0x243185be)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.681834697681228,
+            "heldout": [
+              {
+                "amplification": 1.0117518613001453,
+                "amplification_ci95": [
+                  0.9978484751420494,
+                  1.0258458131998327
+                ],
+                "expected": 19520.596655607224,
+                "hits": 19750,
+                "k": 6,
+                "kept": 1248968,
+                "p_one_sided": 0.05030281744964037,
+                "z": 1.6419245674187886
+              },
+              {
+                "amplification": 1.0129207362084127,
+                "amplification_ci95": [
+                  0.9851212887795946,
+                  1.0415014616333556
+                ],
+                "expected": 4877.972997665405,
+                "hits": 4941,
+                "k": 8,
+                "kept": 1248968,
+                "p_one_sided": 0.18341787195406295,
+                "z": 0.9024163513436071
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xa831c66d, (ch(n, 0x923f82a4, bswap(n)) + 0x243185be)) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.681834697681228,
+            "heldout": [
+              {
+                "amplification": 1.0117518613001453,
+                "amplification_ci95": [
+                  0.9978484751420494,
+                  1.0258458131998327
+                ],
+                "expected": 19520.596655607224,
+                "hits": 19750,
+                "k": 6,
+                "kept": 1248968,
+                "p_one_sided": 0.05030281744964037,
+                "z": 1.6419245674187886
+              },
+              {
+                "amplification": 1.0129207362084127,
+                "amplification_ci95": [
+                  0.9851212887795946,
+                  1.0415014616333556
+                ],
+                "expected": 4877.972997665405,
+                "hits": 4941,
+                "k": 8,
+                "kept": 1248968,
+                "p_one_sided": 0.18341787195406295,
+                "z": 0.9024163513436071
+              }
+            ],
+            "rule": "keep if maj((ch(0xbef9a3f7, bswap(n), rotr(n, 7)) + 0x6ca6351), 0xac069a10, (ch(n, 0x923f82a4, bswap(n)) + 0x243185be)) has 5 leading zero bits",
+            "size": 15
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 450000,
+        "rounds": 8,
+        "rules": [
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) & mid5), (bswap(n) << 8), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) << 8), (bswap(n) & mid5), maj(bswap(n), smalls1(pre1), mid7)))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) << 8), (bswap(n) & mid5), maj(mid7, bswap(n), smalls1(pre1))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) << 8), (bswap(n) & mid5), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) << 8), (mid5 & bswap(n)), maj(mid7, bswap(n), smalls1(pre1))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) << 8), (mid5 & bswap(n)), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((bswap(n) << 8), maj(mid7, smalls1(pre1), bswap(n)), (bswap(n) & mid5)))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj((n << 16), (bswap(n) & mid5), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.850263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not((n & maj(rotr(n, 16), (bswap(n) & mid5), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.800263173762442,
+            "heldout": [
+              {
+                "amplification": 1.0031520453826808,
+                "amplification_ci95": [
+                  0.9970187004023477,
+                  1.0093225170241233
+                ],
+                "expected": 100229.07341194153,
+                "hits": 100545,
+                "k": 6,
+                "kept": 6422032,
+                "p_one_sided": 0.15916265368451135,
+                "z": 0.9979052776470131
+              },
+              {
+                "amplification": 1.0026043788346444,
+                "amplification_ci95": [
+                  0.9903055304931627,
+                  1.0150553624290652
+                ],
+                "expected": 25052.753139972687,
+                "hits": 25118,
+                "k": 8,
+                "kept": 6422032,
+                "p_one_sided": 0.3400880958594327,
+                "z": 0.41222268409457213
+              }
+            ],
+            "rule": "keep if not(((bswap(n) << 24) & maj((bswap(n) << 8), (bswap(n) & mid5), maj(mid7, smalls1(pre1), bswap(n))))) has 2 leading zero bits",
+            "size": 15
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 450000,
+        "rounds": 64,
+        "rules": [
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj((pre3 + 0x7201992a), ch(0x391c0cb3, mid5, (n >> 23)), n) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj((pre3 + 0x7201992a), n, ch(0x391c0cb3, mid5, (n >> 23))) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj(ch(0x391c0cb3, mid5, (n >> 23)), n, (pre3 + 0x7201992a)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj(n, ch(0x391c0cb3, mid5, (n >> 23)), (0x7201992a + pre3)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj(n, ch(0x391c0cb3, mid5, (n >> 23)), (mid0 + 0x7201992a)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj(n, ch(0x391c0cb3, mid5, (n >> 23)), (pre3 + 0x7201992a)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9994210664130289,
+                "amplification_ci95": [
+                  0.9922602361931162,
+                  1.0066327445317895
+                ],
+                "expected": 73177.36483430862,
+                "hits": 73135,
+                "k": 6,
+                "kept": 4661422,
+                "p_one_sided": 1.0,
+                "z": -0.15660914879958687
+              },
+              {
+                "amplification": 0.9947241003509231,
+                "amplification_ci95": [
+                  0.9804002431955239,
+                  1.0092564003976223
+                ],
+                "expected": 18285.472316980362,
+                "hits": 18189,
+                "k": 8,
+                "kept": 4661422,
+                "p_one_sided": 1.0,
+                "z": -0.713427125432112
+              }
+            ],
+            "rule": "keep if (maj(n, ch(0x391c0cb3, mid5, (n >> 23)), (pre3 + 0xae8beb2b)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj(n, ch(0x391c0cb3, mid5, rotr(n, 23)), (pre3 + 0x7201992a)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.6776123357714585,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj(n, ch(0x9a94b6b5, mid5, (n >> 23)), (pre3 + 0x7201992a)) << 23) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 4.627612335771458,
+            "heldout": [
+              {
+                "amplification": 0.9977235743363906,
+                "amplification_ci95": [
+                  0.9907984868053076,
+                  1.0046962892158753
+                ],
+                "expected": 78131.8613743782,
+                "hits": 77954,
+                "k": 6,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.6363082564287366
+              },
+              {
+                "amplification": 0.9934678161727624,
+                "amplification_ci95": [
+                  0.9796100306880997,
+                  1.0075208599903023
+                ],
+                "expected": 19520.511569976807,
+                "hits": 19393,
+                "k": 8,
+                "kept": 4980883,
+                "p_one_sided": 1.0,
+                "z": -0.9126494481388623
+              }
+            ],
+            "rule": "keep if (maj((pre3 + 0x7201992a), ch(0x391c0cb3, mid5, (bswap(n) + bswap(n))), n) << 23) has 6 leading zero bits",
+            "size": 12
+          }
+        ]
+      }
+    ]
+  },
+  "params": {
+    "discovery_templates": 8,
+    "fitness_bits": 18,
+    "fitness_k": 6,
+    "generations": 150,
+    "hall_of_fame": 10,
+    "heldout_templates": 56,
+    "max_size": 15,
+    "nonce_bits": 22,
+    "population": 3000,
+    "reproduce": false,
+    "rounds": [
+      5,
+      6,
+      8,
+      64
+    ]
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "matched": null,
+    "method": "not run in-process for this kind; use `bmr research reproduce <id>`"
+  },
+  "reproduction_command": "bmr research evolved-rules --seed 1112363596 --params '{\"discovery_templates\":8,\"fitness_bits\":18,\"fitness_k\":6,\"generations\":150,\"hall_of_fame\":10,\"heldout_templates\":56,\"max_size\":15,\"nonce_bits\":22,\"population\":3000,\"reproduce\":false,\"rounds\":[5,6,8,64]}'",
+  "result": "negative",
+  "result_digest": "85ee3350b4b9f7d85472bb41414238214412a5f5e332cb418421863bb230cb53",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 5
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 6
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 8
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T18:55:54Z",
+  "status": "completed",
+  "verification": {
+    "detail": "independent hashes and both evaluators agree",
+    "method": "top 16 hash-number bits recomputed with verification::independent for 256 nonces per round count; vectorised rule evaluation checked against scalar evaluation on 64 random rules per round count",
+    "passed": true
+  }
+}

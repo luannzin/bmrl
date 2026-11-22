@@ -243,3 +243,32 @@ Next:
 2. Second seeds for the new hypotheses; evolve rules with a larger budget
    at 5 rounds, where structure is known to exist.
 3. Full-suite rerun from one commit.
+
+## 2026-11-22: Wave 2 (X1, X4, X2)
+
+The user read the two rediscoveries (4-round shortcut, AsicBoost) as
+momentum and asked to go further. They are positive controls: both were
+known. Three pushes:
+
+- X1 (work-sharing v2, work-sharing-0002): the share of the r-round
+  double hash's per-nonce work needed to decide the target, each target
+  DAG checked against the reference: 4 rounds 9.3%, 5 rounds 33.7%,
+  8 rounds 55.9%, 11 rounds 72.7%, 64 rounds 96.1%. The 4-round shortcut
+  is dead code: the target e(r-4) reads outer words W0..W(r-4), so at
+  4 rounds it reads one inner digest word (one inner round of the nonce),
+  and from 11 rounds every word matters; at 64 only the early reject
+  (3.9%) is left. That is why it cannot stretch to 64 rounds.
+- X4 (header-atlas v2, header-atlas-0002): luck (hash / target) against
+  every nonce bit, BIP320 version bit, low time bit and the previous
+  block's luck over 977,066 real blocks: smallest p 0.016 (version bit
+  14), Bonferroni threshold 1.7e-5 over 60 tests. Nothing miners choose
+  predicts luck.
+- X2 (evolved-rules at scale, evolved-rules-0002, reproduce off for its
+  22-minute run): rounds 5, 6, 8, 64; population 3,000 for 150
+  generations (450,000 rules each); 8 discovery and 56 held-out templates
+  of 2^22 nonces. Best held-out A: 1.0009, 1.0118, 1.0032, 0.9994, none
+  significant; at 64 rounds the top rule's interval is 0.991..1.005.
+
+Current state: every lens at 64 rounds is null, and X1 shows exactly why
+the reduced-round shortcuts end. Nothing found changes the number of
+hashes per block.

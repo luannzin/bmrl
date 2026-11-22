@@ -50,6 +50,18 @@ experiment kind reproduced its previous result digest bit for bit. Details:
     iteration against the model's 1.47e5), correct on every input; simulated
     Grover reaches 0.9999 as theory says. With Pauli noise at 1e-3 per gate
     even 4 rounds is a random guess; 8 rounds drops to 0.099 at 1e-5.
+- **Wave 2 (2026-11-22):**
+  - *Dead-code frontier* [work-sharing-0002]: deciding the target needs
+    9.3% of the r-round double hash's per-nonce work at 4 rounds, 33.7% at
+    5, 55.9% at 8, 72.7% at 11 and 96.1% at 64. The target reads inner
+    digest words W0..W(r-4), so the reduced-round shortcut is dead code
+    that is gone by 11 rounds; at 64 only the early reject remains.
+  - *Luck on the real chain* [header-atlas-0002]: no nonce, version-rolling
+    or time bit, nor the previous block's luck, shifts hash / target
+    (smallest p 0.016, threshold 1.7e-5 over 60 tests).
+  - *Evolved rules at scale* [evolved-rules-0002]: 450,000 rules per round
+    count, 56 held-out templates of 2^22 nonces: nothing at 5, 6, 8 or 64
+    rounds; at 64 the best rule's held-out A is 0.998 (0.991..1.005).
 
 ## 2. Disproven or invalidated
 

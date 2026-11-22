@@ -1,0 +1,1025 @@
+{
+  "assumptions": [
+    "Headers come from public P2P peers; nothing is trusted: links, proof of work, retargets and median time past are recomputed, and known block hashes are checked.",
+    "The last 6 blocks below the downloaded tip are excluded (reorg margin).",
+    "hash / target is computed in f64 from the 256-bit values (relative error about 1e-16).",
+    "Nonce, version and time statistics describe miner software and hardware; they are not tests of SHA-256 and are never flagged as deviations.",
+    "Economics: subsidy only (fees are not in headers); device rates are this project's measurements except the Bitaxe-class figure, a vendor specification."
+  ],
+  "baseline": "Uniform(0, 1) for hash / target; 1/2 for each nonce bit.",
+  "candidate_anomaly": false,
+  "conclusion": "NEGATIVE RESULT: no deviation from the baseline was detected in any tested configuration at the stated sample size and significance level. 977066 main-chain headers (heights 0..=977065, data sha256 85826ca56ca71d2e), validated here: 0 link, 0 proof-of-work, 0 difficulty and 0 median-time-past failures; known hashes match; total work 2^96.44. hash / target over 977065 blocks: KS p = 0.869, 20-bin chi-square p = 0.760; per-era KS p 0.064, 0.571, 0.508, 0.340, 0.992; luck against 52 miner-chosen bits and the previous block: smallest p 1.62e-2 (luck vs version bit 14 (BIP9 blocks)); Bonferroni threshold 1.7e-5 over 60 tests: consistent with a random function. Luckiest block: height 756951, hash = 6.205e-7 x target (20.6 extra zero bits). Miner behaviour (not SHA-256): nonce-bit max |z| per era 112.9 (bit 7), 35.7 (bit 7), 63.3 (bit 1), 148.8 (bit 7), 101.9 (bit 7); BIP320 version-rolling bits in 95.9% of the last year's blocks; 16352 blocks earlier than their parent; mean interval 577.6 s. Network hashrate over the last 2016 blocks: 9.873e20 H/s; subsidy 312500000 sats. cpu-avx2 x28 (bench-cpu): 5.314e-3 sats/day, one block per 1.610e8 years; gpu v2 RX 7600 (bench-gpu-0006): 7.985e-2 sats/day, one block per 1.071e7 years; gpu v3 RX 7600 (bench-gpu-0006): 8.723e-2 sats/day, one block per 9.808e6 years; Bitaxe-class BM1370 board (vendor figure, not measured): 5.469e1 sats/day, one block per 1.564e4 years",
+  "configurations": [
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "experiments/data/mainnet-headers.bin, heights 0..=params.height.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 2,
+  "duration_seconds": 3.5833161000000002,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "7c300b437700e53472bdc478ce4d6978573c762f",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5aa67a81517c4de27805ea51556e61acf4a27a4fb5459d706f074804f1207e97"
+  },
+  "finished_at": "2026-11-22T18:55:44Z",
+  "hypothesis": "Over every main-chain block, the winning hash divided by its target departs from Uniform(0, 1), i.e. real-world SHA256d mining shows structure below the target.",
+  "hypothesis_id": "H-MAINNET-01",
+  "hypothesis_status": "not-supported-single-seed",
+  "id": "header-atlas-0002",
+  "implementation": [
+    "experiment_engine::header_atlas",
+    "mining_engine::p2p (download)",
+    "bitcoin_header::{next_work_required, median_time_past, check_proof_of_work}"
+  ],
+  "kind": "header-atlas",
+  "methodology": "Load headers 0..=height, validate every consensus rule on headers, compute u = hash / target per block, test u with Kolmogorov-Smirnov over all blocks and per halving era and with a 20-bin chi-square; version 2 adds luck tests: the mean of u split by every nonce bit, BIP320 version bit and low time bit, and by the previous block's luck (Bonferroni over all tests at 0.001); describe nonce bits per era, version bits per year, timestamps; estimate hashrate from the last 2016 blocks.",
+  "name": "Mainnet header atlas: chain validation, hash/target uniformity, miner behaviour, economics",
+  "null_hypothesis": "hash / target is uniform on [0, 1] in every halving era, as for a random function.",
+  "observations": {
+    "data_sha256": "85826ca56ca71d2e0da10dfb4954f32f5d02a074e50e8e150f6c50a8962b0fc4",
+    "economics": {
+      "devices": [
+        {
+          "device": "cpu-avx2 x28 (bench-cpu)",
+          "expected_sats_per_day": 0.005314288383480953,
+          "expected_years_per_block": 160995849.15983853,
+          "hashes_per_second": 116600000.0,
+          "network_share": 1.1809529741068786e-13,
+          "p_block_within_a_year": 6.211340219941519e-9
+        },
+        {
+          "device": "gpu v2 RX 7600 (bench-gpu-0006)",
+          "expected_sats_per_day": 0.07985105701422497,
+          "expected_years_per_block": 10714678.089062313,
+          "hashes_per_second": 1752000000.0,
+          "network_share": 1.7744679336494438e-12,
+          "p_block_within_a_year": 9.332991113275568e-8
+        },
+        {
+          "device": "gpu v3 RX 7600 (bench-gpu-0006)",
+          "expected_sats_per_day": 0.08723454516280056,
+          "expected_years_per_block": 9807793.109737288,
+          "hashes_per_second": 1914000000.0,
+          "network_share": 1.9385454480622348e-12,
+          "p_block_within_a_year": 1.0195973121351898e-7
+        },
+        {
+          "device": "Bitaxe-class BM1370 board (vendor figure, not measured)",
+          "expected_sats_per_day": 54.69250480426368,
+          "expected_years_per_block": 15643.430010030972,
+          "hashes_per_second": 1200000000000.0,
+          "network_share": 1.215388995650304e-9,
+          "p_block_within_a_year": 0.00006392255648157708
+        }
+      ],
+      "fees": "not included (not in headers)",
+      "network_hashes_per_second": 9.87338213769107e+20,
+      "period_first_height": 975049,
+      "subsidy_sats": 312500000
+    },
+    "hash_over_target": {
+      "bonferroni_threshold": 0.000016666666666666667,
+      "deviation": false,
+      "luckiest": {
+        "height": 756951,
+        "ratio": 6.204889752448108e-7
+      },
+      "tests": [
+        {
+          "d": 0.0006030070005593746,
+          "n": 977065,
+          "p": 0.8693726174023357,
+          "test": "KS all blocks"
+        },
+        {
+          "d": 0.00286425638861465,
+          "n": 209999,
+          "p": 0.06365087395513881,
+          "test": "KS era 0 (heights 0..)"
+        },
+        {
+          "d": 0.0017099450380391734,
+          "n": 210000,
+          "p": 0.5707092906463307,
+          "test": "KS era 1 (heights 210000..)"
+        },
+        {
+          "d": 0.0017943424203525904,
+          "n": 210000,
+          "p": 0.5080272612821207,
+          "test": "KS era 2 (heights 420000..)"
+        },
+        {
+          "d": 0.002050282686645588,
+          "n": 210000,
+          "p": 0.34016561294157427,
+          "test": "KS era 3 (heights 630000..)"
+        },
+        {
+          "d": 0.001164533590609168,
+          "n": 137066,
+          "p": 0.9923481908812688,
+          "test": "KS era 4 (heights 840000..)"
+        },
+        {
+          "df": 19,
+          "n": 977065,
+          "p": 0.7602824512145928,
+          "statistic": 14.393592033283351,
+          "test": "chi-square 20 bins"
+        },
+        {
+          "n": [
+            515970,
+            461095
+          ],
+          "p": 0.14641073939080917,
+          "test": "luck vs nonce bit 0",
+          "z": 1.4523268830038287
+        },
+        {
+          "n": [
+            511172,
+            465893
+          ],
+          "p": 0.14439520093595312,
+          "test": "luck vs nonce bit 1",
+          "z": -1.459617605740443
+        },
+        {
+          "n": [
+            498028,
+            479037
+          ],
+          "p": 0.7941709071750338,
+          "test": "luck vs nonce bit 2",
+          "z": -0.2608983816265332
+        },
+        {
+          "n": [
+            500586,
+            476479
+          ],
+          "p": 0.06047138162283489,
+          "test": "luck vs nonce bit 3",
+          "z": 1.8773408973477093
+        },
+        {
+          "n": [
+            502562,
+            474503
+          ],
+          "p": 0.44602995892062236,
+          "test": "luck vs nonce bit 4",
+          "z": -0.7620503103206768
+        },
+        {
+          "n": [
+            515764,
+            461301
+          ],
+          "p": 0.28414761758128365,
+          "test": "luck vs nonce bit 5",
+          "z": 1.0710485504539162
+        },
+        {
+          "n": [
+            538588,
+            438477
+          ],
+          "p": 0.07275827346713525,
+          "test": "luck vs nonce bit 6",
+          "z": 1.7943440071338403
+        },
+        {
+          "n": [
+            583543,
+            393522
+          ],
+          "p": 0.7617851805100155,
+          "test": "luck vs nonce bit 7",
+          "z": 0.30313739524798583
+        },
+        {
+          "n": [
+            504051,
+            473014
+          ],
+          "p": 0.12303642141180728,
+          "test": "luck vs nonce bit 8",
+          "z": -1.5421529861780816
+        },
+        {
+          "n": [
+            500694,
+            476371
+          ],
+          "p": 0.3882772268768127,
+          "test": "luck vs nonce bit 9",
+          "z": 0.8627458325402777
+        },
+        {
+          "n": [
+            490795,
+            486270
+          ],
+          "p": 0.8312018823725567,
+          "test": "luck vs nonce bit 10",
+          "z": 0.21316040527315724
+        },
+        {
+          "n": [
+            490537,
+            486528
+          ],
+          "p": 0.8201827747411055,
+          "test": "luck vs nonce bit 11",
+          "z": 0.22730994546294803
+        },
+        {
+          "n": [
+            491924,
+            485141
+          ],
+          "p": 0.6363033358917305,
+          "test": "luck vs nonce bit 12",
+          "z": 0.47287358084798886
+        },
+        {
+          "n": [
+            496850,
+            480215
+          ],
+          "p": 0.6540287614326402,
+          "test": "luck vs nonce bit 13",
+          "z": 0.44817238111036223
+        },
+        {
+          "n": [
+            497970,
+            479095
+          ],
+          "p": 0.40952654891969176,
+          "test": "luck vs nonce bit 14",
+          "z": 0.8247270770091303
+        },
+        {
+          "n": [
+            507811,
+            469254
+          ],
+          "p": 0.939330045429913,
+          "test": "luck vs nonce bit 15",
+          "z": -0.07611183923151385
+        },
+        {
+          "n": [
+            494145,
+            482920
+          ],
+          "p": 0.0383097527877096,
+          "test": "luck vs nonce bit 16",
+          "z": 2.0715250457859806
+        },
+        {
+          "n": [
+            489096,
+            487969
+          ],
+          "p": 0.6728577296429584,
+          "test": "luck vs nonce bit 17",
+          "z": -0.422229167764462
+        },
+        {
+          "n": [
+            488032,
+            489033
+          ],
+          "p": 0.46991733557100523,
+          "test": "luck vs nonce bit 18",
+          "z": -0.722613515417417
+        },
+        {
+          "n": [
+            490263,
+            486802
+          ],
+          "p": 0.9325092148346367,
+          "test": "luck vs nonce bit 19",
+          "z": 0.0846881914144098
+        },
+        {
+          "n": [
+            490869,
+            486196
+          ],
+          "p": 0.042670495810109205,
+          "test": "luck vs nonce bit 20",
+          "z": -2.026920929422213
+        },
+        {
+          "n": [
+            490640,
+            486425
+          ],
+          "p": 0.14649798528171748,
+          "test": "luck vs nonce bit 21",
+          "z": -1.4520130313474127
+        },
+        {
+          "n": [
+            494408,
+            482657
+          ],
+          "p": 0.6701818806262868,
+          "test": "luck vs nonce bit 22",
+          "z": 0.425898365719638
+        },
+        {
+          "n": [
+            496097,
+            480968
+          ],
+          "p": 0.31990871940664795,
+          "test": "luck vs nonce bit 23",
+          "z": 0.9946455102230439
+        },
+        {
+          "n": [
+            491731,
+            485334
+          ],
+          "p": 0.16491777412178463,
+          "test": "luck vs nonce bit 24",
+          "z": -1.3887204681575869
+        },
+        {
+          "n": [
+            493414,
+            483651
+          ],
+          "p": 0.6352395232303704,
+          "test": "luck vs nonce bit 25",
+          "z": 0.47436511923831254
+        },
+        {
+          "n": [
+            498690,
+            478375
+          ],
+          "p": 0.8372855782958766,
+          "test": "luck vs nonce bit 26",
+          "z": 0.2053668107730657
+        },
+        {
+          "n": [
+            511589,
+            465476
+          ],
+          "p": 0.48968646821178874,
+          "test": "luck vs nonce bit 27",
+          "z": 0.6908075325589698
+        },
+        {
+          "n": [
+            528816,
+            448249
+          ],
+          "p": 0.1733515934416309,
+          "test": "luck vs nonce bit 28",
+          "z": -1.3615131346768188
+        },
+        {
+          "n": [
+            529497,
+            447568
+          ],
+          "p": 0.07399050225478186,
+          "test": "luck vs nonce bit 29",
+          "z": -1.7866720635738935
+        },
+        {
+          "n": [
+            524479,
+            452586
+          ],
+          "p": 0.37518781551483543,
+          "test": "luck vs nonce bit 30",
+          "z": -0.8867977262203097
+        },
+        {
+          "n": [
+            532226,
+            444839
+          ],
+          "p": 0.9444479789593477,
+          "test": "luck vs nonce bit 31",
+          "z": 0.06968037993167754
+        },
+        {
+          "n": [
+            420632,
+            143387
+          ],
+          "p": 0.39445124759608186,
+          "test": "luck vs version bit 13 (BIP9 blocks)",
+          "z": 0.8515727856574371
+        },
+        {
+          "n": [
+            421562,
+            142457
+          ],
+          "p": 0.016177313697776856,
+          "test": "luck vs version bit 14 (BIP9 blocks)",
+          "z": 2.4048904416713706
+        },
+        {
+          "n": [
+            426943,
+            137076
+          ],
+          "p": 0.4152626418799504,
+          "test": "luck vs version bit 15 (BIP9 blocks)",
+          "z": 0.8146675192935545
+        },
+        {
+          "n": [
+            428991,
+            135028
+          ],
+          "p": 0.47216398224883066,
+          "test": "luck vs version bit 16 (BIP9 blocks)",
+          "z": 0.7189625253956595
+        },
+        {
+          "n": [
+            435097,
+            128922
+          ],
+          "p": 0.5038650698083248,
+          "test": "luck vs version bit 17 (BIP9 blocks)",
+          "z": -0.6684206668342677
+        },
+        {
+          "n": [
+            437003,
+            127016
+          ],
+          "p": 0.11036077500497173,
+          "test": "luck vs version bit 18 (BIP9 blocks)",
+          "z": 1.596573648319677
+        },
+        {
+          "n": [
+            439418,
+            124601
+          ],
+          "p": 0.7943988171574031,
+          "test": "luck vs version bit 19 (BIP9 blocks)",
+          "z": -0.26060286137617056
+        },
+        {
+          "n": [
+            443509,
+            120510
+          ],
+          "p": 0.7129447880145574,
+          "test": "luck vs version bit 20 (BIP9 blocks)",
+          "z": -0.367904036295825
+        },
+        {
+          "n": [
+            426955,
+            137064
+          ],
+          "p": 0.2881724122757492,
+          "test": "luck vs version bit 21 (BIP9 blocks)",
+          "z": 1.0621394239212194
+        },
+        {
+          "n": [
+            399451,
+            164568
+          ],
+          "p": 0.9631700106542396,
+          "test": "luck vs version bit 22 (BIP9 blocks)",
+          "z": 0.04617584930500089
+        },
+        {
+          "n": [
+            402697,
+            161322
+          ],
+          "p": 0.030727925236459952,
+          "test": "luck vs version bit 23 (BIP9 blocks)",
+          "z": 2.160578313972317
+        },
+        {
+          "n": [
+            450180,
+            113839
+          ],
+          "p": 0.9310152622482601,
+          "test": "luck vs version bit 24 (BIP9 blocks)",
+          "z": 0.0865674624755451
+        },
+        {
+          "n": [
+            443431,
+            120588
+          ],
+          "p": 0.7446426578116777,
+          "test": "luck vs version bit 25 (BIP9 blocks)",
+          "z": -0.3257115000689698
+        },
+        {
+          "n": [
+            448849,
+            115170
+          ],
+          "p": 0.6844772276033558,
+          "test": "luck vs version bit 26 (BIP9 blocks)",
+          "z": 0.4063611704545271
+        },
+        {
+          "n": [
+            475625,
+            88394
+          ],
+          "p": 0.861522009789402,
+          "test": "luck vs version bit 27 (BIP9 blocks)",
+          "z": -0.1744370541907417
+        },
+        {
+          "n": [
+            495726,
+            68293
+          ],
+          "p": 0.6303582148876604,
+          "test": "luck vs version bit 28 (BIP9 blocks)",
+          "z": 0.4812226632244324
+        },
+        {
+          "n": [
+            489248,
+            487817
+          ],
+          "p": 0.24253300034183148,
+          "test": "luck vs time bit 0",
+          "z": -1.1686790055123637
+        },
+        {
+          "n": [
+            489213,
+            487852
+          ],
+          "p": 0.8927648154546116,
+          "test": "luck vs time bit 1",
+          "z": 0.13480654027970607
+        },
+        {
+          "n": [
+            489536,
+            487529
+          ],
+          "p": 0.943436252013266,
+          "test": "luck vs time bit 2",
+          "z": -0.07095153112969262
+        },
+        {
+          "n": [
+            489790,
+            487275
+          ],
+          "p": 0.6066255031034716,
+          "test": "luck vs time bit 3",
+          "z": 0.5148962111385793
+        },
+        {
+          "n": [
+            488604,
+            488460
+          ],
+          "p": 0.1930340369176505,
+          "test": "luck vs the previous block's luck",
+          "z": -1.3016559450401546
+        }
+      ]
+    },
+    "height": 977065,
+    "nonce_by_era": [
+      {
+        "bit_z": [
+          -3.746810096339029,
+          -5.252517123988377,
+          -4.78116535881119,
+          -20.401239132599642,
+          -25.450813135470064,
+          -47.05443570609114,
+          -101.55666573880144,
+          -112.86910810305393,
+          0.0720120752354036,
+          0.43861900370654916,
+          -1.747929462532069,
+          -1.088909864923224,
+          1.2242052790018612,
+          -2.7124548338668686,
+          -0.7703109866090142,
+          -1.0409018147662883,
+          -1.887589244806791,
+          -1.2547558563744565,
+          0.2509511712748913,
+          -2.001062817905003,
+          -2.3152973280231275,
+          -1.4642455297865398,
+          -0.4909914220595699,
+          -3.12706981249495,
+          -8.979687563445024,
+          -15.897211154239853,
+          -29.47912498045658,
+          -51.03910386911681,
+          -78.3382269356289,
+          -101.2206093877029,
+          -107.06013403406472,
+          -109.80968599759831
+        ],
+        "blocks": 209999,
+        "era": 0,
+        "max_abs_z": -112.86910810305393,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 70147.34778737041,
+        "top_byte_chi2_p": 0.0
+      },
+      {
+        "bit_z": [
+          -17.14319745693956,
+          -9.845991207447977,
+          -24.63679980764354,
+          -16.488543786231585,
+          -15.794610895281128,
+          -12.386047449794928,
+          -22.10110792310131,
+          -35.68298941138948,
+          1.409687570924511,
+          -0.27931889950207023,
+          -2.684080049902706,
+          -0.6153744504654985,
+          -0.49753678973806265,
+          -2.688444407707426,
+          -4.041395327170579,
+          -6.58581592732225,
+          -1.204562754102678,
+          0.3011406885256695,
+          0.13965944975103511,
+          -0.6852041753410161,
+          -1.3965944975103513,
+          -0.16584559657935422,
+          2.0774343150466477,
+          -0.27059018389263056,
+          -1.8854025716389742,
+          -1.5973549565274643,
+          -3.7620764276685086,
+          -4.063217116194179,
+          -12.530071257350683,
+          -14.293271810457501,
+          -0.6328318816843779,
+          0.4364357804719848
+        ],
+        "blocks": 210000,
+        "era": 1,
+        "max_abs_z": -35.68298941138948,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 3918.182780952382,
+        "top_byte_chi2_p": 4.028525389194397e-91
+      },
+      {
+        "bit_z": [
+          -54.55447255899809,
+          -63.29191688404723,
+          -7.362671616562383,
+          -6.206116798311624,
+          -10.60975382327395,
+          -15.977913923079363,
+          -36.0626885404001,
+          -34.9410485845871,
+          -6.738568450487445,
+          0.6982972487551756,
+          0.3011406885256695,
+          -1.6540916079888224,
+          -4.58257569495584,
+          -7.650719231673893,
+          -10.688312263758908,
+          -37.52911276278597,
+          -6.2541247341635415,
+          0.43207142266726495,
+          2.902297940138699,
+          -0.4408001382767046,
+          -0.9208794967958879,
+          0.401520918034226,
+          -2.3174739943062392,
+          -0.8510497719203703,
+          -4.102496336436657,
+          -6.048999917341709,
+          -8.728715609439696,
+          -31.654687157633056,
+          -45.323855802015615,
+          -43.7352295610976,
+          -9.038585013574805,
+          -16.143759519658715
+        ],
+        "blocks": 210000,
+        "era": 2,
+        "max_abs_z": -63.29191688404723,
+        "max_abs_z_bit": 1,
+        "sum_z2_32_bits": 17110.959866666664,
+        "top_byte_chi2_p": 0.0
+      },
+      {
+        "bit_z": [
+          -22.10110792310131,
+          -19.094065395649334,
+          -4.722235144706875,
+          -7.480509277289819,
+          -7.825293543862687,
+          -25.365647561031754,
+          -38.594016067137616,
+          -148.8202367831421,
+          -39.07845978346152,
+          -27.700578986556874,
+          -3.4827575281664385,
+          -3.1641594084218894,
+          -10.234419052068043,
+          -18.35212456884696,
+          -16.06520107917376,
+          -25.348190129812874,
+          -14.284543094848061,
+          -1.5100678004330672,
+          -1.1434617448366,
+          -2.548784957956391,
+          -5.067019411279743,
+          -5.062655053475023,
+          -16.833328052804454,
+          -19.78799828659979,
+          -0.03491486243775878,
+          1.2787568367829154,
+          -1.8155728467634566,
+          -13.110530845378422,
+          -31.672144588851936,
+          -9.003670151137046,
+          -22.498264483330814,
+          -51.82674893104819
+        ],
+        "blocks": 210000,
+        "era": 3,
+        "max_abs_z": -148.8202367831421,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 34325.22356190477,
+        "top_byte_chi2_p": 0.0
+      },
+      {
+        "bit_z": [
+          -27.480641327853245,
+          -1.636845748444964,
+          0.07562983656181353,
+          -2.5119910000888064,
+          -1.9177565699602717,
+          -22.359420966381872,
+          -24.936237540666518,
+          -101.92741116059268,
+          -28.95542314080861,
+          -32.472210540932934,
+          -2.7983039527871005,
+          -2.7550869033232073,
+          -0.880547382826829,
+          -6.0611911873110556,
+          -11.91169925848563,
+          -16.87625781565039,
+          -1.0696219742313628,
+          -0.5294088559326947,
+          0.043217049463893445,
+          -2.322916408684273,
+          -0.6158429548604816,
+          -3.5978193678691293,
+          -9.999344819708346,
+          -11.112183843403601,
+          1.2911093527338167,
+          1.1884688602570697,
+          -0.6752663978733351,
+          -0.9399708258396824,
+          -9.837280884218746,
+          -13.035342544546861,
+          -21.851620635181124,
+          -16.525119288756255
+        ],
+        "blocks": 137066,
+        "era": 4,
+        "max_abs_z": -101.92741116059268,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 15916.604730567757,
+        "top_byte_chi2_p": 3.388863302093982e-201
+      }
+    ],
+    "time": {
+      "blocks_before_parent": 16352,
+      "mean_interval_seconds": 577.5970687722926
+    },
+    "tip_hash": "00000000000000000000ece2dcada60fe2df5ad1c8991fc01c30c9553a15534b",
+    "validation": {
+      "difficulty_failures": 0,
+      "first_failures": [],
+      "known_hashes_checked": 4,
+      "known_hashes_match": true,
+      "link_failures": 0,
+      "mtp_failures": 0,
+      "passed": true,
+      "pow_failures": 0,
+      "total_work_log2": 96.43722681501797
+    },
+    "version_by_year": [
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 32489,
+        "year": 2009
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 67920,
+        "year": 2010
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 59627,
+        "year": 2011
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 54526,
+        "year": 2012
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 63433,
+        "year": 2013
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 58865,
+        "year": 2014
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0006811362088326798,
+        "blocks": 54321,
+        "year": 2015
+      },
+      {
+        "bip320_bits_set": 0.03296202439335655,
+        "bip9_top_bits": 0.6206450201454851,
+        "blocks": 54851,
+        "year": 2016
+      },
+      {
+        "bip320_bits_set": 0.00657988842797883,
+        "bip9_top_bits": 0.9928300672292948,
+        "blocks": 55928,
+        "year": 2017
+      },
+      {
+        "bip320_bits_set": 0.052901023890784986,
+        "bip9_top_bits": 0.9998348563250028,
+        "blocks": 54498,
+        "year": 2018
+      },
+      {
+        "bip320_bits_set": 0.43581280424841423,
+        "bip9_top_bits": 0.9950213895854846,
+        "blocks": 54232,
+        "year": 2019
+      },
+      {
+        "bip320_bits_set": 0.6761301717334937,
+        "bip9_top_bits": 0.992352786441697,
+        "blocks": 53222,
+        "year": 2020
+      },
+      {
+        "bip320_bits_set": 0.7316744486201268,
+        "bip9_top_bits": 0.9998861177542421,
+        "blocks": 52686,
+        "year": 2021
+      },
+      {
+        "bip320_bits_set": 0.8431789125366624,
+        "bip9_top_bits": 0.999981198766639,
+        "blocks": 53188,
+        "year": 2022
+      },
+      {
+        "bip320_bits_set": 0.9225170836496972,
+        "bip9_top_bits": 1.0,
+        "blocks": 53999,
+        "year": 2023
+      },
+      {
+        "bip320_bits_set": 0.9533222373908328,
+        "bip9_top_bits": 1.0,
+        "blocks": 53473,
+        "year": 2024
+      },
+      {
+        "bip320_bits_set": 0.9664292980671414,
+        "bip9_top_bits": 1.0,
+        "blocks": 53082,
+        "year": 2025
+      },
+      {
+        "bip320_bits_set": 0.9586730872124131,
+        "bip9_top_bits": 1.0,
+        "blocks": 46725,
+        "year": 2026
+      }
+    ]
+  },
+  "params": {
+    "devices": [
+      {
+        "hashes_per_second": 116600000.0,
+        "name": "cpu-avx2 x28 (bench-cpu)"
+      },
+      {
+        "hashes_per_second": 1752000000.0,
+        "name": "gpu v2 RX 7600 (bench-gpu-0006)"
+      },
+      {
+        "hashes_per_second": 1914000000.0,
+        "name": "gpu v3 RX 7600 (bench-gpu-0006)"
+      },
+      {
+        "hashes_per_second": 1200000000000.0,
+        "name": "Bitaxe-class BM1370 board (vendor figure, not measured)"
+      }
+    ],
+    "height": 977065,
+    "reproduce": true
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "ef06b082d44c47983ad8b2b9dd9958584e2a34b5512abec1d84f8db4657db593",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research header-atlas --seed 1112363596 --params '{\"devices\":[{\"hashes_per_second\":116600000.0,\"name\":\"cpu-avx2 x28 (bench-cpu)\"},{\"hashes_per_second\":1752000000.0,\"name\":\"gpu v2 RX 7600 (bench-gpu-0006)\"},{\"hashes_per_second\":1914000000.0,\"name\":\"gpu v3 RX 7600 (bench-gpu-0006)\"},{\"hashes_per_second\":1200000000000.0,\"name\":\"Bitaxe-class BM1370 board (vendor figure, not measured)\"}],\"height\":977065,\"reproduce\":true}'",
+  "result": "negative",
+  "result_digest": "ef06b082d44c47983ad8b2b9dd9958584e2a34b5512abec1d84f8db4657db593",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T18:55:40Z",
+  "status": "completed",
+  "verification": {
+    "detail": "independent hashes, links and target comparison agree",
+    "method": "block hashes of every (height/4096)-th header recomputed with the sha2 crate and links rechecked; the luckiest block's hash compared with its target as 256-bit integers",
+    "passed": true
+  }
+}

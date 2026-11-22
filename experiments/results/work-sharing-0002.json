@@ -1,0 +1,1015 @@
+{
+  "assumptions": [
+    "Batch members use the same nonce and differ only in the inputs of the pattern; template precomputation (anything independent of the nonce) is free.",
+    "Word-level sharing only: two members share a node only if all of its inputs are identical. Bit-level partial sharing is not modelled.",
+    "Outputs needed per nonce: e60 of the outer compression (the early reject); the full digest is computed only for the rare candidates and is not counted.",
+    "Cost weights are a model: primitive ops (rotate, shift, xor, and, or, add = 1) and an RDNA3 estimate (Sigma 4, sigma 4, Ch 1, Maj 2, add 1).",
+    "Feasibility of each pattern follows Bitcoin consensus: version rolling has 16 free bits (BIP320), time a few thousand valid values, a merkle-tail change alone needs a 224-bit partial merkle-root collision."
+  ],
+  "baseline": "k = 1: every per-nonce node computed once per header (the v2 kernel's work).",
+  "candidate_anomaly": false,
+  "conclusion": "EXACT ANALYSIS: the counts below are exact properties of the computation, checked against the reference implementation; converting them to time uses stated cost weights unless a measurement is cited. Per-nonce work of one header with early reject: 3828 primitive ops, 2964 RDNA3 ops (exact DAG count, constants folded). version rolling (overt AsicBoost): shared 460 / per-member 2504 RDNA3 ops, k = 4 saves 11.6% time rolling: shared 4 / per-member 2960 RDNA3 ops, k = 4 saves 0.1% extranonce (new merkle root): shared 23 / per-member 2941 RDNA3 ops, k = 4 saves 0.6% version + time rolling: shared 4 / per-member 2960 RDNA3 ops, k = 4 saves 0.1% extranonce + time: shared 4 / per-member 2960 RDNA3 ops, k = 4 saves 0.1% merkle tail only (covert AsicBoost reversed): shared 23 / per-member 2941 RDNA3 ops, k = 4 saves 0.6% merkle tail + time: shared 4 / per-member 2960 RDNA3 ops, k = 4 saves 0.1% Best feasible pattern at k = 16: version rolling (overt AsicBoost), 14.5% of the per-nonce work saved (RDNA3 weights). Every saving is cost per hash; the number of hashes per block is unchanged. Deciding the target needs this share of the r-round double hash's per-nonce work (the rest is dead code once H7 = IV7 + e(r-4) is all that matters): 4 rounds 9.3%, 5 rounds 33.7%, 6 rounds 44.2%, 7 rounds 50.0%, 8 rounds 55.9%, 9 rounds 63.1%, 10 rounds 68.5%, 11 rounds 72.7%, 12 rounds 75.4%, 16 rounds 82.5%, 24 rounds 86.7%, 32 rounds 91.2%, 48 rounds 94.5%, 64 rounds 96.1%. The outer target reads inner digest words W0..W(r-4), so from 11 rounds on every inner word matters and the saving is only the early reject.",
+  "configurations": [],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Random headers for the DAG check: SplitMix64::stream(seed, i).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 2,
+  "duration_seconds": 0.3277421,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "7c300b437700e53472bdc478ce4d6978573c762f",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5aa67a81517c4de27805ea51556e61acf4a27a4fb5459d706f074804f1207e97"
+  },
+  "finished_at": "2026-11-22T18:55:40Z",
+  "hypothesis": "Some way of batching headers that a miner can produce (version rolling, time rolling, extranonce changes or combinations) lets the batch share more of the per-nonce SHA256d work than overt AsicBoost's message-schedule sharing.",
+  "hypothesis_id": "H-SHARE-01",
+  "hypothesis_status": "analysed",
+  "id": "work-sharing-0002",
+  "implementation": [
+    "experiment_engine::work_sharing"
+  ],
+  "kind": "work-sharing",
+  "methodology": "Build the header SHA256d DAG once per pattern (sums re-associated by dependency class for that pattern), check it against the reference SHA-256 on random headers, keep the nodes the early reject needs, classify each node and count operations per header for k = 1, 2, 4, 8, 16. Version 2 adds the frontier: for each round count r, the per-nonce work of the target (H7 = IV7 + e(r-4)) against the whole r-round double hash, each target DAG checked against the reference.",
+  "name": "Work shared across batches of headers (AsicBoost and beyond), by exact DAG analysis",
+  "null_hypothesis": "Version rolling (shared second-block message) is the best sharing pattern; every other feasible pattern shares less of the per-nonce work.",
+  "observations": {
+    "baseline_per_header": {
+      "primitive": 3828.0,
+      "rdna3": 2964.0
+    },
+    "best_feasible": {
+      "pattern": "version rolling (overt AsicBoost)",
+      "saving_rdna3_at_max_k": 0.145495951417004
+    },
+    "frontier": [
+      {
+        "full_ops": {
+          "primitive": 72,
+          "rdna3": 54
+        },
+        "inner_digest_words_read": 1,
+        "rounds": 4,
+        "target_fraction": 0.09259259259259259,
+        "target_ops": {
+          "primitive": 5,
+          "rdna3": 5
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 122,
+          "rdna3": 92
+        },
+        "inner_digest_words_read": 2,
+        "rounds": 5,
+        "target_fraction": 0.33695652173913043,
+        "target_ops": {
+          "primitive": 40,
+          "rdna3": 31
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 171,
+          "rdna3": 129
+        },
+        "inner_digest_words_read": 3,
+        "rounds": 6,
+        "target_fraction": 0.4418604651162791,
+        "target_ops": {
+          "primitive": 75,
+          "rdna3": 57
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 220,
+          "rdna3": 166
+        },
+        "inner_digest_words_read": 4,
+        "rounds": 7,
+        "target_fraction": 0.5,
+        "target_ops": {
+          "primitive": 110,
+          "rdna3": 83
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 268,
+          "rdna3": 202
+        },
+        "inner_digest_words_read": 5,
+        "rounds": 8,
+        "target_fraction": 0.5594059405940595,
+        "target_ops": {
+          "primitive": 149,
+          "rdna3": 113
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 314,
+          "rdna3": 236
+        },
+        "inner_digest_words_read": 6,
+        "rounds": 9,
+        "target_fraction": 0.6313559322033898,
+        "target_ops": {
+          "primitive": 197,
+          "rdna3": 149
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 360,
+          "rdna3": 270
+        },
+        "inner_digest_words_read": 7,
+        "rounds": 10,
+        "target_fraction": 0.6851851851851852,
+        "target_ops": {
+          "primitive": 245,
+          "rdna3": 185
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 406,
+          "rdna3": 304
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 11,
+        "target_fraction": 0.7269736842105263,
+        "target_ops": {
+          "primitive": 293,
+          "rdna3": 221
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 452,
+          "rdna3": 338
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 12,
+        "target_fraction": 0.7544378698224852,
+        "target_ops": {
+          "primitive": 339,
+          "rdna3": 255
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 636,
+          "rdna3": 474
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 16,
+        "target_fraction": 0.8248945147679325,
+        "target_ops": {
+          "primitive": 523,
+          "rdna3": 391
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 1130,
+          "rdna3": 854
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 24,
+        "target_fraction": 0.8665105386416861,
+        "target_ops": {
+          "primitive": 981,
+          "rdna3": 740
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 1621,
+          "rdna3": 1232
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 32,
+        "target_fraction": 0.9123376623376623,
+        "target_ops": {
+          "primitive": 1479,
+          "rdna3": 1124
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 2799,
+          "rdna3": 2155
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 48,
+        "target_fraction": 0.9447795823665893,
+        "target_ops": {
+          "primitive": 2644,
+          "rdna3": 2036
+        }
+      },
+      {
+        "full_ops": {
+          "primitive": 3983,
+          "rdna3": 3083
+        },
+        "inner_digest_words_read": 8,
+        "rounds": 64,
+        "target_fraction": 0.9614012325656828,
+        "target_ops": {
+          "primitive": 3828,
+          "rdna3": 2964
+        }
+      }
+    ],
+    "frontier_check": {
+      "headers_per_round_count": 256,
+      "mismatches": 0
+    },
+    "patterns": [
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3560.0,
+            "rdna3_ops_per_header": 2734.0,
+            "saving_primitive": 0.07001044932079414,
+            "saving_rdna3": 0.0775978407557355
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3426.0,
+            "rdna3_ops_per_header": 2619.0,
+            "saving_primitive": 0.10501567398119127,
+            "saving_rdna3": 0.1163967611336032
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3359.0,
+            "rdna3_ops_per_header": 2561.5,
+            "saving_primitive": 0.12251828631138972,
+            "saving_rdna3": 0.1357962213225371
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3325.5,
+            "rdna3_ops_per_header": 2532.75,
+            "saving_primitive": 0.13126959247648906,
+            "saving_rdna3": 0.145495951417004
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "free: 16 BIP320 version bits per template, a new midstate per version",
+        "feasible": true,
+        "member_ops": {
+          "primitive": 3292,
+          "rdna3": 2504
+        },
+        "members_differ_in": 1,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 888,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 37,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 43,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 156,
+            "op": "add"
+          },
+          {
+            "class": "shared",
+            "count": 32,
+            "op": "sigma0"
+          },
+          {
+            "class": "shared",
+            "count": 44,
+            "op": "sigma1"
+          }
+        ],
+        "pattern": "version rolling (overt AsicBoost)",
+        "shared_ops": {
+          "primitive": 536,
+          "rdna3": 460
+        }
+      },
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3825.5,
+            "rdna3_ops_per_header": 2962.0,
+            "saving_primitive": 0.000653082549634254,
+            "saving_rdna3": 0.0006747638326585204
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3824.25,
+            "rdna3_ops_per_header": 2961.0,
+            "saving_primitive": 0.000979623824451381,
+            "saving_rdna3": 0.0010121457489878916
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3823.625,
+            "rdna3_ops_per_header": 2960.5,
+            "saving_primitive": 0.00114289446186,
+            "saving_rdna3": 0.0011808367071525216
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3823.3125,
+            "rdna3_ops_per_header": 2960.25,
+            "saving_primitive": 0.0012245297805643096,
+            "saving_rdna3": 0.0012651821862348367
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "limited: about 2^13 valid times, same midstate",
+        "feasible": true,
+        "member_ops": {
+          "primitive": 3823,
+          "rdna3": 2960
+        },
+        "members_differ_in": 4,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 1044,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 68,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 87,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 1,
+            "op": "sigma0"
+          }
+        ],
+        "pattern": "time rolling",
+        "shared_ops": {
+          "primitive": 5,
+          "rdna3": 4
+        }
+      },
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3814.0,
+            "rdna3_ops_per_header": 2952.5,
+            "saving_primitive": 0.0036572622779519337,
+            "saving_rdna3": 0.003879892037786825
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3807.0,
+            "rdna3_ops_per_header": 2946.75,
+            "saving_primitive": 0.005485893416927845,
+            "saving_rdna3": 0.005819838056680182
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3803.5,
+            "rdna3_ops_per_header": 2943.875,
+            "saving_primitive": 0.006400208986415912,
+            "saving_rdna3": 0.006789811066126861
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3801.75,
+            "rdna3_ops_per_header": 2942.4375,
+            "saving_primitive": 0.00685736677115989,
+            "saving_rdna3": 0.0072747975708502555
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "free: a new coinbase and merkle path per member",
+        "feasible": true,
+        "member_ops": {
+          "primitive": 3800,
+          "rdna3": 2941
+        },
+        "members_differ_in": 3,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 1041,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 66,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 85,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 3,
+            "op": "add"
+          },
+          {
+            "class": "shared",
+            "count": 3,
+            "op": "sigma0"
+          },
+          {
+            "class": "shared",
+            "count": 2,
+            "op": "sigma1"
+          }
+        ],
+        "pattern": "extranonce (new merkle root)",
+        "shared_ops": {
+          "primitive": 28,
+          "rdna3": 23
+        }
+      },
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3825.5,
+            "rdna3_ops_per_header": 2962.0,
+            "saving_primitive": 0.000653082549634254,
+            "saving_rdna3": 0.0006747638326585204
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3824.25,
+            "rdna3_ops_per_header": 2961.0,
+            "saving_primitive": 0.000979623824451381,
+            "saving_rdna3": 0.0010121457489878916
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3823.625,
+            "rdna3_ops_per_header": 2960.5,
+            "saving_primitive": 0.00114289446186,
+            "saving_rdna3": 0.0011808367071525216
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3823.3125,
+            "rdna3_ops_per_header": 2960.25,
+            "saving_primitive": 0.0012245297805643096,
+            "saving_rdna3": 0.0012651821862348367
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "free x limited",
+        "feasible": true,
+        "member_ops": {
+          "primitive": 3823,
+          "rdna3": 2960
+        },
+        "members_differ_in": 5,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 1044,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 68,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 87,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 1,
+            "op": "sigma0"
+          }
+        ],
+        "pattern": "version + time rolling",
+        "shared_ops": {
+          "primitive": 5,
+          "rdna3": 4
+        }
+      },
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3825.5,
+            "rdna3_ops_per_header": 2962.0,
+            "saving_primitive": 0.000653082549634254,
+            "saving_rdna3": 0.0006747638326585204
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3824.25,
+            "rdna3_ops_per_header": 2961.0,
+            "saving_primitive": 0.000979623824451381,
+            "saving_rdna3": 0.0010121457489878916
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3823.625,
+            "rdna3_ops_per_header": 2960.5,
+            "saving_primitive": 0.00114289446186,
+            "saving_rdna3": 0.0011808367071525216
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3823.3125,
+            "rdna3_ops_per_header": 2960.25,
+            "saving_primitive": 0.0012245297805643096,
+            "saving_rdna3": 0.0012651821862348367
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "free x limited",
+        "feasible": true,
+        "member_ops": {
+          "primitive": 3823,
+          "rdna3": 2960
+        },
+        "members_differ_in": 7,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 1044,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 68,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 87,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 1,
+            "op": "sigma0"
+          }
+        ],
+        "pattern": "extranonce + time",
+        "shared_ops": {
+          "primitive": 5,
+          "rdna3": 4
+        }
+      },
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3814.0,
+            "rdna3_ops_per_header": 2952.5,
+            "saving_primitive": 0.0036572622779519337,
+            "saving_rdna3": 0.003879892037786825
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3807.0,
+            "rdna3_ops_per_header": 2946.75,
+            "saving_primitive": 0.005485893416927845,
+            "saving_rdna3": 0.005819838056680182
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3803.5,
+            "rdna3_ops_per_header": 2943.875,
+            "saving_primitive": 0.006400208986415912,
+            "saving_rdna3": 0.006789811066126861
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3801.75,
+            "rdna3_ops_per_header": 2942.4375,
+            "saving_primitive": 0.00685736677115989,
+            "saving_rdna3": 0.0072747975708502555
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "infeasible: same midstate with a different merkle tail needs a 224-bit partial merkle-root collision",
+        "feasible": false,
+        "member_ops": {
+          "primitive": 3800,
+          "rdna3": 2941
+        },
+        "members_differ_in": 2,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 1041,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 66,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 85,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 3,
+            "op": "add"
+          },
+          {
+            "class": "shared",
+            "count": 3,
+            "op": "sigma0"
+          },
+          {
+            "class": "shared",
+            "count": 2,
+            "op": "sigma1"
+          }
+        ],
+        "pattern": "merkle tail only (covert AsicBoost reversed)",
+        "shared_ops": {
+          "primitive": 28,
+          "rdna3": 23
+        }
+      },
+      {
+        "by_batch_size": [
+          {
+            "k": 1,
+            "primitive_ops_per_header": 3828.0,
+            "rdna3_ops_per_header": 2964.0,
+            "saving_primitive": 0.0,
+            "saving_rdna3": 0.0
+          },
+          {
+            "k": 2,
+            "primitive_ops_per_header": 3825.5,
+            "rdna3_ops_per_header": 2962.0,
+            "saving_primitive": 0.000653082549634254,
+            "saving_rdna3": 0.0006747638326585204
+          },
+          {
+            "k": 4,
+            "primitive_ops_per_header": 3824.25,
+            "rdna3_ops_per_header": 2961.0,
+            "saving_primitive": 0.000979623824451381,
+            "saving_rdna3": 0.0010121457489878916
+          },
+          {
+            "k": 8,
+            "primitive_ops_per_header": 3823.625,
+            "rdna3_ops_per_header": 2960.5,
+            "saving_primitive": 0.00114289446186,
+            "saving_rdna3": 0.0011808367071525216
+          },
+          {
+            "k": 16,
+            "primitive_ops_per_header": 3823.3125,
+            "rdna3_ops_per_header": 2960.25,
+            "saving_primitive": 0.0012245297805643096,
+            "saving_rdna3": 0.0012651821862348367
+          }
+        ],
+        "dag_check": {
+          "e60_mismatches": 0,
+          "headers": 256
+        },
+        "feasibility": "infeasible (as above)",
+        "feasible": false,
+        "member_ops": {
+          "primitive": 3823,
+          "rdna3": 2960
+        },
+        "members_differ_in": 6,
+        "ops": [
+          {
+            "class": "member",
+            "count": 116,
+            "op": "Sigma0"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "Sigma1"
+          },
+          {
+            "class": "member",
+            "count": 1044,
+            "op": "add"
+          },
+          {
+            "class": "member",
+            "count": 120,
+            "op": "ch"
+          },
+          {
+            "class": "member",
+            "count": 116,
+            "op": "maj"
+          },
+          {
+            "class": "member",
+            "count": 68,
+            "op": "sigma0"
+          },
+          {
+            "class": "member",
+            "count": 87,
+            "op": "sigma1"
+          },
+          {
+            "class": "shared",
+            "count": 1,
+            "op": "sigma0"
+          }
+        ],
+        "pattern": "merkle tail + time",
+        "shared_ops": {
+          "primitive": 5,
+          "rdna3": 4
+        }
+      }
+    ]
+  },
+  "params": {
+    "batch_sizes": [
+      1,
+      2,
+      4,
+      8,
+      16
+    ],
+    "check_headers": 256,
+    "frontier_rounds": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      16,
+      24,
+      32,
+      48,
+      64
+    ],
+    "reproduce": true
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "fa3b7b504a038763cf7873b07f5e0052833a1322b4af9069a275fd713c6abe6b",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research work-sharing --seed 1112363596 --params '{\"batch_sizes\":[1,2,4,8,16],\"check_headers\":256,\"frontier_rounds\":[4,5,6,7,8,9,10,11,12,16,24,32,48,64],\"reproduce\":true}'",
+  "result": "exact-analysis",
+  "result_digest": "fa3b7b504a038763cf7873b07f5e0052833a1322b4af9069a275fd713c6abe6b",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T18:55:40Z",
+  "status": "completed",
+  "verification": {
+    "detail": "all DAGs match the reference",
+    "method": "every pattern's DAG evaluated against the reference SHA-256 e60 on random inputs; the full-digest DAG against bitcoin_header::HeaderMidstate::hash_words on 64 random headers",
+    "passed": true
+  }
+}
