@@ -160,3 +160,36 @@ Next:
    finished setup; restart it.
 3. `evolve` queue: smt at 5-7 rounds, trail-sat 4x budget, new-seed
    replications, neutral bits (B-15), differential-linear (B-17).
+
+## 2026-11-22: GPU kernel v2
+
+The session set up earlier for this never started (no messages, no
+branch), so v2 was built here on `main`.
+
+Done:
+- `crates/gpu-backend/src/v2.rs` generates the WGSL as straight-line code:
+  host-precomputed second-block rounds 0..2 (`pre` in the params), K,
+  padding and IV folded, nonce-independent terms first, outer compression
+  stopped after round 60 with full hashing only for top-word candidates.
+  v1 (`gpu/wgsl/sha256d.wgsl`) is kept as the baseline.
+- `bmr benchmark gpu` measures every kernel in one record.
+- Baseline before the change: bench-gpu-0004 (v1, 499.8 MH/s at `751b455`).
+- From the committed code (`5a9a6d2`): bench-gpu-0005, v1 502.7 MH/s, v2
+  1.749 GH/s, **3.48x**; both kernels 0 digest mismatches over 65,536 lanes
+  and identical search hits (978). bench-regtest-0007: 102 blocks mined by
+  v2, all accepted by Bitcoin Core 32.1. Workgroup size 64/128/256: same rate.
+- Cost per hash only: expected hashes per block unchanged (factor 1.0).
+
+Current state: v2 is the default GPU kernel. The source fingerprint changed
+(`v2.rs` added to it), so research records predate the current code until
+the full suite is rerun.
+
+Next (planning with the user, nothing started):
+1. Real network: node sync, Stratum V1 client with BIP310 version rolling,
+   testnet4 blocks, short mainnet solo-pool runs, a live economics record.
+2. GPU v3: overt AsicBoost (version-rolled midstates share block 2), est.
+   +10-15%, to be measured.
+3. Homemade hardware: a Bitaxe-class BM1370 board if the user buys one;
+   frequency/voltage tuning and measured J/TH.
+4. Track 1 science in parallel: learned selection rule, miner-freedom model,
+   solver calibration against published characteristics.

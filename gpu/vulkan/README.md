@@ -10,9 +10,8 @@ the bottleneck. The first step is a comparison point: compile the same kernel
 with `glslangValidator`/`naga` to SPIR-V, inspect the ISA with Radeon GPU
 Analyzer, and compare with `bmr benchmark gpu`.
 
-Candidate kernel experiments, each to be measured against the verified WGSL
-baseline with `bmr benchmark gpu` parity checks:
-
-- early reject after outer round 60 (as in the CPU scalar kernel),
-- precomputing W16/W17 and the first three second-block rounds on the host,
-- several nonces per invocation to amortise the midstate loads.
+The candidate kernel experiments listed here earlier (early reject after
+outer round 60, host-precomputed rounds 0..2, nonce-independent schedule
+terms hoisted) are done in kernel v2 (`crates/gpu-backend/src/v2.rs`), which
+generates fully unrolled WGSL; `bmr benchmark gpu` measures it against v1
+with parity checks. Workgroup sizes 64, 128 and 256 gave the same rate.

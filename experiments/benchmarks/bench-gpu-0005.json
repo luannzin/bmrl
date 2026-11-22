@@ -1,0 +1,90 @@
+{
+  "adapter": {
+    "api": "Vulkan",
+    "device_id": "0x7480",
+    "driver": "AMD proprietary driver",
+    "driver_info": "26.8.1 (LLPC)",
+    "name": "AMD Radeon RX 7600",
+    "type": "DiscreteGpu",
+    "vendor_id": "0x1002"
+  },
+  "batch_nonces": 371267584,
+  "created_at": "2026-11-22T14:40:51Z",
+  "energy": {
+    "note": "no GPU power counter exposed through wgpu; energy not measured",
+    "source": null
+  },
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "5a9a6d26f5074e1ec5920ecc3f52f68ceef2ba5f",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "64cf5394211c846d4437d146d23df32b0a8c41a06368280e8c7c1dcf98824aaf"
+  },
+  "expected_work_per_block_factor": 1.0,
+  "hashes": 8910422016,
+  "hashes_per_second": 1749453938.2348316,
+  "id": "bench-gpu-0005",
+  "kernel": "crates/gpu-backend/src/v2.rs (precomputed rounds 0..2, unrolled with folded constants, early reject after outer round 60)",
+  "kernels": [
+    {
+      "batch_nonces": 111990272,
+      "description": "gpu/wgsl/sha256d.wgsl (straightforward midstate kernel, no early reject)",
+      "hashes": 2575776256,
+      "hashes_per_second": 502735875.28600216,
+      "kernel": "v1",
+      "parity": {
+        "digest_lanes": 65536,
+        "digest_mismatches": 0,
+        "passed": true,
+        "search_hits_cpu": 978,
+        "search_hits_gpu": 978,
+        "search_identical": true,
+        "search_nonces": 4194304
+      },
+      "seconds": 5.1235179
+    },
+    {
+      "batch_nonces": 371267584,
+      "description": "crates/gpu-backend/src/v2.rs (precomputed rounds 0..2, unrolled with folded constants, early reject after outer round 60)",
+      "hashes": 8910422016,
+      "hashes_per_second": 1749453938.2348316,
+      "kernel": "v2",
+      "parity": {
+        "digest_lanes": 65536,
+        "digest_mismatches": 0,
+        "passed": true,
+        "search_hits_cpu": 978,
+        "search_hits_gpu": 978,
+        "search_identical": true,
+        "search_nonces": 4194304
+      },
+      "seconds": 5.093259
+    }
+  ],
+  "kind": "gpu",
+  "note": "Kernel v2 lowers the cost per nonce (precomputation, unrolling, early reject); every nonce is still evaluated, so the expected number of hashes per block is unchanged (factor 1.0).",
+  "parity": {
+    "digest_lanes": 65536,
+    "digest_mismatches": 0,
+    "passed": true,
+    "search_hits_cpu": 978,
+    "search_hits_gpu": 978,
+    "search_identical": true,
+    "search_nonces": 4194304
+  },
+  "seconds": 5.093259,
+  "speedup_over_v1": 3.4798669126996002
+}

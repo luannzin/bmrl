@@ -11,7 +11,10 @@ experiment kind reproduced its previous result digest bit for bit. Details:
   on every round count, real mainnet headers, 204 regtest blocks accepted in
   the final run (102 per backend), one live-template block per backend.
 - **Throughput (cost per hash only):** CPU 116.6 MH/s, GPU 496.6 MH/s,
-  CPU + GPU 574.6 MH/s concurrent [bench-compare-0003].
+  CPU + GPU 574.6 MH/s concurrent [bench-compare-0003]. GPU kernel v2
+  (2026-11-22): 1.749 GH/s against v1's 502.7 MH/s on the same run, 3.48x,
+  same digests and hits [bench-gpu-0005]; 102 regtest blocks accepted
+  [bench-regtest-0007].
 - **Every nonce of 16 templates behaves like a random function at 64
   rounds** [nonce-atlas-0002]: image size, top-word zeros, leading zeros,
   cube and sub-cube sums all at the null; the four mainnet winning nonces
@@ -64,10 +67,8 @@ about 4.5 × 10^15 machines to meet the block interval at 80 bits.
 
 ## 5. Next
 
-1. **GPU kernel v2** (engineering, cost per hash): CPU tricks in WGSL,
-   target about 3x. A separate session was set up for it in its own worktree;
-   merging it changes the source fingerprint, so the full suite must be
-   rerun afterwards.
+1. **GPU kernel v2: done** (3.48x, see section 1). It changed the source
+   fingerprint, so the full suite must be rerun from the current commit.
 2. **`bmr research evolve` queue:** smt at 5-7 rounds (frontier), trail-sat
    with 4x the solver budget, new-seed replications, and first experiments
    for the untested families (probabilistic neutral bits, differential-linear).
