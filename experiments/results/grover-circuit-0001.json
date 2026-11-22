@@ -1,0 +1,366 @@
+{
+  "assumptions": [
+    "SIMULATION: an exact classical simulation of the circuit; no quantum hardware is used.",
+    "Search register: the m low bits of the nonce word W3; the rest of the header is a fixed template, so 2^m candidates (a real miner would search 32 + more bits).",
+    "Construction: register-level constant propagation; round outputs T, e and a get fresh 32-qubit registers that are kept until the final uncompute; Sigma/sigma/Ch/Maj temporaries are uncomputed at once; Cuccaro adders (2n Toffoli, one ancilla); a constant is added through a prepared temporary register.",
+    "Every compression is cut to `rounds` rounds; the target is the hash number's top d bits, read from H7 = IV7 + e(rounds - 4) of the outer compression (the early-reject identity).",
+    "Diffusion is applied exactly (inversion about the mean over the search register); its gates are not subjected to noise.",
+    "Noisy runs track the coherent state on a clean workspace exactly; an input left with garbage after an oracle call is treated as decohered (its probability set aside and counted as a random guess), which ignores any later re-interference of garbage branches.",
+    "Noise: after each oracle gate, with probability p, a Pauli X or Z (equally likely) on one of the gate's qubits. Real amplitudes throughout (no Y errors).",
+    "The phase flip's multi-controlled Z is counted as 2d - 3 Toffoli with ancillas."
+  ],
+  "baseline": "Random guess: success probability M / 2^m; classical search needs 2^m / M evaluations on average.",
+  "candidate_anomaly": false,
+  "conclusion": "EXACT ANALYSIS: the counts below are exact properties of the computation, checked against the reference implementation; converting them to time uses stated cost weights unless a measurement is cited. 4 rounds: 353 qubits, 576 Toffoli + 1440 CNOT + 338 X per oracle half (1165 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039); with 6 search bits (ideal 0.961, guess 0.062) under noise: p = 1e-6 gives 0.961, p = 1e-5 gives 0.882, p = 1e-4 gives 0.587, p = 1e-3 gives 0.062. 5 rounds: 609 qubits, 1408 Toffoli + 4000 CNOT + 630 X per oracle half (2829 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039). 6 rounds: 865 qubits, 2496 Toffoli + 6812 CNOT + 1153 X per oracle half (5005 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039). 8 rounds: 1313 qubits, 4672 Toffoli + 13926 CNOT + 1431 X per oracle half (9357 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039); with 6 search bits (ideal 0.997, guess 0.016) under noise: p = 1e-6 gives 0.850, p = 1e-5 gives 0.099, p = 1e-4 gives 0.016, p = 1e-3 gives 0.016. 16 rounds: 2849 qubits, 13056 Toffoli + 42456 CNOT + 1887 X per oracle half (26125 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039). 32 rounds: 6785 qubits, 33600 Toffoli + 110317 CNOT + 3125 X per oracle half (67213 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039). 64 rounds: 14977 qubits, 82496 Toffoli + 272077 CNOT + 5141 X per oracle half (165005 Toffoli per Grover iteration); circuit correct on all 256 inputs; d = 8, 1 marked; 12 iterations: success 0.9999 (theory 0.9999, random guess 0.0039). Full SHA256d oracle: 1.650e5 Toffoli per iteration in this construction (quantum-model estimated 1.47e5). A d = 80 search needs 8.64e11 serial iterations, 1.42e17 Toffoli: an error per gate well below 1/1.4e17 is needed to keep the amplitude.",
+  "configurations": [],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Template: nonce_atlas::synthetic(seed, 0) with its nonce field from the seed; noise: SplitMix64::stream(seed ^ trajectory tag, trajectory).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 7.5064781,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "df9687ad1c56650dd14007d073245cf5321e5eff",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "1383e6328ab5afb6344d4c54ee896a01f79ad0c92224e63ac72415cec6c3fe76"
+  },
+  "finished_at": "2026-11-22T17:31:19Z",
+  "hypothesis": "A Grover oracle for the Bitcoin header target can be built and run correctly, and keeps its quadratic advantage at physical error rates of current quantum hardware (about 1e-3 per gate).",
+  "hypothesis_id": "H-QUANT-02",
+  "hypothesis_status": "analysed",
+  "id": "grover-circuit-0001",
+  "implementation": [
+    "experiment_engine::grover_circuit"
+  ],
+  "kind": "grover-circuit",
+  "methodology": "Build the oracle circuit; run it on every input of the search register and compare with the reference hash; run Grover for the optimal number of iterations ideally and under noise for several error rates and trajectories; report exact gate and qubit counts per round count.",
+  "name": "Gate-level Grover on the Bitcoin header SHA256d: verified circuit, exact resources, noise threshold",
+  "null_hypothesis": "The circuit is correct, but its size makes Grover no better than a random guess unless the error per gate is many orders of magnitude below current hardware.",
+  "observations": {
+    "all_checks_passed": true,
+    "by_rounds": [
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 1440,
+          "toffoli": 576,
+          "x": 338
+        },
+        "ideal_success": 0.9999470421032709,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": {
+          "by_error_rate": [
+            {
+              "error_rate": 1e-6,
+              "expected_faults": 0.01413,
+              "success_ci95": [
+                0.9613189697265625,
+                0.9613189697265625
+              ],
+              "success_mean": 0.9613189697265625
+            },
+            {
+              "error_rate": 0.00001,
+              "expected_faults": 0.1413,
+              "success_ci95": [
+                0.7804703458531251,
+                0.983185316683496
+              ],
+              "success_mean": 0.8818278312683105
+            },
+            {
+              "error_rate": 0.0001,
+              "expected_faults": 1.413,
+              "success_ci95": [
+                0.40571493181966345,
+                0.7679071995279928
+              ],
+              "success_mean": 0.5868110656738281
+            },
+            {
+              "error_rate": 0.001,
+              "expected_faults": 14.129999999999999,
+              "success_ci95": [
+                0.0625,
+                0.0625
+              ],
+              "success_mean": 0.0625
+            }
+          ],
+          "ideal_success": 0.9613189697265625,
+          "iterations": 3,
+          "marked": 4.0,
+          "random_guess": 0.0625,
+          "search_bits": 6,
+          "target_bits": 6,
+          "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524d82"
+        },
+        "qubits": 353,
+        "random_guess": 0.00390625,
+        "rounds": 4,
+        "t_gates_per_iteration": 8155,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524d42",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 1165
+      },
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 4000,
+          "toffoli": 1408,
+          "x": 630
+        },
+        "ideal_success": 0.9999470421032707,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": null,
+        "qubits": 609,
+        "random_guess": 0.00390625,
+        "rounds": 5,
+        "t_gates_per_iteration": 19803,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524e42",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 2829
+      },
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 6812,
+          "toffoli": 2496,
+          "x": 1153
+        },
+        "ideal_success": 0.9999470421032711,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": null,
+        "qubits": 865,
+        "random_guess": 0.00390625,
+        "rounds": 6,
+        "t_gates_per_iteration": 35035,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524c42",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 5005
+      },
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 13926,
+          "toffoli": 4672,
+          "x": 1431
+        },
+        "ideal_success": 0.9999470421032709,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": {
+          "by_error_rate": [
+            {
+              "error_rate": 1e-6,
+              "expected_faults": 0.24036,
+              "success_ci95": [
+                0.7138396408482197,
+                0.9855580895223532
+              ],
+              "success_mean": 0.8496988651852865
+            },
+            {
+              "error_rate": 0.00001,
+              "expected_faults": 2.4036,
+              "success_ci95": [
+                -0.011443768624585335,
+                0.20996562920383782
+              ],
+              "success_mean": 0.09926093028962624
+            },
+            {
+              "error_rate": 0.0001,
+              "expected_faults": 24.036,
+              "success_ci95": [
+                0.015625,
+                0.015625
+              ],
+              "success_mean": 0.015625
+            },
+            {
+              "error_rate": 0.001,
+              "expected_faults": 240.36,
+              "success_ci95": [
+                0.015625,
+                0.015625
+              ],
+              "success_mean": 0.015625
+            }
+          ],
+          "ideal_success": 0.996585680786799,
+          "iterations": 6,
+          "marked": 1.0,
+          "random_guess": 0.015625,
+          "search_bits": 6,
+          "target_bits": 6,
+          "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524d02"
+        },
+        "qubits": 1313,
+        "random_guess": 0.00390625,
+        "rounds": 8,
+        "t_gates_per_iteration": 65499,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524c42",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 9357
+      },
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 42456,
+          "toffoli": 13056,
+          "x": 1887
+        },
+        "ideal_success": 0.9999470421032709,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": null,
+        "qubits": 2849,
+        "random_guess": 0.00390625,
+        "rounds": 16,
+        "t_gates_per_iteration": 182875,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524942",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 26125
+      },
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 110317,
+          "toffoli": 33600,
+          "x": 3125
+        },
+        "ideal_success": 0.9999470421032709,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": null,
+        "qubits": 6785,
+        "random_guess": 0.00390625,
+        "rounds": 32,
+        "t_gates_per_iteration": 470491,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524f42",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 67213
+      },
+      {
+        "circuit_check": {
+          "failures": 0,
+          "inputs": 256
+        },
+        "gates_per_half": {
+          "cnot": 272077,
+          "toffoli": 82496,
+          "x": 5141
+        },
+        "ideal_success": 0.9999470421032709,
+        "iterations": 12,
+        "marked": 1,
+        "noisy": null,
+        "qubits": 14977,
+        "random_guess": 0.00390625,
+        "rounds": 64,
+        "t_gates_per_iteration": 1155035,
+        "target_bits": 8,
+        "template_header": "0080da2f8a416a343db378407c62ecc20b26303851ccaeedb1730000000000000000000011917a33995c7f1513eb96f6033069c30927602a470bbf783623131ef5ef45aa5bbad96ad2194c174c524f42",
+        "theory_success": 0.9999470421032736,
+        "toffoli_per_iteration": 165005
+      }
+    ],
+    "search_bits": 8
+  },
+  "params": {
+    "error_rates": [
+      1e-6,
+      0.00001,
+      0.0001,
+      0.001
+    ],
+    "noise_rounds": [
+      4,
+      8
+    ],
+    "noise_search_bits": 6,
+    "reproduce": true,
+    "rounds": [
+      4,
+      5,
+      6,
+      8,
+      16,
+      32,
+      64
+    ],
+    "search_bits": 8,
+    "trajectories": 24
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "048ccde555c57a7701096e7dfc715fd3cde85c3af0045e789b088b7585f43a0f",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research grover-circuit --seed 1112363596 --params '{\"error_rates\":[1e-6,0.00001,0.0001,0.001],\"noise_rounds\":[4,8],\"noise_search_bits\":6,\"reproduce\":true,\"rounds\":[4,5,6,8,16,32,64],\"search_bits\":8,\"trajectories\":24}'",
+  "result": "exact-analysis",
+  "result_digest": "048ccde555c57a7701096e7dfc715fd3cde85c3af0045e789b088b7585f43a0f",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T17:31:12Z",
+  "status": "completed",
+  "verification": {
+    "detail": "independent hashes agree; every circuit check passed",
+    "method": "the reference H7 used to check every circuit is recomputed with verification::independent for every input at the first two round counts; the circuit checks and ideal-vs-theory comparison of the run must all pass",
+    "passed": true
+  }
+}

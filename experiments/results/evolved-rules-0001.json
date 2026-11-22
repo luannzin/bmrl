@@ -1,0 +1,1832 @@
+{
+  "assumptions": [
+    "Rule language: terminals nonce, bswap(nonce), midstate words, second-block state after round 2, probe digest words (reduced-round SHA256d of the template at nonce 0) and constants; operations not, bswap, rotr, shr, shl, Sigma0, Sigma1, sigma0, sigma1, xor, and, or, add, sub, Ch, Maj; at most max_size nodes.",
+    "Predicate: the expression has j leading zero bits (keeps 2^-j of nonces) or bit b is clear (keeps half).",
+    "Hit level: the hash number's top k bits are zero; fitness uses k = fitness_k on the first 2^fitness_bits nonces of each discovery template; held-out tests use all 2^nonce_bits nonces at k = fitness_k and k = 8.",
+    "Templates are synthetic (as in the nonce atlas) and every round count cuts all three compressions; reduced-round results say nothing about 64 rounds.",
+    "Held-out p-values are one-sided binomial normal approximations with a Bonferroni correction over every held-out test of the run (alpha 0.001)."
+  ],
+  "baseline": "A = 1: a selection rule that ignores the hash keeps hits at the overall rate.",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. 4 rounds: 60000 rules evolved; best discovery fitness 1745.7; best held-out amplification at k = 6 is 64.0013 (`keep if bswap((bswap(n) + probe7)) has 6 leading zero bits`); held-out deviation. 5 rounds: 60000 rules evolved; best discovery fitness 3.3; best held-out amplification at k = 6 is 0.9942 (`keep if bit 30 of (not(n) | ch(bswap(n), probe1, ((probe4 + not(n)) << 16))) is 0`); no held-out rule beats A = 1. 6 rounds: 60000 rules evolved; best discovery fitness 3.4; best held-out amplification at k = 6 is 1.0210 (`keep if ((mid2 + n) - ((ch(bswap(n), probe6, n) >> 6) | probe2)) has 6 leading zero bits`); no held-out rule beats A = 1. 8 rounds: 60000 rules evolved; best discovery fitness 4.5; best held-out amplification at k = 6 is 1.0053 (`keep if (((probe5 + mid0) - bswap(mid6)) + (((pre4 >> 4) & 0x7d572cd4) + n)) has 3 leading zero bits`); no held-out rule beats A = 1. 64 rounds: 60000 rules evolved; best discovery fitness 5.0; best held-out amplification at k = 6 is 1.0078 (`keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(pre5, n, bswap(n)))), (0xa6e0dde7 ^ n), mid4), mid4) has 6 leading zero bits`); no held-out rule beats A = 1. Held-out tests: 100 (rules x hit levels x round counts), Bonferroni threshold 1.0e-5. Work per hit with a rule is 1/A of exhaustive search.",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 4
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 5
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 6
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 8
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Templates: nonce_atlas::synthetic(seed, i), discovery i < discovery_templates, held-out after; GP randomness SplitMix64::stream(seed ^ rounds, 0).",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 629.7889648,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "df9687ad1c56650dd14007d073245cf5321e5eff",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "1383e6328ab5afb6344d4c54ee896a01f79ad0c92224e63ac72415cec6c3fe76"
+  },
+  "finished_at": "2026-11-22T17:41:49Z",
+  "hypothesis": "A cheap expression over the nonce, template constants and a one-hash template probe selects nonces that meet a leading-zero target more often than the rest, on templates the search never saw.",
+  "hypothesis_id": "H-EVOLVE-01",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "evolved-rules-0001",
+  "implementation": [
+    "experiment_engine::evolved_rules",
+    "cpu_backend::Prepared::hash8"
+  ],
+  "kind": "evolved-rules",
+  "methodology": "Per round count: compute the top 16 bits of the hash number for every nonce of each template; evolve a population of rules (tournament selection, subtree crossover and mutation, elitism, parsimony penalty) for a fixed number of generations; keep the best distinct rules; measure each once on the held-out templates.",
+  "name": "Evolved cheap nonce-selection rules (genetic programming), held-out tested",
+  "null_hypothesis": "Every evolved rule's held-out amplification is 1 within its confidence interval (at 64 rounds, and at every round count where the header map behaves like a random function).",
+  "observations": {
+    "bonferroni_threshold": 0.00001,
+    "by_rounds": [
+      {
+        "deviation": true,
+        "evaluations": 60000,
+        "rounds": 4,
+        "rules": [
+          {
+            "discovery_fitness": 1745.7060789366883,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap((bswap(n) + probe7)) has 6 leading zero bits",
+            "size": 4
+          },
+          {
+            "discovery_fitness": 1745.7060789366883,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap((probe7 + bswap(n))) has 6 leading zero bits",
+            "size": 4
+          },
+          {
+            "discovery_fitness": 1745.6060789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((bswap(n) | bswap(n)) + probe7)) has 6 leading zero bits",
+            "size": 6
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x106aa070 << 15) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x391c0cb3 << 15) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x3f87c579 << 15) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x428a2f98 << 25) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x53380d13 << 15) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x53fd83d2 << 15) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          },
+          {
+            "discovery_fitness": 1745.5560789366884,
+            "heldout": [
+              {
+                "amplification": 64.00130207670911,
+                "amplification_ci95": [
+                  64.00005157538335,
+                  64.00130207670911
+                ],
+                "expected": 3071.875002861023,
+                "hits": 196604,
+                "k": 6,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 3491.8155547640513
+              },
+              {
+                "amplification": 64.00130203033903,
+                "amplification_ci95": [
+                  63.51251679446216,
+                  64.49258877775802
+                ],
+                "expected": 767.890627861023,
+                "hits": 49146,
+                "k": 8,
+                "kept": 196604,
+                "p_one_sided": 0.0,
+                "z": 1745.8189712025996
+              }
+            ],
+            "rule": "keep if bswap(((0x71374491 << 15) ^ (bswap(n) + probe7))) has 6 leading zero bits",
+            "size": 7
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 60000,
+        "rounds": 5,
+        "rules": [
+          {
+            "discovery_fitness": 3.308133362779081,
+            "heldout": [
+              {
+                "amplification": 0.9738284496663207,
+                "amplification_ci95": [
+                  0.8988654971566501,
+                  1.0549388465102658
+                ],
+                "expected": 605.8561959266663,
+                "hits": 590,
+                "k": 6,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.644190367667375
+              },
+              {
+                "amplification": 0.962377655942327,
+                "amplification_ci95": [
+                  0.8186322710951263,
+                  1.1312517936858066
+                ],
+                "expected": 151.70759534835815,
+                "hits": 146,
+                "k": 8,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.4633930469244269
+              }
+            ],
+            "rule": "keep if (ch(((bswap(n) | probe3) & (probe0 + probe2)), (n + bswap(n)), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 3.308133362779081,
+            "heldout": [
+              {
+                "amplification": 0.9738284496663207,
+                "amplification_ci95": [
+                  0.8988654971566501,
+                  1.0549388465102658
+                ],
+                "expected": 605.8561959266663,
+                "hits": 590,
+                "k": 6,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.644190367667375
+              },
+              {
+                "amplification": 0.962377655942327,
+                "amplification_ci95": [
+                  0.8186322710951263,
+                  1.1312517936858066
+                ],
+                "expected": 151.70759534835815,
+                "hits": 146,
+                "k": 8,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.4633930469244269
+              }
+            ],
+            "rule": "keep if (ch(((probe3 | bswap(n)) & (probe0 + probe2)), (bswap(n) + n), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 3.308133362779081,
+            "heldout": [
+              {
+                "amplification": 0.9738284496663207,
+                "amplification_ci95": [
+                  0.8988654971566501,
+                  1.0549388465102658
+                ],
+                "expected": 605.8561959266663,
+                "hits": 590,
+                "k": 6,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.644190367667375
+              },
+              {
+                "amplification": 0.962377655942327,
+                "amplification_ci95": [
+                  0.8186322710951263,
+                  1.1312517936858066
+                ],
+                "expected": 151.70759534835815,
+                "hits": 146,
+                "k": 8,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.4633930469244269
+              }
+            ],
+            "rule": "keep if (ch(((probe3 | bswap(n)) & (probe0 + probe2)), (n + bswap(n)), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 3.287405314958405,
+            "heldout": [
+              {
+                "amplification": 0.9941874602138616,
+                "amplification_ci95": [
+                  0.985481961897735,
+                  1.0029686359012473
+                ],
+                "expected": 49182.87743186951,
+                "hits": 48897,
+                "k": 6,
+                "kept": 3145712,
+                "p_one_sided": 1.0,
+                "z": -1.289059326292068
+              },
+              {
+                "amplification": 0.9953454716333029,
+                "amplification_ci95": [
+                  0.9779122450149694,
+                  1.0130882429595354
+                ],
+                "expected": 12313.312663078308,
+                "hits": 12256,
+                "k": 8,
+                "kept": 3145712,
+                "p_one_sided": 1.0,
+                "z": -0.5164914482050369
+              }
+            ],
+            "rule": "keep if bit 30 of (not(n) | ch(bswap(n), probe1, ((probe4 + not(n)) << 16))) is 0",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 3.2581333627790814,
+            "heldout": [
+              {
+                "amplification": 0.9738284496663207,
+                "amplification_ci95": [
+                  0.8988654971566501,
+                  1.0549388465102658
+                ],
+                "expected": 605.8561959266663,
+                "hits": 590,
+                "k": 6,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.644190367667375
+              },
+              {
+                "amplification": 0.962377655942327,
+                "amplification_ci95": [
+                  0.8186322710951263,
+                  1.1312517936858066
+                ],
+                "expected": 151.70759534835815,
+                "hits": 146,
+                "k": 8,
+                "kept": 38868,
+                "p_one_sided": 1.0,
+                "z": -0.4633930469244269
+              }
+            ],
+            "rule": "keep if (ch(((probe3 | bswap(n)) & (probe0 + probe2)), (bswap(bswap(n)) + bswap(n)), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 3.187405314958405,
+            "heldout": [
+              {
+                "amplification": 0.9941874602138616,
+                "amplification_ci95": [
+                  0.985481961897735,
+                  1.0029686359012473
+                ],
+                "expected": 49182.87743186951,
+                "hits": 48897,
+                "k": 6,
+                "kept": 3145712,
+                "p_one_sided": 1.0,
+                "z": -1.289059326292068
+              },
+              {
+                "amplification": 0.9953454716333029,
+                "amplification_ci95": [
+                  0.9779122450149694,
+                  1.0130882429595354
+                ],
+                "expected": 12313.312663078308,
+                "hits": 12256,
+                "k": 8,
+                "kept": 3145712,
+                "p_one_sided": 1.0,
+                "z": -0.5164914482050369
+              }
+            ],
+            "rule": "keep if bit 30 of (not(n) | ch((bswap(n) & bswap(n)), probe1, ((probe4 + not(n)) << 16))) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 3.187405314958405,
+            "heldout": [
+              {
+                "amplification": 0.9941874602138616,
+                "amplification_ci95": [
+                  0.985481961897735,
+                  1.0029686359012473
+                ],
+                "expected": 49182.87743186951,
+                "hits": 48897,
+                "k": 6,
+                "kept": 3145712,
+                "p_one_sided": 1.0,
+                "z": -1.289059326292068
+              },
+              {
+                "amplification": 0.9953454716333029,
+                "amplification_ci95": [
+                  0.9779122450149694,
+                  1.0130882429595354
+                ],
+                "expected": 12313.312663078308,
+                "hits": 12256,
+                "k": 8,
+                "kept": 3145712,
+                "p_one_sided": 1.0,
+                "z": -0.5164914482050369
+              }
+            ],
+            "rule": "keep if bit 30 of (not(n) | ch((bswap(n) & n), probe1, ((probe4 + not(n)) << 16))) is 0",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 3.1597170635739102,
+            "heldout": [
+              {
+                "amplification": 0.9539955668290293,
+                "amplification_ci95": [
+                  0.8753817810725797,
+                  1.0395531774775535
+                ],
+                "expected": 536.6901249885559,
+                "hits": 512,
+                "k": 6,
+                "kept": 34397,
+                "p_one_sided": 1.0,
+                "z": -1.0657650796582392
+              },
+              {
+                "amplification": 1.034006047668522,
+                "amplification_ci95": [
+                  0.8760547759209721,
+                  1.2202993974072072
+                ],
+                "expected": 134.42861413955688,
+                "hits": 139,
+                "k": 8,
+                "kept": 34397,
+                "p_one_sided": 0.3466880711829297,
+                "z": 0.39427752342916506
+              }
+            ],
+            "rule": "keep if (ch(((probe3 | bswap(n)) & (bswap(probe0) + probe2)), (n + bswap(n)), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 3.085614802071773,
+            "heldout": [
+              {
+                "amplification": 0.9596321018170851,
+                "amplification_ci95": [
+                  0.8798823493866876,
+                  1.0464905463195375
+                ],
+                "expected": 524.1592054367065,
+                "hits": 503,
+                "k": 6,
+                "kept": 33620,
+                "p_one_sided": 1.0,
+                "z": -0.9242037928402745
+              },
+              {
+                "amplification": 0.9857287758203941,
+                "amplification_ci95": [
+                  0.8299017841425634,
+                  1.1706809499995317
+                ],
+                "expected": 130.8676414489746,
+                "hits": 129,
+                "k": 8,
+                "kept": 33620,
+                "p_one_sided": 1.0,
+                "z": -0.16325908797197403
+              }
+            ],
+            "rule": "keep if (ch(((bswap(n) | probe5) & (probe0 + probe2)), (n + bswap(n)), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 3.085614802071773,
+            "heldout": [
+              {
+                "amplification": 0.9596321018170851,
+                "amplification_ci95": [
+                  0.8798823493866876,
+                  1.0464905463195375
+                ],
+                "expected": 524.1592054367065,
+                "hits": 503,
+                "k": 6,
+                "kept": 33620,
+                "p_one_sided": 1.0,
+                "z": -0.9242037928402745
+              },
+              {
+                "amplification": 0.9857287758203941,
+                "amplification_ci95": [
+                  0.8299017841425634,
+                  1.1706809499995317
+                ],
+                "expected": 130.8676414489746,
+                "hits": 129,
+                "k": 8,
+                "kept": 33620,
+                "p_one_sided": 1.0,
+                "z": -0.16325908797197403
+              }
+            ],
+            "rule": "keep if (ch(((probe5 | bswap(n)) & (probe0 + probe2)), (n + bswap(n)), mid1) - bswap(n)) has 8 leading zero bits",
+            "size": 14
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 60000,
+        "rounds": 6,
+        "rules": [
+          {
+            "discovery_fitness": 3.396798125147205,
+            "heldout": [
+              {
+                "amplification": 1.0209511810149183,
+                "amplification_ci95": [
+                  0.9860840115509149,
+                  1.057030494937345
+                ],
+                "expected": 3067.7274861335754,
+                "hits": 3132,
+                "k": 6,
+                "kept": 195861,
+                "p_one_sided": 0.12293801214935908,
+                "z": 1.160424522448273
+              },
+              {
+                "amplification": 1.0506101399235457,
+                "amplification_ci95": [
+                  0.9808792601176523,
+                  1.1252761300344798
+                ],
+                "expected": 771.9323935508728,
+                "hits": 811,
+                "k": 8,
+                "kept": 195861,
+                "p_one_sided": 0.07984194990946526,
+                "z": 1.4061354944913178
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), probe6, n) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 3.3568037982227388,
+            "heldout": [
+              {
+                "amplification": 1.0038081803765182,
+                "amplification_ci95": [
+                  0.9692332745944582,
+                  1.0395960645508202
+                ],
+                "expected": 3067.3190956115723,
+                "hits": 3079,
+                "k": 6,
+                "kept": 195835,
+                "p_one_sided": 0.4164788004420182,
+                "z": 0.2109099117443193
+              },
+              {
+                "amplification": 1.0079967689524372,
+                "amplification_ci95": [
+                  0.9397338950289523,
+                  1.0811970933589465
+                ],
+                "expected": 771.8278708457947,
+                "hits": 778,
+                "k": 8,
+                "kept": 195835,
+                "p_one_sided": 0.41209290859035724,
+                "z": 0.22216455790872966
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), ch(pre0, probe6, mid2), n) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 3.349478385996897,
+            "heldout": [
+              {
+                "amplification": 1.016246069443332,
+                "amplification_ci95": [
+                  0.9815219968465386,
+                  1.0521780421941191
+                ],
+                "expected": 3078.9786982536316,
+                "hits": 3129,
+                "k": 6,
+                "kept": 196585,
+                "p_one_sided": 0.18366903802225087,
+                "z": 0.9014707659249769
+              },
+              {
+                "amplification": 1.0661689486933548,
+                "amplification_ci95": [
+                  0.9960309379868817,
+                  1.141223602318681
+                ],
+                "expected": 774.7365002632141,
+                "hits": 826,
+                "k": 8,
+                "kept": 196585,
+                "p_one_sided": 0.03275568580624307,
+                "z": 1.841752394847145
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), probe6, 0xd807aa98) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 3.3467981251472048,
+            "heldout": [
+              {
+                "amplification": 1.0209511810149183,
+                "amplification_ci95": [
+                  0.9860840115509149,
+                  1.057030494937345
+                ],
+                "expected": 3067.7274861335754,
+                "hits": 3132,
+                "k": 6,
+                "kept": 195861,
+                "p_one_sided": 0.12293801214935908,
+                "z": 1.160424522448273
+              },
+              {
+                "amplification": 1.0506101399235457,
+                "amplification_ci95": [
+                  0.9808792601176523,
+                  1.1252761300344798
+                ],
+                "expected": 771.9323935508728,
+                "hits": 811,
+                "k": 8,
+                "kept": 195861,
+                "p_one_sided": 0.07984194990946526,
+                "z": 1.4061354944913178
+              }
+            ],
+            "rule": "keep if ((mid2 + bswap(bswap(n))) - ((ch(bswap(n), probe6, n) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 12
+          },
+          {
+            "discovery_fitness": 3.2981615918922627,
+            "heldout": [
+              {
+                "amplification": 1.0127703414893732,
+                "amplification_ci95": [
+                  0.9780439277661808,
+                  1.0487091828606006
+                ],
+                "expected": 3067.8228545188904,
+                "hits": 3107,
+                "k": 6,
+                "kept": 195867,
+                "p_one_sided": 0.23968293872254828,
+                "z": 0.7073227879636145
+              },
+              {
+                "amplification": 1.0350375667784606,
+                "amplification_ci95": [
+                  0.9658420978880737,
+                  1.1091686274363357
+                ],
+                "expected": 771.9526572227478,
+                "hits": 799,
+                "k": 8,
+                "kept": 195867,
+                "p_one_sided": 0.16515615812791332,
+                "z": 0.9734850172128435
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), pre1, n) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 3.296798125147205,
+            "heldout": [
+              {
+                "amplification": 1.0209511810149183,
+                "amplification_ci95": [
+                  0.9860840115509149,
+                  1.057030494937345
+                ],
+                "expected": 3067.7274861335754,
+                "hits": 3132,
+                "k": 6,
+                "kept": 195861,
+                "p_one_sided": 0.12293801214935908,
+                "z": 1.160424522448273
+              },
+              {
+                "amplification": 1.0506101399235457,
+                "amplification_ci95": [
+                  0.9808792601176523,
+                  1.1252761300344798
+                ],
+                "expected": 771.9323935508728,
+                "hits": 811,
+                "k": 8,
+                "kept": 195861,
+                "p_one_sided": 0.07984194990946526,
+                "z": 1.4061354944913178
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - (((ch(bswap(n), probe6, n) >> 6) | probe2) | probe2)) has 6 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 3.296798125147205,
+            "heldout": [
+              {
+                "amplification": 1.0209511810149183,
+                "amplification_ci95": [
+                  0.9860840115509149,
+                  1.057030494937345
+                ],
+                "expected": 3067.7274861335754,
+                "hits": 3132,
+                "k": 6,
+                "kept": 195861,
+                "p_one_sided": 0.12293801214935908,
+                "z": 1.160424522448273
+              },
+              {
+                "amplification": 1.0506101399235457,
+                "amplification_ci95": [
+                  0.9808792601176523,
+                  1.1252761300344798
+                ],
+                "expected": 771.9323935508728,
+                "hits": 811,
+                "k": 8,
+                "kept": 195861,
+                "p_one_sided": 0.07984194990946526,
+                "z": 1.4061354944913178
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), probe6, (bswap(n) | n)) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 3.296798125147205,
+            "heldout": [
+              {
+                "amplification": 1.0209511810149183,
+                "amplification_ci95": [
+                  0.9860840115509149,
+                  1.057030494937345
+                ],
+                "expected": 3067.7274861335754,
+                "hits": 3132,
+                "k": 6,
+                "kept": 195861,
+                "p_one_sided": 0.12293801214935908,
+                "z": 1.160424522448273
+              },
+              {
+                "amplification": 1.0506101399235457,
+                "amplification_ci95": [
+                  0.9808792601176523,
+                  1.1252761300344798
+                ],
+                "expected": 771.9323935508728,
+                "hits": 811,
+                "k": 8,
+                "kept": 195861,
+                "p_one_sided": 0.07984194990946526,
+                "z": 1.4061354944913178
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), probe6, n) >> 6) | (probe2 | probe2))) has 6 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 3.2668119923426833,
+            "heldout": [
+              {
+                "amplification": 1.0162043931874134,
+                "amplification_ci95": [
+                  0.9814817337834261,
+                  1.0521349048264714
+                ],
+                "expected": 3079.1049723625183,
+                "hits": 3129,
+                "k": 6,
+                "kept": 196593,
+                "p_one_sided": 0.18427929069823015,
+                "z": 0.8991766489042117
+              },
+              {
+                "amplification": 1.0648348182809382,
+                "amplification_ci95": [
+                  0.9947434035277442,
+                  1.13984272785409
+                ],
+                "expected": 774.7680540084839,
+                "hits": 825,
+                "k": 8,
+                "kept": 196593,
+                "p_one_sided": 0.035564353067474935,
+                "z": 1.804654839646032
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), probe6, 0xdc423bd7) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 11
+          },
+          {
+            "discovery_fitness": 3.264852782721583,
+            "heldout": [
+              {
+                "amplification": 1.0154013858942086,
+                "amplification_ci95": [
+                  0.9806895970744791,
+                  1.0513212617642747
+                ],
+                "expected": 3078.5855164527893,
+                "hits": 3126,
+                "k": 6,
+                "kept": 196558,
+                "p_one_sided": 0.19640128336764112,
+                "z": 0.8545459367905236
+              },
+              {
+                "amplification": 1.061127856799779,
+                "amplification_ci95": [
+                  0.9911569703828578,
+                  1.1360161473542871
+                ],
+                "expected": 774.6474609375,
+                "hits": 822,
+                "k": 8,
+                "kept": 196558,
+                "p_one_sided": 0.04443953906409643,
+                "z": 1.7013404206443952
+              }
+            ],
+            "rule": "keep if ((mid2 + n) - ((ch(bswap(n), ch(n, probe6, not(0x6ca6351)), n) >> 6) | probe2)) has 6 leading zero bits",
+            "size": 15
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 60000,
+        "rounds": 8,
+        "rules": [
+          {
+            "discovery_fitness": 4.450656340562624,
+            "heldout": [
+              {
+                "amplification": 1.005291117018414,
+                "amplification_ci95": [
+                  0.9929418804159372,
+                  1.0177914555162253
+                ],
+                "expected": 24622.718316078186,
+                "hits": 24753,
+                "k": 6,
+                "kept": 1572862,
+                "p_one_sided": 0.20319522109611732,
+                "z": 0.8302623892398932
+              },
+              {
+                "amplification": 1.0000820805123036,
+                "amplification_ci95": [
+                  0.9755214774976114,
+                  1.0252585392538738
+                ],
+                "expected": 6188.492045402527,
+                "hits": 6189,
+                "k": 8,
+                "kept": 1572862,
+                "p_one_sided": 0.49742403779383454,
+                "z": 0.006457025134498412
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + (((pre4 >> 4) & 0x7d572cd4) + n)) has 3 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.450656340562624,
+            "heldout": [
+              {
+                "amplification": 1.005291117018414,
+                "amplification_ci95": [
+                  0.9929418804159372,
+                  1.0177914555162253
+                ],
+                "expected": 24622.718316078186,
+                "hits": 24753,
+                "k": 6,
+                "kept": 1572862,
+                "p_one_sided": 0.20319522109611732,
+                "z": 0.8302623892398932
+              },
+              {
+                "amplification": 1.0000820805123036,
+                "amplification_ci95": [
+                  0.9755214774976114,
+                  1.0252585392538738
+                ],
+                "expected": 6188.492045402527,
+                "hits": 6189,
+                "k": 8,
+                "kept": 1572862,
+                "p_one_sided": 0.49742403779383454,
+                "z": 0.006457025134498412
+              }
+            ],
+            "rule": "keep if (((probe5 + n) - bswap(mid6)) + (((pre4 >> 4) & 0x7d572cd4) + mid0)) has 3 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.450656340562624,
+            "heldout": [
+              {
+                "amplification": 1.005291117018414,
+                "amplification_ci95": [
+                  0.9929418804159372,
+                  1.0177914555162253
+                ],
+                "expected": 24622.718316078186,
+                "hits": 24753,
+                "k": 6,
+                "kept": 1572862,
+                "p_one_sided": 0.20319522109611732,
+                "z": 0.8302623892398932
+              },
+              {
+                "amplification": 1.0000820805123036,
+                "amplification_ci95": [
+                  0.9755214774976114,
+                  1.0252585392538738
+                ],
+                "expected": 6188.492045402527,
+                "hits": 6189,
+                "k": 8,
+                "kept": 1572862,
+                "p_one_sided": 0.49742403779383454,
+                "z": 0.006457025134498412
+              }
+            ],
+            "rule": "keep if (((probe5 + pre3) - bswap(mid6)) + (((pre4 >> 4) & 0x7d572cd4) + n)) has 3 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.415177043502814,
+            "heldout": [
+              {
+                "amplification": 1.0052086142475578,
+                "amplification_ci95": [
+                  0.9928598873235002,
+                  1.0177084432780013
+                ],
+                "expected": 24622.74959564209,
+                "hits": 24751,
+                "k": 6,
+                "kept": 1572864,
+                "p_one_sided": 0.2068736771807397,
+                "z": 0.8173168806489094
+              },
+              {
+                "amplification": 0.9999192057474325,
+                "amplification_ci95": [
+                  0.9753606355408405,
+                  1.0250936316852917
+                ],
+                "expected": 6188.499995231628,
+                "hits": 6188,
+                "k": 8,
+                "kept": 1572864,
+                "p_one_sided": 1.0,
+                "z": -0.006355843061837503
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + (((pre4 >> 4) & not(0x62ec8825)) + n)) has 3 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.402717515808627,
+            "heldout": [
+              {
+                "amplification": 1.0052060308243913,
+                "amplification_ci95": [
+                  0.9928573353906142,
+                  1.0177058279887041
+                ],
+                "expected": 24622.812877178192,
+                "hits": 24751,
+                "k": 6,
+                "kept": 1572868,
+                "p_one_sided": 0.20698919888012807,
+                "z": 0.8169125489918495
+              },
+              {
+                "amplification": 1.0004014111010442,
+                "amplification_ci95": [
+                  0.9758369002936241,
+                  1.0255817737053337
+                ],
+                "expected": 6188.515861034393,
+                "hits": 6191,
+                "k": 8,
+                "kept": 1572868,
+                "p_one_sided": 0.4874043182262203,
+                "z": 0.03157785548973729
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + (((pre4 >> 4) & rotr(0x9d48cd4, 12)) + n)) has 3 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.375807957403001,
+            "heldout": [
+              {
+                "amplification": 1.004803093108044,
+                "amplification_ci95": [
+                  0.992456829665768,
+                  1.017300460728717
+                ],
+                "expected": 24622.734712600708,
+                "hits": 24741,
+                "k": 6,
+                "kept": 1572863,
+                "p_one_sided": 0.22551956224055814,
+                "z": 0.7536837445695644
+              },
+              {
+                "amplification": 0.9989502733123651,
+                "amplification_ci95": [
+                  0.974403699535851,
+                  1.0241127079276526
+                ],
+                "expected": 6188.49622964859,
+                "hits": 6182,
+                "k": 8,
+                "kept": 1572863,
+                "p_one_sided": 1.0,
+                "z": -0.08257884493700617
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + (((pre4 >> 4) & 0xdc0a4d5c) + n)) has 3 leading zero bits",
+            "size": 13
+          },
+          {
+            "discovery_fitness": 4.350656340562624,
+            "heldout": [
+              {
+                "amplification": 1.005291117018414,
+                "amplification_ci95": [
+                  0.9929418804159372,
+                  1.0177914555162253
+                ],
+                "expected": 24622.718316078186,
+                "hits": 24753,
+                "k": 6,
+                "kept": 1572862,
+                "p_one_sided": 0.20319522109611732,
+                "z": 0.8302623892398932
+              },
+              {
+                "amplification": 1.0000820805123036,
+                "amplification_ci95": [
+                  0.9755214774976114,
+                  1.0252585392538738
+                ],
+                "expected": 6188.492045402527,
+                "hits": 6189,
+                "k": 8,
+                "kept": 1572862,
+                "p_one_sided": 0.49742403779383454,
+                "z": 0.006457025134498412
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + ((((pre4 >> 4) & 0x7d572cd4) & 0x7d572cd4) + n)) has 3 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.238362034098592,
+            "heldout": [
+              {
+                "amplification": 1.0050061735301987,
+                "amplification_ci95": [
+                  0.9926586743830739,
+                  1.0175047758662348
+                ],
+                "expected": 24622.734319210052,
+                "hits": 24746,
+                "k": 6,
+                "kept": 1572863,
+                "p_one_sided": 0.2160654670927753,
+                "z": 0.7855503728931537
+              },
+              {
+                "amplification": 1.0173715735379947,
+                "amplification_ci95": [
+                  0.9925977825049728,
+                  1.0427611354425184
+                ],
+                "expected": 6188.496085166931,
+                "hits": 6296,
+                "k": 8,
+                "kept": 1572863,
+                "p_one_sided": 0.08588014721490483,
+                "z": 1.3665694867605382
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + ((((bswap(mid6) << 20) >> 4) & 0x7d572cd4) + n)) has 3 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.238362034098592,
+            "heldout": [
+              {
+                "amplification": 1.0050061735301987,
+                "amplification_ci95": [
+                  0.9926586743830739,
+                  1.0175047758662348
+                ],
+                "expected": 24622.734319210052,
+                "hits": 24746,
+                "k": 6,
+                "kept": 1572863,
+                "p_one_sided": 0.2160654670927753,
+                "z": 0.7855503728931537
+              },
+              {
+                "amplification": 1.0173715735379947,
+                "amplification_ci95": [
+                  0.9925977825049728,
+                  1.0427611354425184
+                ],
+                "expected": 6188.496085166931,
+                "hits": 6296,
+                "k": 8,
+                "kept": 1572863,
+                "p_one_sided": 0.08588014721490483,
+                "z": 1.3665694867605382
+              }
+            ],
+            "rule": "keep if (((probe5 + pre3) - bswap(mid6)) + ((((bswap(mid6) << 20) >> 4) & 0x7d572cd4) + n)) has 3 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.1980830318213975,
+            "heldout": [
+              {
+                "amplification": 1.004638743258911,
+                "amplification_ci95": [
+                  0.9922934914597863,
+                  1.0171350997537867
+                ],
+                "expected": 24622.781239509583,
+                "hits": 24737,
+                "k": 6,
+                "kept": 1572866,
+                "p_one_sided": 0.23333884050472734,
+                "z": 0.7278952570707575
+              },
+              {
+                "amplification": 0.9989483986798335,
+                "amplification_ci95": [
+                  0.9744018708785036,
+                  1.0241107861735208
+                ],
+                "expected": 6188.507843017578,
+                "hits": 6182,
+                "k": 8,
+                "kept": 1572866,
+                "p_one_sided": 1.0,
+                "z": -0.08272639426882815
+              }
+            ],
+            "rule": "keep if (((probe5 + mid0) - bswap(mid6)) + (((pre4 >> 4) & 0x2c6d308e) + n)) has 3 leading zero bits",
+            "size": 13
+          }
+        ]
+      },
+      {
+        "deviation": false,
+        "evaluations": 60000,
+        "rounds": 64,
+        "rules": [
+          {
+            "discovery_fitness": 5.037896431937708,
+            "heldout": [
+              {
+                "amplification": 1.00225848438954,
+                "amplification_ci95": [
+                  0.9895305147607442,
+                  1.0151475120855933
+                ],
+                "expected": 23098.831649303436,
+                "hits": 23151,
+                "k": 6,
+                "kept": 1467601,
+                "p_one_sided": 0.36570473828035294,
+                "z": 0.34325122822247267
+              },
+              {
+                "amplification": 1.0076180623418483,
+                "amplification_ci95": [
+                  0.9819833152540508,
+                  1.0339193001056564
+                ],
+                "expected": 5718.436593532562,
+                "hits": 5762,
+                "k": 8,
+                "kept": 1467601,
+                "p_one_sided": 0.28228036070421997,
+                "z": 0.5760805033085382
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(mid0, n, bswap(n)))), (0xa6e0dde7 ^ n), mid4), mid4) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 5.037896431937708,
+            "heldout": [
+              {
+                "amplification": 1.00225848438954,
+                "amplification_ci95": [
+                  0.9895305147607442,
+                  1.0151475120855933
+                ],
+                "expected": 23098.831649303436,
+                "hits": 23151,
+                "k": 6,
+                "kept": 1467601,
+                "p_one_sided": 0.36570473828035294,
+                "z": 0.34325122822247267
+              },
+              {
+                "amplification": 1.0076180623418483,
+                "amplification_ci95": [
+                  0.9819833152540508,
+                  1.0339193001056564
+                ],
+                "expected": 5718.436593532562,
+                "hits": 5762,
+                "k": 8,
+                "kept": 1467601,
+                "p_one_sided": 0.28228036070421997,
+                "z": 0.5760805033085382
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(mid0, n, bswap(n)))), (0xa6e0dde7 ^ n), mid4), pre7) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 5.037896431937708,
+            "heldout": [
+              {
+                "amplification": 1.00225848438954,
+                "amplification_ci95": [
+                  0.9895305147607442,
+                  1.0151475120855933
+                ],
+                "expected": 23098.831649303436,
+                "hits": 23151,
+                "k": 6,
+                "kept": 1467601,
+                "p_one_sided": 0.36570473828035294,
+                "z": 0.34325122822247267
+              },
+              {
+                "amplification": 1.0076180623418483,
+                "amplification_ci95": [
+                  0.9819833152540508,
+                  1.0339193001056564
+                ],
+                "expected": 5718.436593532562,
+                "hits": 5762,
+                "k": 8,
+                "kept": 1467601,
+                "p_one_sided": 0.28228036070421997,
+                "z": 0.5760805033085382
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(mid0, n, bswap(n)))), (0xa6e0dde7 ^ n), pre7), mid4) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.966379411212445,
+            "heldout": [
+              {
+                "amplification": 1.0053582055715629,
+                "amplification_ci95": [
+                  0.9914409154572683,
+                  1.0194676737697186
+                ],
+                "expected": 19356.28504562378,
+                "hits": 19460,
+                "k": 6,
+                "kept": 1229586,
+                "p_one_sided": 0.22799370265318727,
+                "z": 0.7454703524574644
+              },
+              {
+                "amplification": 1.0098946080261137,
+                "amplification_ci95": [
+                  0.9818856847526988,
+                  1.0386992588318664
+                ],
+                "expected": 4789.608699321747,
+                "hits": 4837,
+                "k": 8,
+                "kept": 1229586,
+                "p_one_sided": 0.24674258397961024,
+                "z": 0.6847761269634141
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(probe5, n, bswap(n)))), (0xa6e0dde7 ^ n), mid4), mid4) has 6 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.708874016215445,
+            "heldout": [
+              {
+                "amplification": 1.007778913098879,
+                "amplification_ci95": [
+                  0.9950839831306866,
+                  1.0206331568746678
+                ],
+                "expected": 23347.38273859024,
+                "hits": 23529,
+                "k": 6,
+                "kept": 1483085,
+                "p_one_sided": 0.11729732535701459,
+                "z": 1.1886062820643755
+              },
+              {
+                "amplification": 1.0105259837472675,
+                "amplification_ci95": [
+                  0.9849831302855744,
+                  1.0367285361959668
+                ],
+                "expected": 5777.189398288727,
+                "hits": 5838,
+                "k": 8,
+                "kept": 1483085,
+                "p_one_sided": 0.21183884433572264,
+                "z": 0.8000571262568806
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(pre5, n, bswap(n)))), (0xa6e0dde7 ^ n), mid4), mid4) has 6 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.6555656990663765,
+            "heldout": [
+              {
+                "amplification": 0.999145009388379,
+                "amplification_ci95": [
+                  0.9869421765679357,
+                  1.0114962843717805
+                ],
+                "expected": 25065.43070793152,
+                "hits": 25044,
+                "k": 6,
+                "kept": 1594349,
+                "p_one_sided": 1.0,
+                "z": -0.135362676103276
+              },
+              {
+                "amplification": 1.008262606829722,
+                "amplification_ci95": [
+                  0.9836537254126944,
+                  1.0334846589517237
+                ],
+                "expected": 6215.642589092255,
+                "hits": 6267,
+                "k": 8,
+                "kept": 1594349,
+                "p_one_sided": 0.2573881579512369,
+                "z": 0.6514185245471472
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(mid0, n, bswap(n)))), (0xa6e0dde7 ^ n), 0x2045504d), mid4) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.634807719671739,
+            "heldout": [
+              {
+                "amplification": 1.006164040700889,
+                "amplification_ci95": [
+                  0.9941100930127212,
+                  1.018361766626972
+                ],
+                "expected": 25871.52685546875,
+                "hits": 26031,
+                "k": 6,
+                "kept": 1643504,
+                "p_one_sided": 0.16072977354293863,
+                "z": 0.9914630369254144
+              },
+              {
+                "amplification": 1.0119557899521938,
+                "amplification_ci95": [
+                  0.98765942052217,
+                  1.0368474252986224
+                ],
+                "expected": 6402.453609466553,
+                "hits": 6479,
+                "k": 8,
+                "kept": 1643504,
+                "p_one_sided": 0.1693728554740403,
+                "z": 0.9566465213528417
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0((0x99f1f4d8 | maj(pre5, n, bswap(n)))), (0xa6e0dde7 ^ n), mid4), mid4) has 5 leading zero bits",
+            "size": 15
+          },
+          {
+            "discovery_fitness": 4.6306763130622794,
+            "heldout": [
+              {
+                "amplification": 1.0011391327489072,
+                "amplification_ci95": [
+                  0.988301521351525,
+                  1.0141407951591017
+                ],
+                "expected": 22678.16655778885,
+                "hits": 22704,
+                "k": 6,
+                "kept": 1440729,
+                "p_one_sided": 0.4318975932287287,
+                "z": 0.17154509622756897
+              },
+              {
+                "amplification": 1.0087236788508418,
+                "amplification_ci95": [
+                  0.9828381411008197,
+                  1.0352882175377434
+                ],
+                "expected": 5613.033696651459,
+                "hits": 5662,
+                "k": 8,
+                "kept": 1440729,
+                "p_one_sided": 0.2566913227800036,
+                "z": 0.6535796087131073
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0(((0x99f1f4d8 | n) | probe5)), (0xa6e0dde7 ^ n), mid4), mid4) has 5 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.6306763130622794,
+            "heldout": [
+              {
+                "amplification": 1.0011391327489072,
+                "amplification_ci95": [
+                  0.988301521351525,
+                  1.0141407951591017
+                ],
+                "expected": 22678.16655778885,
+                "hits": 22704,
+                "k": 6,
+                "kept": 1440729,
+                "p_one_sided": 0.4318975932287287,
+                "z": 0.17154509622756897
+              },
+              {
+                "amplification": 1.0087236788508418,
+                "amplification_ci95": [
+                  0.9828381411008197,
+                  1.0352882175377434
+                ],
+                "expected": 5613.033696651459,
+                "hits": 5662,
+                "k": 8,
+                "kept": 1440729,
+                "p_one_sided": 0.2566913227800036,
+                "z": 0.6535796087131073
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0(((0x99f1f4d8 | n) | probe5)), (0xa6e0dde7 ^ n), pre7), mid4) has 5 leading zero bits",
+            "size": 14
+          },
+          {
+            "discovery_fitness": 4.6306763130622794,
+            "heldout": [
+              {
+                "amplification": 1.0011391327489072,
+                "amplification_ci95": [
+                  0.988301521351525,
+                  1.0141407951591017
+                ],
+                "expected": 22678.16655778885,
+                "hits": 22704,
+                "k": 6,
+                "kept": 1440729,
+                "p_one_sided": 0.4318975932287287,
+                "z": 0.17154509622756897
+              },
+              {
+                "amplification": 1.0087236788508418,
+                "amplification_ci95": [
+                  0.9828381411008197,
+                  1.0352882175377434
+                ],
+                "expected": 5613.033696651459,
+                "hits": 5662,
+                "k": 8,
+                "kept": 1440729,
+                "p_one_sided": 0.2566913227800036,
+                "z": 0.6535796087131073
+              }
+            ],
+            "rule": "keep if maj(bswap(n), maj(smalls0(((n | 0x99f1f4d8) | probe5)), (0xa6e0dde7 ^ n), mid4), mid4) has 5 leading zero bits",
+            "size": 14
+          }
+        ]
+      }
+    ]
+  },
+  "params": {
+    "discovery_templates": 6,
+    "fitness_bits": 19,
+    "fitness_k": 6,
+    "generations": 60,
+    "hall_of_fame": 10,
+    "heldout_templates": 6,
+    "max_size": 15,
+    "nonce_bits": 21,
+    "population": 1000,
+    "reproduce": true,
+    "rounds": [
+      4,
+      5,
+      6,
+      8,
+      64
+    ]
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "6eebd7976c63846c2d3dc88ab0489dbee0b57e4e99ee7022104d0b4804603e36",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research evolved-rules --seed 1112363596 --params '{\"discovery_templates\":6,\"fitness_bits\":19,\"fitness_k\":6,\"generations\":60,\"hall_of_fame\":10,\"heldout_templates\":6,\"max_size\":15,\"nonce_bits\":21,\"population\":1000,\"reproduce\":true,\"rounds\":[4,5,6,8,64]}'",
+  "result": "reduced-round-only",
+  "result_digest": "6eebd7976c63846c2d3dc88ab0489dbee0b57e4e99ee7022104d0b4804603e36",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 4
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 5
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 6
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 8
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T17:31:20Z",
+  "status": "completed",
+  "verification": {
+    "detail": "independent hashes and both evaluators agree",
+    "method": "top 16 hash-number bits recomputed with verification::independent for 256 nonces per round count; vectorised rule evaluation checked against scalar evaluation on 64 random rules per round count",
+    "passed": true
+  }
+}
