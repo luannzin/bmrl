@@ -166,8 +166,11 @@ fn work_at_full_rounds(rec: &Value) -> Option<Value> {
                 .iter()
                 .filter_map(|f| {
                     let h = &c["strategies"][*f]["best_usable"]["held_out"];
-                    let wf = h["work_factor"].as_f64()?;
-                    Some(json!({ "family": f, "strategy": c["strategies"][*f]["best_usable"]["strategy"], "held_out_work_factor": wf, "held_out_amplification_ci95": h["ci95"] }))
+                    let a = h["A"].as_f64()?;
+                    // A reduction needs the held-out interval above 1 (linear has a z instead of an interval).
+                    let reduces = h["ci95"][0].as_f64().map_or(h["z"].as_f64().is_some_and(|z| z > statistical_engine::Z95), |lo| lo > 1.0);
+                    Some(json!({ "family": f, "strategy": c["strategies"][*f]["best_usable"]["strategy"], "held_out_amplification": a,
+                                 "held_out_amplification_ci95": h["ci95"], "held_out_z": h["z"], "work_factor": (a > 0.0).then(|| 1.0 / a), "significant_reduction": reduces }))
                 })
                 .collect();
             Some(json!({ "measure": "held-out work per hit of each family's best discovery strategy (1 = exhaustive)", "families": fams }))
@@ -276,7 +279,7 @@ fn verification_status(recs: &[&Value], seeds: usize, e: &Entry) -> String {
         return "candidate anomaly, unconfirmed".into();
     }
     let reproduced = recs.iter().all(|r| r["reproduction"]["matched"] != false);
-    format!("verified{}, {seeds} seed(s)", if reproduced { ", reproduced" } else { ", NOT reproduced" })
+    format!("verified{}, {seeds} run seed(s)", if reproduced { ", reproduced" } else { ", NOT reproduced" })
 }
 
 /// Build the board from the registry.
@@ -327,10 +330,13 @@ fn cell(s: &str) -> String {
     s.replace('|', "\\|").replace('\n', " ")
 }
 
-/// Every executable proposal across the board, best first.
+/// Every proposal across the board, best first; one entry per command
+/// (several entries can propose the same run).
 pub fn queue(board: &Value) -> Vec<Value> {
     let mut q: Vec<Value> = board["entries"].as_array().into_iter().flatten().flat_map(|e| e["next"].as_array().cloned().unwrap_or_default()).collect();
     q.sort_by(|a, b| b["priority"].as_f64().unwrap_or(0.0).total_cmp(&a["priority"].as_f64().unwrap_or(0.0)));
+    let mut seen = std::collections::HashSet::new();
+    q.retain(|p| seen.insert(p["command"].as_str().or(p["design"].as_str()).unwrap_or("").to_string()));
     q
 }
 
@@ -347,12 +353,14 @@ pub fn render(board: &Value) -> String {
         let mut rounds: Vec<u64> = e["evidence"].as_array().into_iter().flatten().flat_map(|v| v["rounds_tested"].as_array().cloned().unwrap_or_default()).filter_map(|r| r.as_u64()).collect();
         rounds.sort_unstable();
         rounds.dedup();
+        // Only a held-out interval above A = 1 counts as a reduction; point estimates never do.
         let work = e["evidence"].as_array().into_iter().flatten().find_map(|v| {
             let w = &v["work_at_64_rounds"];
             if let Some(f) = w["families"].as_array() {
-                f.iter().filter_map(|x| x["held_out_work_factor"].as_f64()).min_by(f64::total_cmp).map(|m| format!("best held-out {m:.3}"))
+                let sig: Vec<&str> = f.iter().filter(|x| x["significant_reduction"] == true).filter_map(|x| x["family"].as_str()).collect();
+                Some(if sig.is_empty() { "none: every held-out CI includes A = 1".into() } else { format!("CANDIDATE: {}", sig.join(", ")) })
             } else {
-                w["value"].as_f64().map(|x| format!("{x:.4}"))
+                w["value"].as_f64().map(|x| format!("neighbour strategy {x:.4}x exhaustive"))
             }
         });
         let next = e["next"].as_array().and_then(|n| n.first()).map_or("-".to_string(), |n| format!("{}: {}", n["rule"].as_str().unwrap_or(""), n["rationale"].as_str().unwrap_or("")));
@@ -386,7 +394,27 @@ pub fn render(board: &Value) -> String {
         s.push_str(&format!("- **Counterexamples / witnesses:** {cx}{}\n", ev.iter().find_map(|v| v["counterexample_sample"].as_array().filter(|a| !a.is_empty()).map(|a| format!(", e.g. `{}`", serde_json::to_string(&a[0]).unwrap_or_default()))).unwrap_or_default()));
         let rounds: Vec<String> = ev.iter().map(|v| format!("{} tested {} deviating {}", v["id"].as_str().unwrap_or(""), v["rounds_tested"], v["rounds_with_deviation"])).collect();
         s.push_str(&format!("- **Rounds covered:** {}\n", if rounds.is_empty() { "-".into() } else { rounds.join("; ") }));
-        let works: Vec<String> = ev.iter().filter_map(|v| v["work_at_64_rounds"].as_object().map(|_| serde_json::to_string(&v["work_at_64_rounds"]).unwrap_or_default())).collect();
+        let works: Vec<String> = ev
+            .iter()
+            .filter_map(|v| {
+                let w = &v["work_at_64_rounds"];
+                if let Some(f) = w["families"].as_array() {
+                    let parts: Vec<String> = f
+                        .iter()
+                        .map(|x| {
+                            let ci = x["held_out_amplification_ci95"].as_array().map_or_else(
+                                || format!("z {:.2}", x["held_out_z"].as_f64().unwrap_or(f64::NAN)),
+                                |c| format!("95% CI {:.3}..{:.3}", c[0].as_f64().unwrap_or(f64::NAN), c[1].as_f64().unwrap_or(f64::NAN)),
+                            );
+                            format!("{} `{}`: held-out A {:.4} ({ci})", x["family"].as_str().unwrap_or(""), x["strategy"].as_str().unwrap_or(""), x["held_out_amplification"].as_f64().unwrap_or(f64::NAN))
+                        })
+                        .collect();
+                    Some(format!("{} at 64 rounds, work per hit = 1/A: {}", v["id"].as_str().unwrap_or(""), parts.join("; ")))
+                } else {
+                    w["value"].as_f64().map(|x| format!("{} at 64 rounds: neighbour strategy {x:.4}x the exhaustive work", v["id"].as_str().unwrap_or("")))
+                }
+            })
+            .collect();
         s.push_str(&format!("- **Expected work reduction:** {}\n", if works.is_empty() { "none claimed".into() } else { works.join("; ") }));
         s.push_str(&format!("- **Verification status:** {}\n", e["verification"].as_str().unwrap_or("")));
         s.push_str(&format!("- **Cost so far:** {:.0} s of experiment time\n", e["cost_seconds"].as_f64().unwrap_or(0.0)));
@@ -413,6 +441,21 @@ mod tests {
             assert!(e.kinds.iter().all(|k| Kind::parse(k).is_some()), "{}: unknown kind", e.id);
             assert!(!e.kinds.is_empty() || e.derivation.is_some() || e.design.is_some(), "{}: no evidence source", e.id);
         }
+    }
+
+    #[test]
+    fn work_column_ignores_point_estimates_inside_the_interval() {
+        let rec = |ci: Value, z: f64| {
+            json!({ "kind": "nonce-atlas", "id": "nonce-atlas-0009", "observations": { "configurations": [{ "rounds": 64, "strategies": {
+                "neighbour": { "best_usable": { "strategy": "x ^ 0x22", "held_out": { "A": 1.2, "ci95": ci } } },
+                "linear": { "best_usable": { "strategy": "parity", "held_out": { "A": 1.001, "z": z } } } } }] } })
+        };
+        let board = |r: Value| json!({ "records": 1, "generated_at": "t", "entries": [{ "id": "B-X", "family": "f", "title": "t", "verification": "v", "next": [],
+            "evidence": [{ "id": "nonce-atlas-0009", "rounds_tested": [64], "work_at_64_rounds": work_at_full_rounds(&r) }] }] });
+        // A point estimate of 1.2 (work 0.83) whose interval includes 1 is not a reduction.
+        assert!(render(&board(rec(json!([0.55, 2.62]), 0.3))).contains("| none: every held-out CI includes A = 1 |"));
+        assert!(render(&board(rec(json!([1.05, 1.4]), 0.3))).contains("CANDIDATE: neighbour"));
+        assert!(render(&board(rec(json!([0.55, 2.62]), 2.5))).contains("CANDIDATE: linear"));
     }
 
     #[test]

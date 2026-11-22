@@ -141,15 +141,21 @@ Caught and fixed before publishing:
 - fingerprint missing the new modules;
 - a nonce-atlas-0001 smoke record from uncommitted code (kept as history).
 
-Current state: records and docs committed; BOARD.md held back because its
-summary column showed the neighbour family's point estimate (work 0.831,
-CI including 1) as "best held-out", which reads like a work reduction.
+Current state:
+- Records and docs are committed at `d43e899`, where the audit passes.
+- The first BOARD.md showed the neighbour family's point estimate (work
+  0.831, CI including 1) as "best held-out", which reads like a work
+  reduction.
+- Fixed in `board.rs`: the work column names a family only when its
+  held-out CI excludes A = 1, the work line is readable, the label says
+  "run seed(s)", and the `evolve` queue deduplicates commands. The board was
+  regenerated from the same records.
+- `board.rs` is fingerprinted, so at HEAD the audit reports every record as
+  older code until the full suite is rerun. No experiment code changed.
 
 Next:
-1. Fix `board.rs` rendering: work column shows only CIs that exclude 1;
-   readable work line; "run seed(s)" label; `evolve` queue deduplicates
-   commands. This changes the fingerprint, so rerun the full suite, then
-   commit the regenerated board.
+1. Rerun the full suite from HEAD (about 3 h), or fold it into the rerun
+   that GPU kernel v2 needs anyway after its merge.
 2. GPU kernel v2 in its own worktree. The session started for it never
    finished setup; restart it.
 3. `evolve` queue: smt at 5-7 rounds, trail-sat 4x budget, new-seed
