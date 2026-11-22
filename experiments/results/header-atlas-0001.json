@@ -1,0 +1,548 @@
+{
+  "assumptions": [
+    "Headers come from public P2P peers; nothing is trusted: links, proof of work, retargets and median time past are recomputed, and known block hashes are checked.",
+    "The last 6 blocks below the downloaded tip are excluded (reorg margin).",
+    "hash / target is computed in f64 from the 256-bit values (relative error about 1e-16).",
+    "Nonce, version and time statistics describe miner software and hardware; they are not tests of SHA-256 and are never flagged as deviations.",
+    "Economics: subsidy only (fees are not in headers); device rates are this project's measurements except the Bitaxe-class figure, a vendor specification."
+  ],
+  "baseline": "Uniform(0, 1) for hash / target; 1/2 for each nonce bit.",
+  "candidate_anomaly": false,
+  "conclusion": "NEGATIVE RESULT: no deviation from the baseline was detected in any tested configuration at the stated sample size and significance level. 977066 main-chain headers (heights 0..=977065, data sha256 85826ca56ca71d2e), validated here: 0 link, 0 proof-of-work, 0 difficulty and 0 median-time-past failures; known hashes match; total work 2^96.44. hash / target over 977065 blocks: KS p = 0.869, 20-bin chi-square p = 0.760; per-era KS p 0.064, 0.571, 0.508, 0.340, 0.992; Bonferroni threshold 1.4e-4: consistent with a random function. Luckiest block: height 756951, hash = 6.205e-7 x target (20.6 extra zero bits). Miner behaviour (not SHA-256): nonce-bit max |z| per era 112.9 (bit 7), 35.7 (bit 7), 63.3 (bit 1), 148.8 (bit 7), 101.9 (bit 7); BIP320 version-rolling bits in 95.9% of the last year's blocks; 16352 blocks earlier than their parent; mean interval 577.6 s. Network hashrate over the last 2016 blocks: 9.873e20 H/s; subsidy 312500000 sats. cpu-avx2 x28 (bench-cpu): 5.314e-3 sats/day, one block per 1.610e8 years; gpu v2 RX 7600 (bench-gpu-0006): 7.985e-2 sats/day, one block per 1.071e7 years; gpu v3 RX 7600 (bench-gpu-0006): 8.723e-2 sats/day, one block per 9.808e6 years; Bitaxe-class BM1370 board (vendor figure, not measured): 5.469e1 sats/day, one block per 1.564e4 years",
+  "configurations": [
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "experiments/data/mainnet-headers.bin, heights 0..=params.height.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 2.825158,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "703c1c9941a6549323aa72badd4b762eb585fed7",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "198376b3496a50dc86555fd58737613da29e17a40205e51991e12503ca9a4528"
+  },
+  "finished_at": "2026-11-22T15:59:47Z",
+  "hypothesis": "Over every main-chain block, the winning hash divided by its target departs from Uniform(0, 1), i.e. real-world SHA256d mining shows structure below the target.",
+  "hypothesis_id": "H-MAINNET-01",
+  "hypothesis_status": "not-supported-single-seed",
+  "id": "header-atlas-0001",
+  "implementation": [
+    "experiment_engine::header_atlas",
+    "mining_engine::p2p (download)",
+    "bitcoin_header::{next_work_required, median_time_past, check_proof_of_work}"
+  ],
+  "kind": "header-atlas",
+  "methodology": "Load headers 0..=height, validate every consensus rule on headers, compute u = hash / target per block, test u with Kolmogorov-Smirnov over all blocks and per halving era and with a 20-bin chi-square (Bonferroni over these tests at 0.001); describe nonce bits per era, version bits per year, timestamps; estimate hashrate from the last 2016 blocks.",
+  "name": "Mainnet header atlas: chain validation, hash/target uniformity, miner behaviour, economics",
+  "null_hypothesis": "hash / target is uniform on [0, 1] in every halving era, as for a random function.",
+  "observations": {
+    "data_sha256": "85826ca56ca71d2e0da10dfb4954f32f5d02a074e50e8e150f6c50a8962b0fc4",
+    "economics": {
+      "devices": [
+        {
+          "device": "cpu-avx2 x28 (bench-cpu)",
+          "expected_sats_per_day": 0.005314288383480953,
+          "expected_years_per_block": 160995849.15983853,
+          "hashes_per_second": 116600000.0,
+          "network_share": 1.1809529741068786e-13,
+          "p_block_within_a_year": 6.211340219941519e-9
+        },
+        {
+          "device": "gpu v2 RX 7600 (bench-gpu-0006)",
+          "expected_sats_per_day": 0.07985105701422497,
+          "expected_years_per_block": 10714678.089062313,
+          "hashes_per_second": 1752000000.0,
+          "network_share": 1.7744679336494438e-12,
+          "p_block_within_a_year": 9.332991113275568e-8
+        },
+        {
+          "device": "gpu v3 RX 7600 (bench-gpu-0006)",
+          "expected_sats_per_day": 0.08723454516280056,
+          "expected_years_per_block": 9807793.109737288,
+          "hashes_per_second": 1914000000.0,
+          "network_share": 1.9385454480622348e-12,
+          "p_block_within_a_year": 1.0195973121351898e-7
+        },
+        {
+          "device": "Bitaxe-class BM1370 board (vendor figure, not measured)",
+          "expected_sats_per_day": 54.69250480426368,
+          "expected_years_per_block": 15643.430010030972,
+          "hashes_per_second": 1200000000000.0,
+          "network_share": 1.215388995650304e-9,
+          "p_block_within_a_year": 0.00006392255648157708
+        }
+      ],
+      "fees": "not included (not in headers)",
+      "network_hashes_per_second": 9.87338213769107e+20,
+      "period_first_height": 975049,
+      "subsidy_sats": 312500000
+    },
+    "hash_over_target": {
+      "bonferroni_threshold": 0.00014285714285714287,
+      "deviation": false,
+      "luckiest": {
+        "height": 756951,
+        "ratio": 6.204889752448108e-7
+      },
+      "tests": [
+        {
+          "d": 0.0006030070005593746,
+          "n": 977065,
+          "p": 0.8693726174023357,
+          "test": "KS all blocks"
+        },
+        {
+          "d": 0.00286425638861465,
+          "n": 209999,
+          "p": 0.06365087395513881,
+          "test": "KS era 0 (heights 0..)"
+        },
+        {
+          "d": 0.0017099450380391734,
+          "n": 210000,
+          "p": 0.5707092906463307,
+          "test": "KS era 1 (heights 210000..)"
+        },
+        {
+          "d": 0.0017943424203525904,
+          "n": 210000,
+          "p": 0.5080272612821207,
+          "test": "KS era 2 (heights 420000..)"
+        },
+        {
+          "d": 0.002050282686645588,
+          "n": 210000,
+          "p": 0.34016561294157427,
+          "test": "KS era 3 (heights 630000..)"
+        },
+        {
+          "d": 0.001164533590609168,
+          "n": 137066,
+          "p": 0.9923481908812688,
+          "test": "KS era 4 (heights 840000..)"
+        },
+        {
+          "df": 19,
+          "n": 977065,
+          "p": 0.7602824512145928,
+          "statistic": 14.393592033283351,
+          "test": "chi-square 20 bins"
+        }
+      ]
+    },
+    "height": 977065,
+    "nonce_by_era": [
+      {
+        "bit_z": [
+          -3.746810096339029,
+          -5.252517123988377,
+          -4.78116535881119,
+          -20.401239132599642,
+          -25.450813135470064,
+          -47.05443570609114,
+          -101.55666573880144,
+          -112.86910810305393,
+          0.0720120752354036,
+          0.43861900370654916,
+          -1.747929462532069,
+          -1.088909864923224,
+          1.2242052790018612,
+          -2.7124548338668686,
+          -0.7703109866090142,
+          -1.0409018147662883,
+          -1.887589244806791,
+          -1.2547558563744565,
+          0.2509511712748913,
+          -2.001062817905003,
+          -2.3152973280231275,
+          -1.4642455297865398,
+          -0.4909914220595699,
+          -3.12706981249495,
+          -8.979687563445024,
+          -15.897211154239853,
+          -29.47912498045658,
+          -51.03910386911681,
+          -78.3382269356289,
+          -101.2206093877029,
+          -107.06013403406472,
+          -109.80968599759831
+        ],
+        "blocks": 209999,
+        "era": 0,
+        "max_abs_z": -112.86910810305393,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 70147.34778737041,
+        "top_byte_chi2_p": 0.0
+      },
+      {
+        "bit_z": [
+          -17.14319745693956,
+          -9.845991207447977,
+          -24.63679980764354,
+          -16.488543786231585,
+          -15.794610895281128,
+          -12.386047449794928,
+          -22.10110792310131,
+          -35.68298941138948,
+          1.409687570924511,
+          -0.27931889950207023,
+          -2.684080049902706,
+          -0.6153744504654985,
+          -0.49753678973806265,
+          -2.688444407707426,
+          -4.041395327170579,
+          -6.58581592732225,
+          -1.204562754102678,
+          0.3011406885256695,
+          0.13965944975103511,
+          -0.6852041753410161,
+          -1.3965944975103513,
+          -0.16584559657935422,
+          2.0774343150466477,
+          -0.27059018389263056,
+          -1.8854025716389742,
+          -1.5973549565274643,
+          -3.7620764276685086,
+          -4.063217116194179,
+          -12.530071257350683,
+          -14.293271810457501,
+          -0.6328318816843779,
+          0.4364357804719848
+        ],
+        "blocks": 210000,
+        "era": 1,
+        "max_abs_z": -35.68298941138948,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 3918.182780952382,
+        "top_byte_chi2_p": 4.028525389194397e-91
+      },
+      {
+        "bit_z": [
+          -54.55447255899809,
+          -63.29191688404723,
+          -7.362671616562383,
+          -6.206116798311624,
+          -10.60975382327395,
+          -15.977913923079363,
+          -36.0626885404001,
+          -34.9410485845871,
+          -6.738568450487445,
+          0.6982972487551756,
+          0.3011406885256695,
+          -1.6540916079888224,
+          -4.58257569495584,
+          -7.650719231673893,
+          -10.688312263758908,
+          -37.52911276278597,
+          -6.2541247341635415,
+          0.43207142266726495,
+          2.902297940138699,
+          -0.4408001382767046,
+          -0.9208794967958879,
+          0.401520918034226,
+          -2.3174739943062392,
+          -0.8510497719203703,
+          -4.102496336436657,
+          -6.048999917341709,
+          -8.728715609439696,
+          -31.654687157633056,
+          -45.323855802015615,
+          -43.7352295610976,
+          -9.038585013574805,
+          -16.143759519658715
+        ],
+        "blocks": 210000,
+        "era": 2,
+        "max_abs_z": -63.29191688404723,
+        "max_abs_z_bit": 1,
+        "sum_z2_32_bits": 17110.959866666664,
+        "top_byte_chi2_p": 0.0
+      },
+      {
+        "bit_z": [
+          -22.10110792310131,
+          -19.094065395649334,
+          -4.722235144706875,
+          -7.480509277289819,
+          -7.825293543862687,
+          -25.365647561031754,
+          -38.594016067137616,
+          -148.8202367831421,
+          -39.07845978346152,
+          -27.700578986556874,
+          -3.4827575281664385,
+          -3.1641594084218894,
+          -10.234419052068043,
+          -18.35212456884696,
+          -16.06520107917376,
+          -25.348190129812874,
+          -14.284543094848061,
+          -1.5100678004330672,
+          -1.1434617448366,
+          -2.548784957956391,
+          -5.067019411279743,
+          -5.062655053475023,
+          -16.833328052804454,
+          -19.78799828659979,
+          -0.03491486243775878,
+          1.2787568367829154,
+          -1.8155728467634566,
+          -13.110530845378422,
+          -31.672144588851936,
+          -9.003670151137046,
+          -22.498264483330814,
+          -51.82674893104819
+        ],
+        "blocks": 210000,
+        "era": 3,
+        "max_abs_z": -148.8202367831421,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 34325.22356190477,
+        "top_byte_chi2_p": 0.0
+      },
+      {
+        "bit_z": [
+          -27.480641327853245,
+          -1.636845748444964,
+          0.07562983656181353,
+          -2.5119910000888064,
+          -1.9177565699602717,
+          -22.359420966381872,
+          -24.936237540666518,
+          -101.92741116059268,
+          -28.95542314080861,
+          -32.472210540932934,
+          -2.7983039527871005,
+          -2.7550869033232073,
+          -0.880547382826829,
+          -6.0611911873110556,
+          -11.91169925848563,
+          -16.87625781565039,
+          -1.0696219742313628,
+          -0.5294088559326947,
+          0.043217049463893445,
+          -2.322916408684273,
+          -0.6158429548604816,
+          -3.5978193678691293,
+          -9.999344819708346,
+          -11.112183843403601,
+          1.2911093527338167,
+          1.1884688602570697,
+          -0.6752663978733351,
+          -0.9399708258396824,
+          -9.837280884218746,
+          -13.035342544546861,
+          -21.851620635181124,
+          -16.525119288756255
+        ],
+        "blocks": 137066,
+        "era": 4,
+        "max_abs_z": -101.92741116059268,
+        "max_abs_z_bit": 7,
+        "sum_z2_32_bits": 15916.604730567757,
+        "top_byte_chi2_p": 3.388863302093982e-201
+      }
+    ],
+    "time": {
+      "blocks_before_parent": 16352,
+      "mean_interval_seconds": 577.5970687722926
+    },
+    "tip_hash": "00000000000000000000ece2dcada60fe2df5ad1c8991fc01c30c9553a15534b",
+    "validation": {
+      "difficulty_failures": 0,
+      "first_failures": [],
+      "known_hashes_checked": 4,
+      "known_hashes_match": true,
+      "link_failures": 0,
+      "mtp_failures": 0,
+      "passed": true,
+      "pow_failures": 0,
+      "total_work_log2": 96.43722681501797
+    },
+    "version_by_year": [
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 32489,
+        "year": 2009
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 67920,
+        "year": 2010
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 59627,
+        "year": 2011
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 54526,
+        "year": 2012
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 63433,
+        "year": 2013
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0,
+        "blocks": 58865,
+        "year": 2014
+      },
+      {
+        "bip320_bits_set": 0.0,
+        "bip9_top_bits": 0.0006811362088326798,
+        "blocks": 54321,
+        "year": 2015
+      },
+      {
+        "bip320_bits_set": 0.03296202439335655,
+        "bip9_top_bits": 0.6206450201454851,
+        "blocks": 54851,
+        "year": 2016
+      },
+      {
+        "bip320_bits_set": 0.00657988842797883,
+        "bip9_top_bits": 0.9928300672292948,
+        "blocks": 55928,
+        "year": 2017
+      },
+      {
+        "bip320_bits_set": 0.052901023890784986,
+        "bip9_top_bits": 0.9998348563250028,
+        "blocks": 54498,
+        "year": 2018
+      },
+      {
+        "bip320_bits_set": 0.43581280424841423,
+        "bip9_top_bits": 0.9950213895854846,
+        "blocks": 54232,
+        "year": 2019
+      },
+      {
+        "bip320_bits_set": 0.6761301717334937,
+        "bip9_top_bits": 0.992352786441697,
+        "blocks": 53222,
+        "year": 2020
+      },
+      {
+        "bip320_bits_set": 0.7316744486201268,
+        "bip9_top_bits": 0.9998861177542421,
+        "blocks": 52686,
+        "year": 2021
+      },
+      {
+        "bip320_bits_set": 0.8431789125366624,
+        "bip9_top_bits": 0.999981198766639,
+        "blocks": 53188,
+        "year": 2022
+      },
+      {
+        "bip320_bits_set": 0.9225170836496972,
+        "bip9_top_bits": 1.0,
+        "blocks": 53999,
+        "year": 2023
+      },
+      {
+        "bip320_bits_set": 0.9533222373908328,
+        "bip9_top_bits": 1.0,
+        "blocks": 53473,
+        "year": 2024
+      },
+      {
+        "bip320_bits_set": 0.9664292980671414,
+        "bip9_top_bits": 1.0,
+        "blocks": 53082,
+        "year": 2025
+      },
+      {
+        "bip320_bits_set": 0.9586730872124131,
+        "bip9_top_bits": 1.0,
+        "blocks": 46725,
+        "year": 2026
+      }
+    ]
+  },
+  "params": {
+    "devices": [
+      {
+        "hashes_per_second": 116600000.0,
+        "name": "cpu-avx2 x28 (bench-cpu)"
+      },
+      {
+        "hashes_per_second": 1752000000.0,
+        "name": "gpu v2 RX 7600 (bench-gpu-0006)"
+      },
+      {
+        "hashes_per_second": 1914000000.0,
+        "name": "gpu v3 RX 7600 (bench-gpu-0006)"
+      },
+      {
+        "hashes_per_second": 1200000000000.0,
+        "name": "Bitaxe-class BM1370 board (vendor figure, not measured)"
+      }
+    ],
+    "height": 977065,
+    "reproduce": true
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "320043e81248c1af261dfec30a77295521412c7331d9e4e9e22a33248ee0d5eb",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research header-atlas --seed 1112363596 --params '{\"devices\":[{\"hashes_per_second\":116600000.0,\"name\":\"cpu-avx2 x28 (bench-cpu)\"},{\"hashes_per_second\":1752000000.0,\"name\":\"gpu v2 RX 7600 (bench-gpu-0006)\"},{\"hashes_per_second\":1914000000.0,\"name\":\"gpu v3 RX 7600 (bench-gpu-0006)\"},{\"hashes_per_second\":1200000000000.0,\"name\":\"Bitaxe-class BM1370 board (vendor figure, not measured)\"}],\"height\":977065,\"reproduce\":true}'",
+  "result": "negative",
+  "result_digest": "320043e81248c1af261dfec30a77295521412c7331d9e4e9e22a33248ee0d5eb",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": []
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T15:59:44Z",
+  "status": "completed",
+  "verification": {
+    "detail": "independent hashes, links and target comparison agree",
+    "method": "block hashes of every (height/4096)-th header recomputed with the sha2 crate and links rechecked; the luckiest block's hash compared with its target as 256-bit integers",
+    "passed": true
+  }
+}
