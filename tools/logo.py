@@ -49,32 +49,34 @@ THICK = 2.2  # the rim's depth in pixels, seen edge-on
 FACE = [DUSK[1], DUSK[2], DUSK[3], DUSK[3]]  # plum low, ember, gold high
 GLYPH_INK = DUSK[0]
 
-# The bitcoin sign, 12x16, two bars through a B.
+# The bitcoin sign, two bars through a B. Odd in both directions, like the coin (25 pixels across,
+# centred on pixel 15), so it centres on it exactly.
 GLYPH = [
-    "...#..#.....",
-    "...#..#.....",
-    "#########...",
-    ".##.....##..",
-    ".##......##.",
-    ".##......##.",
-    ".##.....##..",
-    ".########...",
-    ".##.....##..",
-    ".##......##.",
-    ".##......##.",
-    ".##......##.",
-    ".##.....##..",
-    "#########...",
-    "...#..#.....",
-    "...#..#.....",
+    "...#.#.....",
+    "...#.#.....",
+    "#########..",
+    ".##.....##.",
+    ".##......##",
+    ".##......##",
+    ".##.....##.",
+    ".########..",
+    ".##.....##.",
+    ".##......##",
+    ".##......##",
+    ".##......##",
+    ".##......##",
+    ".##.....##.",
+    "#########..",
+    "...#.#.....",
+    "...#.#.....",
 ]
 GW, GH = len(GLYPH[0]), len(GLYPH)
 
 
 def glyph_at(u, v):
-    """Whether face point (u, v) in -1..1 falls on the sign (drawn in the face's middle 58% x 74%)."""
-    gx = (u / 0.58 + 1) / 2 * GW + 0.5  # nudged right so the B sits optically centred
-    gy = (v / 0.74 + 1) / 2 * GH
+    """Whether face point (u, v) in -1..1 falls on the sign: one glyph cell per pixel when the coin
+    faces you, squeezed with the face as it turns."""
+    gx, gy = u * R + GW / 2, v * R + GH / 2
     return 0 <= gx < GW and 0 <= gy < GH and GLYPH[int(gy)][int(gx)] == "#"
 
 
