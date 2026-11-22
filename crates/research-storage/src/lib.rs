@@ -283,6 +283,7 @@ impl Store {
     /// * else `negative` from >= 2 seeds  -> `not-supported`
     /// * else one `negative`              -> `not-supported-single-seed`
     /// * else `model-estimate`            -> `modelled`
+    /// * else `exact-analysis`            -> `analysed`
     /// * otherwise                        -> `open`
     #[allow(clippy::too_many_arguments)]
     pub fn add_evidence(
@@ -317,6 +318,8 @@ impl Store {
             "not-supported-single-seed"
         } else if count("model-estimate")? > 0 {
             "modelled"
+        } else if count("exact-analysis")? > 0 {
+            "analysed"
         } else {
             "open"
         };

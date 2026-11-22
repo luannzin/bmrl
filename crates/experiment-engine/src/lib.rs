@@ -33,6 +33,7 @@ pub mod smt_scaling;
 pub mod statistical;
 pub mod trail_sat;
 pub mod trail_search;
+pub mod work_sharing;
 
 use anyhow::{Context, Result, bail};
 use research_storage::{Store, now_iso};
@@ -62,6 +63,7 @@ pub enum Kind {
     NonceAtlas,
     TrailSat,
     QuantumModel,
+    WorkSharing,
 }
 
 /// What exactly an experiment measures. Results never transfer between these.
@@ -133,7 +135,7 @@ pub struct Verification {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 15] = [
+    pub const ALL: [Kind; 16] = [
         Kind::ReducedRound,
         Kind::Differential,
         Kind::Statistical,
@@ -149,6 +151,7 @@ impl Kind {
         Kind::NonceAtlas,
         Kind::TrailSat,
         Kind::QuantumModel,
+        Kind::WorkSharing,
     ];
     /// The MVP experiment set (`bmr research all`).
     pub const MVP: [Kind; 4] = [Kind::ReducedRound, Kind::Differential, Kind::Statistical, Kind::Smt];
@@ -157,6 +160,8 @@ impl Kind {
         [Kind::Characteristic, Kind::Algebraic, Kind::Schedule, Kind::SmtScaling, Kind::Multiseed, Kind::Hardware];
     /// Structural-shortcut search (`bmr research breakthrough`).
     pub const BREAKTHROUGH: [Kind; 3] = [Kind::NonceAtlas, Kind::TrailSat, Kind::QuantumModel];
+    /// Discovery wave (`bmr research discovery`).
+    pub const DISCOVERY: [Kind; 1] = [Kind::WorkSharing];
 
     fn module(self) -> &'static Module {
         &MODULES[self as usize]
@@ -204,7 +209,7 @@ macro_rules! module {
 }
 
 /// Indexed by `Kind as usize`, in declaration order.
-const MODULES: [Module; 15] = [
+const MODULES: [Module; 16] = [
     module!("reduced-round", reduced_round),
     module!("differential", differential),
     module!("statistical", statistical),
@@ -220,6 +225,7 @@ const MODULES: [Module; 15] = [
     module!("nonce-atlas", nonce_atlas),
     module!("trail-sat", trail_sat),
     module!("quantum-model", quantum_model),
+    module!("work-sharing", work_sharing),
 ];
 
 /// Parameter helpers shared by the kinds.
@@ -297,6 +303,7 @@ fn conclusion(result: &str, summary: &[String]) -> String {
         "negative" => "NEGATIVE RESULT: no deviation from the baseline was detected in any tested configuration at the stated sample size and significance level.",
         "reduced-round-only" => "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation.",
         "model-estimate" => "MODEL ESTIMATE: figures below come from an analytical model with stated assumptions, validated only where noted; they are not measurements.",
+        "exact-analysis" => "EXACT ANALYSIS: the counts below are exact properties of the computation, checked against the reference implementation; converting them to time uses stated cost weights unless a measurement is cited.",
         "not-replicated" => "NOT REPLICATED: a full-round deviation appeared but vanished on a fresh seed; treated as statistical noise.",
         "candidate-anomaly" => "CANDIDATE ANOMALY (unconfirmed): a full-round deviation replicated on a fresh seed. This is NOT a discovery: it requires review of the methodology, a larger independent run and an external implementation before any claim.",
         _ => "",
@@ -542,7 +549,7 @@ mod tests {
     #[test]
     fn module_table_matches_kind_order() {
         let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
-        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model"]);
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing"]);
         assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
     }
 

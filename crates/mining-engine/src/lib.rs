@@ -27,6 +27,14 @@ impl Work {
         self.header.serialize()
     }
 
+    /// The same job with BIP320 version bits 13..=28 XORed with `m`: a new
+    /// midstate, an identical second block (overt AsicBoost).
+    pub fn version_rolled(&self, m: u32) -> Work {
+        let mut h = self.header;
+        h.version ^= ((m << 13) & 0x1fff_e000) as i32;
+        Work::new(h, self.target)
+    }
+
     /// Reference check: SHA-256d over the full 80-byte header.
     pub fn verify(&self, nonce: u32) -> bool {
         let mut h = self.header;

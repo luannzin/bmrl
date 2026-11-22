@@ -146,6 +146,10 @@ enum ResearchCmd {
     QuantumModel(ResearchOpts),
     /// Structural-shortcut search: nonce-atlas, trail-sat and quantum-model.
     Breakthrough(ResearchOpts),
+    /// AsicBoost++: exact DAG count of the work a batch of headers can share.
+    WorkSharing(ResearchOpts),
+    /// Discovery wave: every kind in Kind::DISCOVERY.
+    Discovery(ResearchOpts),
     /// Rebuild the breakthrough research board (research/BOARD.md) from the registry.
     Board,
     /// Propose the next experiments from previous findings; `--run N` executes the top N executable ones.
@@ -427,19 +431,31 @@ fn gpu_parity(g: &GpuBackend, cpu: &CpuBackend) -> Result<Value> {
     let start = u32::MAX - count + 1;
     let gpu_hashes = g.hash_dump(&w, start, count)?;
     let mismatches = gpu_hashes.iter().enumerate().filter(|(i, h)| **h != w.midstate.hash_words(start.wrapping_add(*i as u32))).count();
-    // Search parity at a 12-bit target.
-    let w12 = synthetic_work(0x5ea4, 12);
-    let gpu = scan_verified(g, &w12, 0, 1 << 22)?;
-    let cpu_scan = scan_verified(cpu, &w12, 0, 1 << 22)?;
+    // Search parity at a 12-bit target, every member header of the kernel; each GPU hit re-checked on the full header.
+    let works = g.members_of(&synthetic_work(0x5ea4, 12));
+    let (gpu, _) = g.scan_members(&works, 0, 1 << 22, usize::MAX)?;
+    let all_valid = gpu.iter().all(|&(m, n)| works[m as usize].verify(n));
+    let mut cpu_hits = Vec::new();
+    for (m, w) in works.iter().enumerate() {
+        cpu_hits.extend(scan_verified(cpu, w, 0, 1 << 22)?.found.into_iter().map(|n| (m as u32, n)));
+    }
     Ok(json!({
         "digest_lanes": count,
         "digest_mismatches": mismatches,
+        "search_headers": works.len(),
         "search_nonces": 1u64 << 22,
-        "search_hits_gpu": gpu.found.len(),
-        "search_hits_cpu": cpu_scan.found.len(),
-        "search_identical": gpu.found == cpu_scan.found,
-        "passed": mismatches == 0 && gpu.found == cpu_scan.found,
+        "search_hits_gpu": gpu.len(),
+        "search_hits_cpu": cpu_hits.len(),
+        "search_identical": gpu == cpu_hits,
+        "passed": mismatches == 0 && all_valid && gpu == cpu_hits,
     }))
+}
+
+/// Header hashes per second of `g` on synthetic work (all of its member headers).
+fn gpu_throughput(g: &GpuBackend, seconds: f64) -> Result<(u64, f64)> {
+    let works = g.members_of(&synthetic_work(1, 32));
+    let slice = g.batch() as u64;
+    measure(seconds, |done| Ok(g.scan_members(&works, batch_start(done / works.len() as u64, slice), slice, usize::MAX)?.1))
 }
 
 /// Raw SHA-256d throughput of `b` on synthetic work (no template, no coinbase):
@@ -453,7 +469,8 @@ fn rate_of((n, s): (u64, f64)) -> f64 {
     n as f64 / s
 }
 
-/// Every GPU kernel on the same adapter; the top-level rate is the last (fastest) kernel's.
+/// Every GPU kernel on the same adapter; the top-level rate is the last kernel's
+/// (v3: header hashes per second over its 4 version-rolled headers).
 fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
     let cpu = CpuBackend::new(Kernel::best(), o.threads)?;
     let mut kernels = Vec::new();
@@ -465,12 +482,13 @@ fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
         adapter = adapter_json(a);
         g.calibrate(Duration::from_millis(250))?;
         let parity = gpu_parity(&g, &cpu)?;
-        let (n, s) = throughput(&g, o.seconds, g.batch() as u64)?;
-        say!(human, "{:<10} {} ({} nonces/dispatch)", k.name(), fmt_rate(n as f64 / s), g.batch());
+        let (n, s) = gpu_throughput(&g, o.seconds)?;
+        say!(human, "{:<10} {} header hashes ({} nonces x {} headers per dispatch)", k.name(), fmt_rate(n as f64 / s), g.batch(), k.members());
         say!(human, "{:<10} parity: {} digest lanes, {} mismatches; search {} vs {} hits, identical: {}", k.name(), parity["digest_lanes"], parity["digest_mismatches"], parity["search_hits_gpu"], parity["search_hits_cpu"], parity["search_identical"]);
         kernels.push(json!({
             "kernel": k.name(),
             "description": k.description(),
+            "headers_per_nonce": k.members(),
             "batch_nonces": g.batch(),
             "hashes_per_second": n as f64 / s,
             "hashes": n,
@@ -493,9 +511,9 @@ fn bench_gpu(human: bool, o: &BenchOpts) -> Result<(Value, bool)> {
         "speedup_over_v1": speedup,
         "energy": { "source": null, "note": "no GPU power counter exposed through wgpu; energy not measured" },
         "expected_work_per_block_factor": 1.0,
-        "note": "Kernel v2 lowers the cost per nonce (precomputation, unrolling, early reject); every nonce is still evaluated, so the expected number of hashes per block is unchanged (factor 1.0).",
+        "note": "Kernels v2 and v3 lower the cost per header hash (precomputation, unrolling, early reject, shared schedule across version-rolled headers); every header is still evaluated, so the expected number of hashes per block is unchanged (factor 1.0).",
     }))?;
-    say!(human, "speedup    v2 / v1 = {speedup:.2}x");
+    say!(human, "speedup    {} / v1 = {speedup:.2}x", best["kernel"].as_str().unwrap_or(""));
     say!(human, "saved      {}", v["id"].as_str().unwrap_or(""));
     Ok((v, ok))
 }
@@ -661,6 +679,7 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
     let cmd_name = match cmd {
         ResearchCmd::Structural(_) => "structural",
         ResearchCmd::Breakthrough(_) => "breakthrough",
+        ResearchCmd::Discovery(_) => "discovery",
         _ => "",
     };
     let single = |kind, o: &ResearchOpts| -> Result<(Value, bool)> {
@@ -684,6 +703,7 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
         ResearchCmd::NonceAtlas(o) => single(Kind::NonceAtlas, &o),
         ResearchCmd::TrailSat(o) => single(Kind::TrailSat, &o),
         ResearchCmd::QuantumModel(o) => single(Kind::QuantumModel, &o),
+        ResearchCmd::WorkSharing(o) => single(Kind::WorkSharing, &o),
         ResearchCmd::Board => {
             let board = experiment_engine::board::build(&store)?;
             let path = workspace_root().join("research").join("BOARD.md");
@@ -726,13 +746,14 @@ fn research(human: bool, cmd: ResearchCmd) -> Result<(Value, bool)> {
             }
             Ok((json!({ "hypothesis": h, "evidence": evidence }), true))
         }
-        ResearchCmd::All(o) | ResearchCmd::Structural(o) | ResearchCmd::Breakthrough(o) if o.params.is_some() => {
+        ResearchCmd::All(o) | ResearchCmd::Structural(o) | ResearchCmd::Breakthrough(o) | ResearchCmd::Discovery(o) if o.params.is_some() => {
             bail!("--params is per experiment kind; run kinds individually to override parameters")
         }
-        ResearchCmd::All(o) | ResearchCmd::Structural(o) | ResearchCmd::Breakthrough(o) => {
+        ResearchCmd::All(o) | ResearchCmd::Structural(o) | ResearchCmd::Breakthrough(o) | ResearchCmd::Discovery(o) => {
             let kinds: &[Kind] = match cmd_name {
                 "structural" => &Kind::STRUCTURAL,
                 "breakthrough" => &Kind::BREAKTHROUGH,
+                "discovery" => &Kind::DISCOVERY,
                 _ => &Kind::MVP,
             };
             let mut recs = Vec::new();

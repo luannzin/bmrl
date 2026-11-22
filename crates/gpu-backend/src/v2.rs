@@ -1,7 +1,8 @@
-//! Kernel v2: the CPU kernel's tricks in WGSL, generated as straight-line code.
+//! Generated kernels: v2 (one header per nonce) and v3 (k version-rolled
+//! headers per nonce). The CPU kernel's tricks in WGSL, as straight-line code.
 //!
-//! * The host passes the second-block state after rounds 0..=2 (`pre`), so
-//!   the nonce enters at round 3 of a precomputed state.
+//! * The host passes each header's second-block state after rounds 0..=2
+//!   (`pre`), so the nonce enters at round 3 of a precomputed state.
 //! * Every round and schedule word is unrolled with K, the padding words and
 //!   the outer IV as literals. Constant terms are folded here, and terms that
 //!   do not depend on the nonce (W16, W17, most of round 3) come first in each
@@ -12,6 +13,10 @@
 //!   passes is hashed in full (`full_hash`) and compared with the whole target.
 //!   The values the early check never reads (a in outer rounds 57..=60,
 //!   W61..W63) are dead code for the driver.
+//! * With k > 1 (v3, overt AsicBoost), the k headers differ only in BIP320
+//!   version bits: their second blocks are identical, so the inner message
+//!   schedule is computed once per nonce and the k inner compressions run in
+//!   lockstep on it. `experiment_engine::work_sharing` counts the saving.
 //!
 //! Output is bit-identical to `gpu/wgsl/sha256d.wgsl` (v1) and the CPU kernels.
 
@@ -56,52 +61,68 @@ fn sigma(w: &Word, f: fn(u32) -> u32, wgsl: &str) -> Word {
     }
 }
 
-/// Rounds `rounds` of one compression with prefix `p`. `s` holds the WGSL
-/// expressions of a..h; `w` starts with the 16 message words and grows by
-/// one schedule word just before the round that needs it.
-fn compress(out: &mut String, p: &str, s: &mut [String; 8], w: &mut Vec<Word>, rounds: std::ops::Range<usize>) {
+/// Rounds `rounds` of one compression for every state in `states`, all on the
+/// same message: `w` starts with the 16 message words and grows by one
+/// schedule word (named `{wp}w{t}`) just before the round that needs it.
+/// State `m`'s values are named with prefix `sp[m]`.
+fn compress(out: &mut String, wp: &str, sp: &[String], states: &mut [[String; 8]], w: &mut Vec<Word>, rounds: std::ops::Range<usize>) {
     for t in rounds {
         if t == w.len() {
             let terms = [sigma(&w[t - 2], small_sigma1, "ssig1"), w[t - 7].clone(), sigma(&w[t - 15], small_sigma0, "ssig0"), w[t - 16].clone()];
-            let word = bind(out, format!("{p}w{t}"), terms);
+            let word = bind(out, format!("{wp}w{t}"), terms);
             w.push(word);
         }
         let kw = match &w[t] {
             Word::Const(x) => format!("{:#010x}u", K[t].wrapping_add(*x)),
             Word::Uniform(x) | Word::Nonce(x) => format!("{:#010x}u + {x}", K[t]),
         };
-        let [a, b, c, d, e, f, g, h] = s.clone();
-        writeln!(out, "        let {p}t{t} = {h} + bsig1({e}) + ch({e}, {f}, {g}) + {kw};").unwrap();
-        writeln!(out, "        let {p}e{t} = {d} + {p}t{t};").unwrap();
-        writeln!(out, "        let {p}a{t} = {p}t{t} + bsig0({a}) + maj({a}, {b}, {c});").unwrap();
-        *s = [format!("{p}a{t}"), a, b, c, format!("{p}e{t}"), e, f, g];
+        for (p, s) in sp.iter().zip(states.iter_mut()) {
+            let [a, b, c, d, e, f, g, h] = s.clone();
+            writeln!(out, "        let {p}t{t} = {h} + bsig1({e}) + ch({e}, {f}, {g}) + {kw};").unwrap();
+            writeln!(out, "        let {p}e{t} = {d} + {p}t{t};").unwrap();
+            writeln!(out, "        let {p}a{t} = {p}t{t} + bsig0({a}) + maj({a}, {b}, {c});").unwrap();
+            *s = [format!("{p}a{t}"), a, b, c, format!("{p}e{t}"), e, f, g];
+        }
     }
 }
 
-/// SHA-256d from the precomputed state through outer round `outer_rounds - 1`.
-/// Returns the outer working state (not yet fed forward).
-fn sha256d(out: &mut String, outer_rounds: usize) -> [String; 8] {
-    let mut w = vec![Word::Uniform("w0".into()), Word::Uniform("w1".into()), Word::Uniform("w2".into()), Word::Nonce("w3".into()), Word::Const(0x8000_0000)];
-    w.resize(15, Word::Const(0));
-    w.push(Word::Const(640));
-    let mut s = std::array::from_fn(|i| format!("pre{i}"));
-    compress(out, "i", &mut s, &mut w, 3..64);
-
+/// Outer compression of member `m` through round `outer_rounds - 1`, from its
+/// inner state `s`; returns the outer working state (not fed forward).
+fn outer(out: &mut String, m: usize, s: &[String; 8], outer_rounds: usize) -> [String; 8] {
     let mut w2 = Vec::new();
-    for (k, x) in s.iter().enumerate() {
-        w2.push(bind(out, format!("d{k}"), [Word::Uniform(format!("mid{k}")), Word::Nonce(x.clone())]));
+    for (i, x) in s.iter().enumerate() {
+        w2.push(bind(out, format!("d{m}_{i}"), [Word::Uniform(format!("mid{m}_{i}")), Word::Nonce(x.clone())]));
     }
     w2.push(Word::Const(0x8000_0000));
     w2.resize(15, Word::Const(0));
     w2.push(Word::Const(256));
-    let mut s2 = IV.map(|x| format!("{x:#010x}u"));
-    compress(out, "o", &mut s2, &mut w2, 0..outer_rounds);
+    let p = format!("o{m}_");
+    let mut s2 = [IV.map(|x| format!("{x:#010x}u"))];
+    compress(out, &p, std::slice::from_ref(&p), &mut s2, &mut w2, 0..outer_rounds);
+    let [s2] = s2;
     s2
 }
 
-const TEMPLATE: &str = r#"// SHA-256d nonce search, kernel v2. Generated by crates/gpu-backend/src/v2.rs;
-// edit the generator, not this text. Same bindings and results as
-// gpu/wgsl/sha256d.wgsl (v1); `pre` is the second-block state after rounds 0..=2.
+/// Inner compressions of `k` members in lockstep on the shared second block.
+fn inner(out: &mut String, k: usize) -> Vec<[String; 8]> {
+    let mut w = vec![Word::Uniform("w0".into()), Word::Uniform("w1".into()), Word::Uniform("w2".into()), Word::Nonce("w3".into()), Word::Const(0x8000_0000)];
+    w.resize(15, Word::Const(0));
+    w.push(Word::Const(640));
+    let sp: Vec<String> = (0..k).map(|m| format!("i{m}_")).collect();
+    let mut states: Vec<[String; 8]> = (0..k).map(|m| std::array::from_fn(|i| format!("pre{m}_{i}"))).collect();
+    compress(out, "i", &sp, &mut states, &mut w, 3..64);
+    states
+}
+
+const TEMPLATE: &str = r#"// SHA-256d nonce search, generated by crates/gpu-backend/src/v2.rs with
+// MEMBERS version-rolled headers per nonce; edit the generator, not this text.
+// Same bindings as gpu/wgsl/sha256d.wgsl (v1). Hits are (nonce, member) pairs.
+
+struct Member {
+    mid: array<u32, 8>,
+    // Second-block state after rounds 0..=2.
+    pre: array<u32, 8>,
+}
 
 struct Params {
     midstate: array<u32, 8>,
@@ -115,7 +136,7 @@ struct Params {
     pad0: u32,
     pad1: u32,
     pad2: u32,
-    pre: array<u32, 8>,
+    members: array<Member, MEMBERS>,
 }
 
 struct Found {
@@ -139,10 +160,8 @@ fn bswap(x: u32) -> u32 {
     return (x << 24u) | ((x & 0xff00u) << 8u) | ((x >> 8u) & 0xff00u) | (x >> 24u);
 }
 
-// Full SHA-256d (H0..H7) of the header with `nonce`.
-fn full_hash(nonce: u32) -> array<u32, 8> {
-//UNIFORMS
-        let w3 = bswap(nonce);
+// Full SHA-256d (H0..H7) of member `m`'s header with `nonce`.
+fn full_hash(nonce: u32, m: u32) -> array<u32, 8> {
 //FULL
 }
 
@@ -162,6 +181,14 @@ fn meets_target(hash: array<u32, 8>) -> bool {
     return true;
 }
 
+fn record(nonce: u32, m: u32) {
+    let slot = atomicAdd(&found.count, 1u);
+    if (slot < params.capacity) {
+        found.nonces[2u * slot] = nonce;
+        found.nonces[2u * slot + 1u] = m;
+    }
+}
+
 @compute @workgroup_size(256)
 fn search(@builtin(global_invocation_id) gid: vec3<u32>) {
 //UNIFORMS
@@ -174,13 +201,6 @@ fn search(@builtin(global_invocation_id) gid: vec3<u32>) {
         let nonce = params.nonce_base + offset;
         let w3 = bswap(nonce);
 //EARLY
-        // H7 = IV7 + e60 is the most significant word of the hash number.
-        if (bswap(h7) <= target0 && meets_target(full_hash(nonce))) {
-            let slot = atomicAdd(&found.count, 1u);
-            if (slot < params.capacity) {
-                found.nonces[slot] = nonce;
-            }
-        }
     }
 }
 
@@ -189,32 +209,51 @@ fn dump_hashes(@builtin(global_invocation_id) gid: vec3<u32>) {
     if (gid.x >= params.count) {
         return;
     }
-    let h = full_hash(params.nonce_base + gid.x);
+    let h = full_hash(params.nonce_base + gid.x, 0u);
     for (var k = 0u; k < 8u; k++) {
         dump[gid.x * 8u + k] = h[k];
     }
 }
 "#;
 
-/// The kernel v2 WGSL source.
-pub fn shader() -> String {
-    let mut uniforms = String::new();
-    for i in 0..8 {
-        writeln!(uniforms, "    let mid{i} = params.midstate[{i}];").unwrap();
-        writeln!(uniforms, "    let pre{i} = params.pre[{i}];").unwrap();
+/// Loads of the per-dispatch constants; member `m`'s are read from `members[{index(m)}]`.
+fn uniforms(k: usize, index: impl Fn(usize) -> String) -> String {
+    let mut u = String::new();
+    for m in 0..k {
+        for i in 0..8 {
+            writeln!(u, "    let mid{m}_{i} = params.members[{}].mid[{i}];", index(m)).unwrap();
+            writeln!(u, "    let pre{m}_{i} = params.members[{}].pre[{i}];", index(m)).unwrap();
+        }
     }
     for i in 0..3 {
-        writeln!(uniforms, "    let w{i} = params.tail[{i}];").unwrap();
+        writeln!(u, "    let w{i} = params.tail[{i}];").unwrap();
     }
+    u
+}
 
-    let mut full = String::new();
-    let s = sha256d(&mut full, 64);
-    let digest: Vec<String> = (0..8).map(|k| format!("{:#010x}u + {}", IV[k], s[k])).collect();
+/// The WGSL source for `k` version-rolled headers per nonce (k = 1 is v2).
+pub fn shader(k: usize) -> String {
+    assert!(k >= 1, "at least one header per nonce");
+    let mut full = uniforms(1, |_| "m".into());
+    writeln!(full, "        let w3 = bswap(nonce);").unwrap();
+    let s = inner(&mut full, 1);
+    let s2 = outer(&mut full, 0, &s[0], 64);
+    let digest: Vec<String> = (0..8).map(|i| format!("{:#010x}u + {}", IV[i], s2[i])).collect();
     writeln!(full, "        return array<u32, 8>({});", digest.join(", ")).unwrap();
 
     let mut early = String::new();
-    let s = sha256d(&mut early, 61);
-    writeln!(early, "        let h7 = {:#010x}u + {};", IV[7], s[4]).unwrap();
+    let states = inner(&mut early, k);
+    for (m, s) in states.iter().enumerate() {
+        let s2 = outer(&mut early, m, s, 61);
+        // H7 = IV7 + e60 is the most significant word of the hash number.
+        writeln!(early, "        if (bswap({:#010x}u + {}) <= target0 && meets_target(full_hash(nonce, {m}u))) {{", IV[7], s2[4]).unwrap();
+        writeln!(early, "            record(nonce, {m}u);").unwrap();
+        writeln!(early, "        }}").unwrap();
+    }
 
-    TEMPLATE.replace("//UNIFORMS", &uniforms).replace("//FULL", &full).replace("//EARLY", &early)
+    TEMPLATE
+        .replace("MEMBERS", &k.to_string())
+        .replace("//UNIFORMS", &uniforms(k, |m| format!("{m}u")))
+        .replace("//FULL", &full)
+        .replace("//EARLY", &early)
 }
