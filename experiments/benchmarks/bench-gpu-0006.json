@@ -1,0 +1,114 @@
+{
+  "adapter": {
+    "api": "Vulkan",
+    "device_id": "0x7480",
+    "driver": "AMD proprietary driver",
+    "driver_info": "26.8.1 (LLPC)",
+    "name": "AMD Radeon RX 7600",
+    "type": "DiscreteGpu",
+    "vendor_id": "0x1002"
+  },
+  "batch_nonces": 53575424,
+  "created_at": "2026-11-22T15:41:38Z",
+  "energy": {
+    "note": "no GPU power counter exposed through wgpu; energy not measured",
+    "source": null
+  },
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "9c5cd49d2d3242b5f1907298ddc1d260b96d26f6",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "d7a7757c7890bbcd1cabb3f90c082b46715d7675723f3ce908d5e98d06c547a4"
+  },
+  "expected_work_per_block_factor": 1.0,
+  "hashes": 9857878016,
+  "hashes_per_second": 1914041914.9300165,
+  "id": "bench-gpu-0006",
+  "kernel": "crates/gpu-backend/src/v2.rs, 8 version-rolled headers per nonce sharing the inner schedule (overt AsicBoost) on top of v2",
+  "kernels": [
+    {
+      "batch_nonces": 117486592,
+      "description": "gpu/wgsl/sha256d.wgsl (straightforward midstate kernel, no early reject)",
+      "hashes": 2584705024,
+      "hashes_per_second": 505842902.5693509,
+      "headers_per_nonce": 1,
+      "kernel": "v1",
+      "parity": {
+        "digest_lanes": 65536,
+        "digest_mismatches": 0,
+        "passed": true,
+        "search_headers": 1,
+        "search_hits_cpu": 978,
+        "search_hits_gpu": 978,
+        "search_identical": true,
+        "search_nonces": 4194304
+      },
+      "seconds": 5.1096991
+    },
+    {
+      "batch_nonces": 362436352,
+      "description": "crates/gpu-backend/src/v2.rs, 1 header per nonce (precomputed rounds 0..2, unrolled with folded constants, early reject after outer round 60)",
+      "hashes": 9060908800,
+      "hashes_per_second": 1752014566.3272676,
+      "headers_per_nonce": 1,
+      "kernel": "v2",
+      "parity": {
+        "digest_lanes": 65536,
+        "digest_mismatches": 0,
+        "passed": true,
+        "search_headers": 1,
+        "search_hits_cpu": 978,
+        "search_hits_gpu": 978,
+        "search_identical": true,
+        "search_nonces": 4194304
+      },
+      "seconds": 5.1717086
+    },
+    {
+      "batch_nonces": 53575424,
+      "description": "crates/gpu-backend/src/v2.rs, 8 version-rolled headers per nonce sharing the inner schedule (overt AsicBoost) on top of v2",
+      "hashes": 9857878016,
+      "hashes_per_second": 1914041914.9300165,
+      "headers_per_nonce": 8,
+      "kernel": "v3",
+      "parity": {
+        "digest_lanes": 65536,
+        "digest_mismatches": 0,
+        "passed": true,
+        "search_headers": 8,
+        "search_hits_cpu": 8218,
+        "search_hits_gpu": 8218,
+        "search_identical": true,
+        "search_nonces": 4194304
+      },
+      "seconds": 5.1502937
+    }
+  ],
+  "kind": "gpu",
+  "note": "Kernels v2 and v3 lower the cost per header hash (precomputation, unrolling, early reject, shared schedule across version-rolled headers); every header is still evaluated, so the expected number of hashes per block is unchanged (factor 1.0).",
+  "parity": {
+    "digest_lanes": 65536,
+    "digest_mismatches": 0,
+    "passed": true,
+    "search_headers": 8,
+    "search_hits_cpu": 8218,
+    "search_hits_gpu": 8218,
+    "search_identical": true,
+    "search_nonces": 4194304
+  },
+  "seconds": 5.1502937,
+  "speedup_over_v1": 3.783866305542563
+}
