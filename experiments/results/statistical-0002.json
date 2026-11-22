@@ -1,0 +1,449 @@
+{
+  "assumptions": [
+    "Headers are 80 uniform random bytes (the nonce field is overwritten); real headers fix most fields, which only narrows the input set further.",
+    "Hash read as Bitcoin's little-endian 256-bit number; 'leading zeros' counts from its most significant bit.",
+    "Bit tests: binomial z with Bonferroni over 256 bits, 3 tests and all round counts.",
+    "Chi-square tests with bins merged to expected count >= 5.",
+    "Round-reduced variants cut all three compression calls to r rounds; midstate kept."
+  ],
+  "baseline": "Uniform random 256-bit outputs: each bit P(1) = 1/2; P(lz >= k) = 2^-k; bit agreement of consecutive hashes ~ Binomial(256, 1/2).",
+  "candidate_anomaly": false,
+  "conclusion": "NEGATIVE RESULT: no deviation from the baseline was detected in any tested configuration at the stated sample size and significance level. 4194304 header hashes per round count (64 headers x 65536 nonces). Full SHA-256d: 8-bit target hit rate 0.003883 vs expected 0.003906 (95% CI 0.003824..0.003943). Round counts with a detected deviation: [].",
+  "configurations": [
+    {
+      "deviation_detected": false,
+      "rounds": 8
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 12
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 16
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 20
+    },
+    {
+      "deviation_detected": false,
+      "rounds": 64
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "`headers` random 80-byte headers from SplitMix64::stream(seed, header_index); nonces 0..nonces_per_header for each.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 2.8668095,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "480c36fd4302c3f1cb81ec90156b6258e6fa5dfc",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5ab426012e480d5696c6d2c4463b8a0d3f7c666c7ac9c9e4dd1abc5093642a7e"
+  },
+  "finished_at": "2026-11-22T00:14:48Z",
+  "hypothesis": "As a function of the 32-bit nonce, r-round SHA-256d of an 80-byte header shows a measurable deviation from uniform output: biased output bits, a leading-zero distribution that departs from P(lz = k) = 2^-(k+1) (which would change the expected work per block), or correlation between hashes of consecutive nonces.",
+  "hypothesis_id": "H-STAT-01",
+  "hypothesis_status": "not-supported-single-seed",
+  "id": "statistical-0002",
+  "implementation": [
+    "bitcoin_header::HeaderMidstate::with_rounds",
+    "bitcoin_header::hash_number_words",
+    "statistical_engine"
+  ],
+  "kind": "statistical",
+  "methodology": "For each round count, hash `nonces_per_header` consecutive nonces (from 0) for each of `headers` random headers. Accumulate per-bit one counts, the leading-zero histogram and the agreement histogram between hash(n) and hash(n+1). Report the observed rate of meeting 8- and 16-bit targets with Wilson intervals against 2^-k.",
+  "name": "Statistical uniformity of SHA-256d block-header hashes over the nonce",
+  "null_hypothesis": "Hash numbers of distinct nonces are independent and uniform on [0, 2^256).",
+  "observations": [
+    {
+      "alpha_per_test": 0.0006666666666666666,
+      "bit_frequency": {
+        "bonferroni_significant_bits": 0,
+        "max_abs_z": 3.0302734375,
+        "worst_bit_ci95": [
+          0.5002613060841348,
+          0.5012183182626184
+        ],
+        "worst_bit_from_msb": 160,
+        "worst_bit_p_one": 0.5007398128509521
+      },
+      "consecutive_nonce_agreement_chi_square": {
+        "df": 74,
+        "p_value": 0.8537619720121954,
+        "statistic": 61.322397641726766
+      },
+      "deviation_detected": false,
+      "hashes": 4194304,
+      "leading_zeros_chi_square": {
+        "df": 19,
+        "p_value": 0.5631945004876661,
+        "statistic": 17.393993377685547
+      },
+      "max_leading_zeros": 28,
+      "rounds": 8,
+      "target_hit_rates": [
+        {
+          "ci95": [
+            0.003832336915176321,
+            0.003951507927138702
+          ],
+          "expected_rate": 0.00390625,
+          "hits": 16322,
+          "observed_over_expected": 0.9962158203125,
+          "observed_rate": 0.003891468048095703,
+          "zero_bits": 8
+        },
+        {
+          "ci95": [
+            0.00001174114808348496,
+            0.000019215439684649395
+          ],
+          "expected_rate": 0.0000152587890625,
+          "hits": 63,
+          "observed_over_expected": 0.984375,
+          "observed_rate": 0.000015020370483398438,
+          "zero_bits": 16
+        },
+        {
+          "ci95": [
+            1.307659576196273e-7,
+            1.7387818002213401e-6
+          ],
+          "expected_rate": 9.5367431640625e-7,
+          "hits": 2,
+          "observed_over_expected": 0.5,
+          "observed_rate": 4.76837158203125e-7,
+          "zero_bits": 20
+        }
+      ]
+    },
+    {
+      "alpha_per_test": 0.0006666666666666666,
+      "bit_frequency": {
+        "bonferroni_significant_bits": 0,
+        "max_abs_z": 2.779296875,
+        "worst_bit_ci95": [
+          0.49884295517292027,
+          0.4997999675177471
+        ],
+        "worst_bit_from_msb": 218,
+        "worst_bit_p_one": 0.49932146072387695
+      },
+      "consecutive_nonce_agreement_chi_square": {
+        "df": 74,
+        "p_value": 0.6553007063133865,
+        "statistic": 68.60361492569378
+      },
+      "deviation_detected": false,
+      "hashes": 4194304,
+      "leading_zeros_chi_square": {
+        "df": 19,
+        "p_value": 0.18427624947855786,
+        "statistic": 24.316892623901367
+      },
+      "max_leading_zeros": 23,
+      "rounds": 12,
+      "target_hit_rates": [
+        {
+          "ci95": [
+            0.003822872948853638,
+            0.003941898424602176
+          ],
+          "expected_rate": 0.00390625,
+          "hits": 16282,
+          "observed_over_expected": 0.9937744140625,
+          "observed_rate": 0.0038819313049316406,
+          "zero_bits": 8
+        },
+        {
+          "ci95": [
+            0.000012579737236017598,
+            0.00002028419741803763
+          ],
+          "expected_rate": 0.0000152587890625,
+          "hits": 67,
+          "observed_over_expected": 1.046875,
+          "observed_rate": 0.000015974044799804688,
+          "zero_bits": 16
+        },
+        {
+          "ci95": [
+            5.091909346800394e-7,
+            2.790866987601586e-6
+          ],
+          "expected_rate": 9.5367431640625e-7,
+          "hits": 5,
+          "observed_over_expected": 1.25,
+          "observed_rate": 1.1920928955078125e-6,
+          "zero_bits": 20
+        }
+      ]
+    },
+    {
+      "alpha_per_test": 0.0006666666666666666,
+      "bit_frequency": {
+        "bonferroni_significant_bits": 0,
+        "max_abs_z": 2.5400390625,
+        "worst_bit_ci95": [
+          0.5001416199112741,
+          0.5010986324012959
+        ],
+        "worst_bit_from_msb": 151,
+        "worst_bit_p_one": 0.5006201267242432
+      },
+      "consecutive_nonce_agreement_chi_square": {
+        "df": 74,
+        "p_value": 0.0874390959673582,
+        "statistic": 91.00093443133554
+      },
+      "deviation_detected": false,
+      "hashes": 4194304,
+      "leading_zeros_chi_square": {
+        "df": 19,
+        "p_value": 0.5256098712911735,
+        "statistic": 17.952550888061523
+      },
+      "max_leading_zeros": 25,
+      "rounds": 16,
+      "target_hit_rates": [
+        {
+          "ci95": [
+            0.003862858819117247,
+            0.003982497960268723
+          ],
+          "expected_rate": 0.00390625,
+          "hits": 16451,
+          "observed_over_expected": 1.00408935546875,
+          "observed_rate": 0.003922224044799805,
+          "zero_bits": 8
+        },
+        {
+          "ci95": [
+            0.000011950465654923414,
+            0.000019482958834691153
+          ],
+          "expected_rate": 0.0000152587890625,
+          "hits": 64,
+          "observed_over_expected": 1.0,
+          "observed_rate": 0.0000152587890625,
+          "zero_bits": 16
+        },
+        {
+          "ci95": [
+            1.1289300493383888e-6,
+            4.078474758864114e-6
+          ],
+          "expected_rate": 9.5367431640625e-7,
+          "hits": 9,
+          "observed_over_expected": 2.25,
+          "observed_rate": 2.1457672119140625e-6,
+          "zero_bits": 20
+        }
+      ]
+    },
+    {
+      "alpha_per_test": 0.0006666666666666666,
+      "bit_frequency": {
+        "bonferroni_significant_bits": 0,
+        "max_abs_z": 2.9052734375,
+        "worst_bit_ci95": [
+          0.4988121992452341,
+          0.4997692115083622
+        ],
+        "worst_bit_from_msb": 196,
+        "worst_bit_p_one": 0.49929070472717285
+      },
+      "consecutive_nonce_agreement_chi_square": {
+        "df": 74,
+        "p_value": 0.5222073580242756,
+        "statistic": 72.66249140237727
+      },
+      "deviation_detected": false,
+      "hashes": 4194304,
+      "leading_zeros_chi_square": {
+        "df": 19,
+        "p_value": 0.43313872632658423,
+        "statistic": 19.37323570251465
+      },
+      "max_leading_zeros": 24,
+      "rounds": 20,
+      "target_hit_rates": [
+        {
+          "ci95": [
+            0.003837305533606862,
+            0.003956552879859245
+          ],
+          "expected_rate": 0.00390625,
+          "hits": 16343,
+          "observed_over_expected": 0.99749755859375,
+          "observed_rate": 0.003896474838256836,
+          "zero_bits": 8
+        },
+        {
+          "ci95": [
+            0.000013210886672137936,
+            0.00002108355814635795
+          ],
+          "expected_rate": 0.0000152587890625,
+          "hits": 70,
+          "observed_over_expected": 1.09375,
+          "observed_rate": 0.000016689300537109375,
+          "zero_bits": 16
+        },
+        {
+          "ci95": [
+            2.4325152649366635e-7,
+            2.10313295282752e-6
+          ],
+          "expected_rate": 9.5367431640625e-7,
+          "hits": 3,
+          "observed_over_expected": 0.75,
+          "observed_rate": 7.152557373046875e-7,
+          "zero_bits": 20
+        }
+      ]
+    },
+    {
+      "alpha_per_test": 0.0006666666666666666,
+      "bit_frequency": {
+        "bonferroni_significant_bits": 0,
+        "max_abs_z": 2.8154296875,
+        "worst_bit_ci95": [
+          0.49883413370510415,
+          0.4997911460268684
+        ],
+        "worst_bit_from_msb": 44,
+        "worst_bit_p_one": 0.4993126392364502
+      },
+      "consecutive_nonce_agreement_chi_square": {
+        "df": 74,
+        "p_value": 0.9998070257569387,
+        "statistic": 38.32935163139345
+      },
+      "deviation_detected": false,
+      "hashes": 4194304,
+      "leading_zeros_chi_square": {
+        "df": 19,
+        "p_value": 0.24202711119622305,
+        "statistic": 22.89435386657715
+      },
+      "max_leading_zeros": 21,
+      "rounds": 64,
+      "target_hit_rates": [
+        {
+          "ci95": [
+            0.0038242925380416568,
+            0.003943339855743038
+          ],
+          "expected_rate": 0.00390625,
+          "hits": 16288,
+          "observed_over_expected": 0.994140625,
+          "observed_rate": 0.00388336181640625,
+          "zero_bits": 8
+        },
+        {
+          "ci95": [
+            9.661515544101253e-6,
+            0.000016526705009230907
+          ],
+          "expected_rate": 0.0000152587890625,
+          "hits": 53,
+          "observed_over_expected": 0.828125,
+          "observed_rate": 0.000012636184692382812,
+          "zero_bits": 16
+        },
+        {
+          "ci95": [
+            5.091909346800394e-7,
+            2.790866987601586e-6
+          ],
+          "expected_rate": 9.5367431640625e-7,
+          "hits": 5,
+          "observed_over_expected": 1.25,
+          "observed_rate": 1.1920928955078125e-6,
+          "zero_bits": 20
+        }
+      ]
+    }
+  ],
+  "params": {
+    "alpha": 0.01,
+    "headers": 64,
+    "nonces_per_header": 65536,
+    "reproduce": true,
+    "rounds": [
+      8,
+      12,
+      16,
+      20,
+      64
+    ]
+  },
+  "primitive": "bitcoin-header-sha256d",
+  "reproduction": {
+    "digest": "4f3522cb055da82171e1394fa8507ff9d197e9ceb74e6c21135560f4e59242b1",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research statistical --seed 1112363596 --params '{\"alpha\":0.01,\"headers\":64,\"nonces_per_header\":65536,\"reproduce\":true,\"rounds\":[8,12,16,20,64]}'",
+  "result": "negative",
+  "result_digest": "4f3522cb055da82171e1394fa8507ff9d197e9ceb74e6c21135560f4e59242b1",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "no deviation detected",
+    "full_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 64
+      }
+    ],
+    "full_round_tested": true,
+    "primitive": "bitcoin-header-sha256d",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": false,
+        "rounds": 8
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 12
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 16
+      },
+      {
+        "deviation_detected": false,
+        "rounds": 20
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T00:14:46Z",
+  "status": "completed",
+  "verification": {
+    "detail": "2048 nonces x 5 round counts; mismatching round counts: []",
+    "method": "independent SHA-256 over the full serialized header (no midstate) for the first header's first nonces at every round count",
+    "passed": true
+  }
+}

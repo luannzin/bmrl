@@ -1,0 +1,1791 @@
+{
+  "assumptions": [
+    "Pairs follow the trail when every schedule difference and every state difference matches it at every round up to the target.",
+    "Exact conditions are derived only when the last round's operand differences sit on disjoint bits and Ch/Maj cases are single-difference ones; otherwise they are reported as not derived.",
+    "Seeds are independent SplitMix64 streams; the Python check uses numpy PCG64.",
+    "Wilson 95% intervals; implementations agree when their intervals overlap."
+  ],
+  "baseline": "The three estimators of the characteristic experiment (sequential, grouped, signed).",
+  "candidate_anomaly": false,
+  "conclusion": "REDUCED-ROUND ONLY: deviations were detected only for reduced-round variants. These say nothing about full 64-round SHA-256/SHA-256d and give no mining advantage; full-round configurations (where tested) showed no deviation. W15[31] through round 17: 40668 of 83886080 pairs over 5 seeds, 2^-11.01 (95% CI 2^-11.02..2^-11.00); estimates 2^-26.0 sequential, 2^-17.0 grouped, 2^-11.0 signed; 11 exact conditions, counterexamples 0 (conditions hold, no follow) / 0 (follow, conditions fail); Python/numpy (PCG64) 2^-11.00 over 8388608 pairs; structural: exact signed-difference conditions explain the frequency; independent code and seeds agree. W15[0] through round 17: 10238 of 83886080 pairs over 5 seeds, 2^-13.00 (95% CI 2^-13.03..2^-12.97); estimates 2^-29.0 sequential, 2^-20.0 grouped, 2^-13.0 signed; 11 exact conditions, counterexamples 0 (conditions hold, no follow) / 0 (follow, conditions fail); Python/numpy (PCG64) 2^-12.98 over 8388608 pairs; structural: exact signed-difference conditions explain the frequency; independent code and seeds agree. W8[31] through round 10: 41026 of 83886080 pairs over 5 seeds, 2^-11.00 (95% CI 2^-11.01..2^-10.98); estimates 2^-26.0 sequential, 2^-17.0 grouped, 2^-11.0 signed; 11 exact conditions, counterexamples 0 (conditions hold, no follow) / 0 (follow, conditions fail); Python/numpy (PCG64) 2^-11.04 over 8388608 pairs; structural: exact signed-difference conditions explain the frequency; independent code and seeds agree. W0[31] through round 2: 40926 of 83886080 pairs over 5 seeds, 2^-11.00 (95% CI 2^-11.02..2^-10.99); estimates 2^-26.0 sequential, 2^-17.0 grouped, 2^-11.0 signed; 11 exact conditions, counterexamples 0 (conditions hold, no follow) / 0 (follow, conditions fail); Python/numpy (PCG64) 2^-10.99 over 8388608 pairs; structural: exact signed-difference conditions explain the frequency; independent code and seeds agree. Reduced-round only: every number above is for the stated round, with no extrapolation to other round counts.",
+  "configurations": [
+    {
+      "deviation_detected": true,
+      "rounds": 17
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 17
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 10
+    },
+    {
+      "deviation_detected": true,
+      "rounds": 2
+    }
+  ],
+  "confirmation": null,
+  "counterexamples": [],
+  "dataset": {
+    "description": "Seed s uses SplitMix64::stream(derived(seed, s), i) for pair i; Python uses PCG64(s) for its own seeds.",
+    "generator": "SplitMix64::stream(seed, sample_index)",
+    "seed": 1112363596
+  },
+  "definition_version": 1,
+  "duration_seconds": 142.9852782,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "480c36fd4302c3f1cb81ec90156b6258e6fa5dfc",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5ab426012e480d5696c6d2c4463b8a0d3f7c666c7ac9c9e4dd1abc5093642a7e"
+  },
+  "finished_at": "2026-11-22T00:34:40Z",
+  "hypothesis": "The frequency with which pairs follow the measurable single-bit XOR trails (2^-11 at round 17 for a W15 MSB difference) is fully explained by exact bit conditions derived from signed differences, holds across independent seeds and an independent implementation, and is not an artifact.",
+  "hypothesis_id": "H-CHAR-02",
+  "hypothesis_status": "supported-reduced-round-only",
+  "id": "characteristic-audit-0001",
+  "implementation": [
+    "experiment_engine::characteristic_audit",
+    "differential_engine::characteristic",
+    "research/differential-cryptanalysis/trail_audit.py"
+  ],
+  "kind": "characteristic-audit",
+  "methodology": "Per target and seed, trace samples_per_seed random pairs through the target round; count prefix followers, followers, pairs satisfying the derived conditions and both mismatch directions; record each condition's marginal frequency. Then run research/differential-cryptanalysis/trail_audit.py, which rebuilds the trail and its costs from the definitions and counts followers with numpy.",
+  "name": "Audit of measurable XOR characteristics: estimates, exact conditions, seeds, independent code",
+  "null_hypothesis": "The observed frequency is an artifact (sample generator, implementation bug, or unexplained dependency): it changes across seeds or implementations, or the derived conditions do not characterise following.",
+  "observations": [
+    {
+      "equivalence": {
+        "conditions_hold": 40668,
+        "conditions_hold_but_no_follow": 0,
+        "exact": true,
+        "follow_but_conditions_fail": 0
+      },
+      "estimates": {
+        "grouped_log2": -17.0,
+        "last_round_costs": {
+          "grouped": 17,
+          "sequential": 26,
+          "signed": 11
+        },
+        "sequential_log2": -26.0,
+        "signed_log2": -11.0
+      },
+      "exact_conditions": [
+        "Ch: f[31] = g[31]",
+        "Maj: b[31] = c[31]",
+        "a' = T1 + T2: a'[6] = Σ1(e)[6]",
+        "a' = T1 + T2: a'[20] = Σ1(e)[20]",
+        "a' = T1 + T2: a'[25] = Σ1(e)[25]",
+        "a' = T1 + T2: a'[9] = Σ0(a)[9]",
+        "a' = T1 + T2: a'[18] = Σ0(a)[18]",
+        "a' = T1 + T2: a'[29] = Σ0(a)[29]",
+        "e' = d + T1: e'[6] = Σ1(e)[6]",
+        "e' = d + T1: e'[20] = Σ1(e)[20]",
+        "e' = d + T1: e'[25] = Σ1(e)[25]"
+      ],
+      "independent_implementation": {
+        "agreement_p": 0.609168163289081,
+        "costs_match": true,
+        "follow": {
+          "ci95": [
+            0.0004741454911764598,
+            0.0005040665913358311
+          ],
+          "count": 4101,
+          "log2_ci95": [
+            -11.042382562637426,
+            -10.95409804137226
+          ],
+          "log2_p": -10.998239971672783,
+          "of": 8388608,
+          "p": 0.0004888772964477539
+        },
+        "generator": "numpy PCG64",
+        "numpy": "2.5.3",
+        "pairs": 8388608,
+        "rates_agree": true,
+        "trail_matches": true
+      },
+      "joint_structure": {
+        "dependent_pairs": [],
+        "implied_conditions": 0,
+        "joint": 0.0004848003387451172,
+        "joint_vs_independent_chi_square": {
+          "df": 2047,
+          "p_value": 0.31023227923280544,
+          "statistic": 2078.175588474562
+        },
+        "marginals": [
+          {
+            "ci95": [
+              0.49989002238990804,
+              0.5001040171458874
+            ],
+            "condition": "f[31] = g[31]",
+            "from": "Ch",
+            "p": 0.49999701976776123
+          },
+          {
+            "ci95": [
+              0.5000140715740686,
+              0.5002280663237784
+            ],
+            "condition": "b[31] = c[31]",
+            "from": "Maj",
+            "p": 0.5001210689544677
+          },
+          {
+            "ci95": [
+              0.4999207426225813,
+              0.5001347373782351
+            ],
+            "condition": "a'[6] = Σ1(e)[6]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000277400016785
+          },
+          {
+            "ci95": [
+              0.49986757528185005,
+              0.5000815700375565
+            ],
+            "condition": "a'[20] = Σ1(e)[20]",
+            "from": "a' = T1 + T2",
+            "p": 0.49997457265853884
+          },
+          {
+            "ci95": [
+              0.49999084960443974,
+              0.5002048443563253
+            ],
+            "condition": "a'[25] = Σ1(e)[25]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000978469848633
+          },
+          {
+            "ci95": [
+              0.4999596763755522,
+              0.5001736711296327
+            ],
+            "condition": "a'[9] = Σ0(a)[9]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000666737556457
+          },
+          {
+            "ci95": [
+              0.4999234009896495,
+              0.5001373957452372
+            ],
+            "condition": "a'[18] = Σ0(a)[18]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000303983688354
+          },
+          {
+            "ci95": [
+              0.49991225492146857,
+              0.500126249677293
+            ],
+            "condition": "a'[29] = Σ0(a)[29]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000192523002625
+          },
+          {
+            "ci95": [
+              0.499962322821736,
+              0.5001763175756626
+            ],
+            "condition": "e'[6] = Σ1(e)[6]",
+            "from": "e' = d + T1",
+            "p": 0.5000693202018738
+          },
+          {
+            "ci95": [
+              0.49988761436237367,
+              0.5001016091183443
+            ],
+            "condition": "e'[20] = Σ1(e)[20]",
+            "from": "e' = d + T1",
+            "p": 0.4999946117401123
+          },
+          {
+            "ci95": [
+              0.4998861600091116,
+              0.5001001547650747
+            ],
+            "condition": "e'[25] = Σ1(e)[25]",
+            "from": "e' = d + T1",
+            "p": 0.4999931573867798
+          }
+        ],
+        "pairs_examined": 83886080,
+        "pairwise_max_abs_z": 2.7638303230537224,
+        "pairwise_threshold_z": 3.743024952750874,
+        "product_of_marginals": 0.0004886638469319048,
+        "redundancy": [
+          {
+            "ci95": [
+              0.49622719758731026,
+              0.5030970839148803
+            ],
+            "condition": 0,
+            "implied": false,
+            "p_given_all_others": 0.49966212480495387
+          },
+          {
+            "ci95": [
+              0.49339873449316807,
+              0.5002489443841286
+            ],
+            "condition": 1,
+            "implied": false,
+            "p_given_all_others": 0.4968236903831118
+          },
+          {
+            "ci95": [
+              0.4936710455648891,
+              0.5005231618487002
+            ],
+            "condition": 2,
+            "implied": false,
+            "p_given_all_others": 0.4970969674004718
+          },
+          {
+            "ci95": [
+              0.49406491530128727,
+              0.5009197844524543
+            ],
+            "condition": 3,
+            "implied": false,
+            "p_given_all_others": 0.49749223203581827
+          },
+          {
+            "ci95": [
+              0.4952807771934337,
+              0.5021441105041585
+            ],
+            "condition": 4,
+            "implied": false,
+            "p_given_all_others": 0.49871238319476124
+          },
+          {
+            "ci95": [
+              0.4944108267763425,
+              0.5012681091781873
+            ],
+            "condition": 5,
+            "implied": false,
+            "p_given_all_others": 0.49783936637735804
+          },
+          {
+            "ci95": [
+              0.49389517124537546,
+              0.5007488546644971
+            ],
+            "condition": 6,
+            "implied": false,
+            "p_given_all_others": 0.4973218871523956
+          },
+          {
+            "ci95": [
+              0.49633733912962447,
+              0.5032079860594993
+            ],
+            "condition": 7,
+            "implied": false,
+            "p_given_all_others": 0.4997726518624114
+          },
+          {
+            "ci95": [
+              0.49527468298568744,
+              0.5021379739995069
+            ],
+            "condition": 8,
+            "implied": false,
+            "p_given_all_others": 0.4987062675512281
+          },
+          {
+            "ci95": [
+              0.4958909569127321,
+              0.502758518665982
+            ],
+            "condition": 9,
+            "implied": false,
+            "p_given_all_others": 0.4993247059401321
+          },
+          {
+            "ci95": [
+              0.4956894313246906,
+              0.5025555979668779
+            ],
+            "condition": 10,
+            "implied": false,
+            "p_given_all_others": 0.4991224732753225
+          }
+        ]
+      },
+      "measured": {
+        "per_seed": [
+          {
+            "follow": {
+              "ci95": [
+                0.0004729304544719562,
+                0.0004939664218945495
+              ],
+              "count": 8109,
+              "log2_ci95": [
+                -11.046084332063348,
+                -10.983299403757046
+              ],
+              "log2_p": -11.014691702744148,
+              "of": 16777216,
+              "p": 0.0004833340644836426
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 7820381848274665195
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.000466327581017263,
+                0.0004872178579766176
+              ],
+              "count": 7997,
+              "log2_ci95": [
+                -11.066368618925722,
+                -11.003145366292593
+              ],
+              "log2_p": -11.034756827443108,
+              "of": 16777216,
+              "p": 0.00047665834426879883
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 2274071790655778127
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004846635775698065,
+                0.0005059559419855597
+              ],
+              "count": 8308,
+              "log2_ci95": [
+                -11.01072871139174,
+                -10.948700617251061
+              ],
+              "log2_p": -10.979714499155353,
+              "of": 16777216,
+              "p": 0.0004951953887939453
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 15531836144685419788
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004725767162892553,
+                0.0004936049045037169
+              ],
+              "count": 8103,
+              "log2_ci95": [
+                -11.047163829631527,
+                -10.984355650240325
+              ],
+              "log2_p": -11.015759574769877,
+              "of": 16777216,
+              "p": 0.00048297643661499023
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 10403642442846038867
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004754066619997805,
+                0.0004964970033814595
+              ],
+              "count": 8151,
+              "log2_ci95": [
+                -11.038550259258788,
+                -10.975927369187048
+              ],
+              "log2_p": -11.00723864905687,
+              "of": 16777216,
+              "p": 0.000485837459564209
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 4247369346575939912
+          }
+        ],
+        "pooled": {
+          "ci95": [
+            0.00048011252467165447,
+            0.0004895339021725119
+          ],
+          "count": 40668,
+          "log2_ci95": [
+            -11.024339807547952,
+            -10.996303603882899
+          ],
+          "log2_p": -11.010321672682212,
+          "of": 83886080,
+          "p": 0.0004848003387451172
+        },
+        "prefix_pairs": 83886080,
+        "seed_homogeneity_p": 0.18032279298400739,
+        "seeds_consistent": true
+      },
+      "target": {
+        "bit": 31,
+        "rounds": 17,
+        "word": 15
+      },
+      "template_rotation_vs_first_target": 0,
+      "trail_schedule_differences": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "80000000",
+        "00000000"
+      ],
+      "trail_state_differences": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "8000000000000000000000000000000080000000000000000000000000000000",
+        "2214024080000000000000000000000002100040800000000000000000000000"
+      ],
+      "verdict": "structural: exact signed-difference conditions explain the frequency; independent code and seeds agree"
+    },
+    {
+      "equivalence": {
+        "conditions_hold": 10238,
+        "conditions_hold_but_no_follow": 0,
+        "exact": true,
+        "follow_but_conditions_fail": 0
+      },
+      "estimates": {
+        "grouped_log2": -20.0,
+        "last_round_costs": {
+          "grouped": 17,
+          "sequential": 26,
+          "signed": 11
+        },
+        "sequential_log2": -29.0,
+        "signed_log2": -13.0
+      },
+      "exact_conditions": [
+        "Ch: f[0] = g[0]",
+        "Maj: b[0] = c[0]",
+        "a' = T1 + T2: a'[7] = Σ1(e)[7]",
+        "a' = T1 + T2: a'[21] = Σ1(e)[21]",
+        "a' = T1 + T2: a'[26] = Σ1(e)[26]",
+        "a' = T1 + T2: a'[10] = Σ0(a)[10]",
+        "a' = T1 + T2: a'[19] = Σ0(a)[19]",
+        "a' = T1 + T2: a'[30] = Σ0(a)[30]",
+        "e' = d + T1: e'[7] = Σ1(e)[7]",
+        "e' = d + T1: e'[21] = Σ1(e)[21]",
+        "e' = d + T1: e'[26] = Σ1(e)[26]"
+      ],
+      "independent_implementation": {
+        "agreement_p": 0.6942194403513758,
+        "costs_match": true,
+        "follow": {
+          "ci95": [
+            0.00011632195157251897,
+            0.00013137593910248304
+          ],
+          "count": 1037,
+          "log2_ci95": [
+            -13.069589000396151,
+            -12.894011302641518
+          ],
+          "log2_p": -12.981799821186774,
+          "of": 8388608,
+          "p": 0.00012362003326416016
+        },
+        "generator": "numpy PCG64",
+        "numpy": "2.5.3",
+        "pairs": 8388608,
+        "rates_agree": true,
+        "trail_matches": true
+      },
+      "joint_structure": {
+        "dependent_pairs": [],
+        "implied_conditions": 0,
+        "joint": 0.00048827049135997784,
+        "joint_vs_independent_chi_square": {
+          "df": 2047,
+          "p_value": 0.8632905747693579,
+          "statistic": 1977.0668774822398
+        },
+        "marginals": [
+          {
+            "ci95": [
+              0.49990144898368577,
+              0.5003294755412239
+            ],
+            "condition": "f[0] = g[0]",
+            "from": "Ch",
+            "p": 0.5001154622836084
+          },
+          {
+            "ci95": [
+              0.49984555398916497,
+              0.5002735805550781
+            ],
+            "condition": "b[0] = c[0]",
+            "from": "Maj",
+            "p": 0.5000595672830347
+          },
+          {
+            "ci95": [
+              0.49974282548231885,
+              0.5001708520496748
+            ],
+            "condition": "a'[7] = Σ1(e)[7]",
+            "from": "a' = T1 + T2",
+            "p": 0.4999568387580894
+          },
+          {
+            "ci95": [
+              0.49990407204236814,
+              0.5003320985993819
+            ],
+            "condition": "a'[21] = Σ1(e)[21]",
+            "from": "a' = T1 + T2",
+            "p": 0.500118085342509
+          },
+          {
+            "ci95": [
+              0.49965473841795127,
+              0.5000827649721554
+            ],
+            "condition": "a'[26] = Σ1(e)[26]",
+            "from": "a' = T1 + T2",
+            "p": 0.49986875167100775
+          },
+          {
+            "ci95": [
+              0.49983973556838734,
+              0.5002677621348649
+            ],
+            "condition": "a'[10] = Σ0(a)[10]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000537488614732
+          },
+          {
+            "ci95": [
+              0.49966418142724073,
+              0.5000922079834905
+            ],
+            "condition": "a'[19] = Σ0(a)[19]",
+            "from": "a' = T1 + T2",
+            "p": 0.49987819468305006
+          },
+          {
+            "ci95": [
+              0.49983606328643604,
+              0.50026408985324
+            ],
+            "condition": "a'[30] = Σ0(a)[30]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000500765790123
+          },
+          {
+            "ci95": [
+              0.4998107865408506,
+              0.5002388131092748
+            ],
+            "condition": "e'[7] = Σ1(e)[7]",
+            "from": "e' = d + T1",
+            "p": 0.5000247998296061
+          },
+          {
+            "ci95": [
+              0.49974430393337466,
+              0.500172330500838
+            ],
+            "condition": "e'[21] = Σ1(e)[21]",
+            "from": "e' = d + T1",
+            "p": 0.49995831720946976
+          },
+          {
+            "ci95": [
+              0.4998743122496637,
+              0.500302338811936
+            ],
+            "condition": "e'[26] = Σ1(e)[26]",
+            "from": "e' = d + T1",
+            "p": 0.5000883255469817
+          }
+        ],
+        "pairs_examined": 20967886,
+        "pairwise_max_abs_z": 2.192327276248834,
+        "pairwise_threshold_z": 3.743024952750874,
+        "product_of_marginals": 0.0004884493333648963,
+        "redundancy": [
+          {
+            "ci95": [
+              0.49517290801148095,
+              0.5088963494844684
+            ],
+            "condition": 0,
+            "implied": false,
+            "p_given_all_others": 0.5020350120139263
+          },
+          {
+            "ci95": [
+              0.5007852736100329,
+              0.5145842076341753
+            ],
+            "condition": 1,
+            "implied": false,
+            "p_given_all_others": 0.5076862045026281
+          },
+          {
+            "ci95": [
+              0.48904051876532867,
+              0.5026789469842398
+            ],
+            "condition": 2,
+            "implied": false,
+            "p_given_all_others": 0.4958589625611469
+          },
+          {
+            "ci95": [
+              0.48894516227388357,
+              0.5025822478808303
+            ],
+            "condition": 3,
+            "implied": false,
+            "p_given_all_others": 0.4957629170500218
+          },
+          {
+            "ci95": [
+              0.4908353762025548,
+              0.5044989579877562
+            ],
+            "condition": 4,
+            "implied": false,
+            "p_given_all_others": 0.4976667314796811
+          },
+          {
+            "ci95": [
+              0.4916533993638768,
+              0.5053283707406053
+            ],
+            "condition": 5,
+            "implied": false,
+            "p_given_all_others": 0.49849060278508134
+          },
+          {
+            "ci95": [
+              0.49795088899189627,
+              0.5117119749383857
+            ],
+            "condition": 6,
+            "implied": false,
+            "p_given_all_others": 0.5048323471400394
+          },
+          {
+            "ci95": [
+              0.49551539642316,
+              0.5092435082759699
+            ],
+            "condition": 7,
+            "implied": false,
+            "p_given_all_others": 0.5023799008783552
+          },
+          {
+            "ci95": [
+              0.49522180588947007,
+              0.5089459146673004
+            ],
+            "condition": 8,
+            "implied": false,
+            "p_given_all_others": 0.5020842528566525
+          },
+          {
+            "ci95": [
+              0.4949041424860904,
+              0.5086239131461175
+            ],
+            "condition": 9,
+            "implied": false,
+            "p_given_all_others": 0.5017643599294256
+          },
+          {
+            "ci95": [
+              0.49671785220334347,
+              0.5104622962351931
+            ],
+            "condition": 10,
+            "implied": false,
+            "p_given_all_others": 0.5035907525823906
+          }
+        ]
+      },
+      "measured": {
+        "per_seed": [
+          {
+            "follow": {
+              "ci95": [
+                0.00011707199455086878,
+                0.00012765517107132777
+              ],
+              "count": 2051,
+              "log2_ci95": [
+                -13.060316377619348,
+                -12.935460399753046
+              ],
+              "log2_p": -12.997888223520148,
+              "of": 16777216,
+              "p": 0.00012224912643432617
+            },
+            "pairs": 16777216,
+            "prefix": 4193919,
+            "seed": 7820381848274665195
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.00011835500879065926,
+                0.00012899476060116005
+              ],
+              "count": 2073,
+              "log2_ci95": [
+                -13.044591617249317,
+                -12.920399910863951
+              ],
+              "log2_p": -12.982495598890585,
+              "of": 16777216,
+              "p": 0.00012356042861938477
+            },
+            "pairs": 16777216,
+            "prefix": 4195837,
+            "seed": 2274071790655778127
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.00011468133034754195,
+                0.00012515825552217573
+              ],
+              "count": 2010,
+              "log2_ci95": [
+                -13.090081833943925,
+                -12.963958924255591
+              ],
+              "log2_p": -13.027020213933708,
+              "of": 16777216,
+              "p": 0.00011980533599853516
+            },
+            "pairs": 16777216,
+            "prefix": 4190928,
+            "seed": 15531836144685419788
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.00011666379452939206,
+                0.0001272289062570154
+              ],
+              "count": 2044,
+              "log2_ci95": [
+                -13.065355475377643,
+                -12.940285893079212
+              ],
+              "log2_p": -13.002820519062379,
+              "of": 16777216,
+              "p": 0.00012183189392089844
+            },
+            "pairs": 16777216,
+            "prefix": 4195030,
+            "seed": 10403642442846038867
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.00011759684576599052,
+                0.00012820320321650622
+              ],
+              "count": 2060,
+              "log2_ci95": [
+                -13.053863015453334,
+                -12.929280070737603
+              ],
+              "log2_p": -12.99157137792942,
+              "of": 16777216,
+              "p": 0.0001227855682373047
+            },
+            "pairs": 16777216,
+            "prefix": 4192172,
+            "seed": 4247369346575939912
+          }
+        ],
+        "pooled": {
+          "ci95": [
+            0.00011970529591143016,
+            0.0001244334279504053
+          ],
+          "count": 10238,
+          "log2_ci95": [
+            -13.028225399230067,
+            -12.97233827462832
+          ],
+          "log2_p": -13.000281803895982,
+          "of": 83886080,
+          "p": 0.00012204647064208984
+        },
+        "prefix_pairs": 20967886,
+        "seed_homogeneity_p": 0.8954240184231422,
+        "seeds_consistent": true
+      },
+      "target": {
+        "bit": 0,
+        "rounds": 17,
+        "word": 15
+      },
+      "template_rotation_vs_first_target": 31,
+      "trail_schedule_differences": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000001",
+        "00000000"
+      ],
+      "trail_state_differences": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "0000000100000000000000000000000000000001000000000000000000000000",
+        "4428048000000001000000000000000004200080000000010000000000000000"
+      ],
+      "verdict": "structural: exact signed-difference conditions explain the frequency; independent code and seeds agree"
+    },
+    {
+      "equivalence": {
+        "conditions_hold": 41026,
+        "conditions_hold_but_no_follow": 0,
+        "exact": true,
+        "follow_but_conditions_fail": 0
+      },
+      "estimates": {
+        "grouped_log2": -17.0,
+        "last_round_costs": {
+          "grouped": 17,
+          "sequential": 26,
+          "signed": 11
+        },
+        "sequential_log2": -26.0,
+        "signed_log2": -11.0
+      },
+      "exact_conditions": [
+        "Ch: f[31] = g[31]",
+        "Maj: b[31] = c[31]",
+        "a' = T1 + T2: a'[6] = Σ1(e)[6]",
+        "a' = T1 + T2: a'[20] = Σ1(e)[20]",
+        "a' = T1 + T2: a'[25] = Σ1(e)[25]",
+        "a' = T1 + T2: a'[9] = Σ0(a)[9]",
+        "a' = T1 + T2: a'[18] = Σ0(a)[18]",
+        "a' = T1 + T2: a'[29] = Σ0(a)[29]",
+        "e' = d + T1: e'[6] = Σ1(e)[6]",
+        "e' = d + T1: e'[20] = Σ1(e)[20]",
+        "e' = d + T1: e'[25] = Σ1(e)[25]"
+      ],
+      "independent_implementation": {
+        "agreement_p": 0.06534840865488993,
+        "costs_match": true,
+        "follow": {
+          "ci95": [
+            0.00045982601400957143,
+            0.0004892990151723833
+          ],
+          "count": 3979,
+          "log2_ci95": [
+            -11.086624292743094,
+            -10.996996000533551
+          ],
+          "log2_p": -11.041809816306262,
+          "of": 8388608,
+          "p": 0.0004743337631225586
+        },
+        "generator": "numpy PCG64",
+        "numpy": "2.5.3",
+        "pairs": 8388608,
+        "rates_agree": true,
+        "trail_matches": true
+      },
+      "joint_structure": {
+        "dependent_pairs": [],
+        "implied_conditions": 0,
+        "joint": 0.0004890680313110352,
+        "joint_vs_independent_chi_square": {
+          "df": 2047,
+          "p_value": 0.37113104213160036,
+          "statistic": 2067.4433852624834
+        },
+        "marginals": [
+          {
+            "ci95": [
+              0.4999021221322592,
+              0.5001161168882068
+            ],
+            "condition": "f[31] = g[31]",
+            "from": "Ch",
+            "p": 0.5000091195106506
+          },
+          {
+            "ci95": [
+              0.49989308606850735,
+              0.5001070808244905
+            ],
+            "condition": "b[31] = c[31]",
+            "from": "Maj",
+            "p": 0.5000000834465027
+          },
+          {
+            "ci95": [
+              0.4999069977920027,
+              0.500120992547902
+            ],
+            "condition": "a'[6] = Σ1(e)[6]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000139951705933
+          },
+          {
+            "ci95": [
+              0.49986703884007755,
+              0.5000810335957722
+            ],
+            "condition": "a'[20] = Σ1(e)[20]",
+            "from": "a' = T1 + T2",
+            "p": 0.49997403621673586
+          },
+          {
+            "ci95": [
+              0.49986331951045815,
+              0.5000773142660642
+            ],
+            "condition": "a'[25] = Σ1(e)[25]",
+            "from": "a' = T1 + T2",
+            "p": 0.49997031688690186
+          },
+          {
+            "ci95": [
+              0.49982264530359677,
+              0.5000366400574613
+            ],
+            "condition": "a'[9] = Σ0(a)[9]",
+            "from": "a' = T1 + T2",
+            "p": 0.4999296426773071
+          },
+          {
+            "ci95": [
+              0.4997987796057622,
+              0.5000127743579457
+            ],
+            "condition": "a'[18] = Σ0(a)[18]",
+            "from": "a' = T1 + T2",
+            "p": 0.4999057769775391
+          },
+          {
+            "ci95": [
+              0.4999374200016832,
+              0.5001514147568219
+            ],
+            "condition": "a'[29] = Σ0(a)[29]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000444173812866
+          },
+          {
+            "ci95": [
+              0.4998998690767822,
+              0.5001138638327451
+            ],
+            "condition": "e'[6] = Σ1(e)[6]",
+            "from": "e' = d + T1",
+            "p": 0.5000068664550781
+          },
+          {
+            "ci95": [
+              0.49996225129616356,
+              0.5001762460500944
+            ],
+            "condition": "e'[20] = Σ1(e)[20]",
+            "from": "e' = d + T1",
+            "p": 0.5000692486763001
+          },
+          {
+            "ci95": [
+              0.49987125884869127,
+              0.5000852536044721
+            ],
+            "condition": "e'[25] = Σ1(e)[25]",
+            "from": "e' = d + T1",
+            "p": 0.49997825622558595
+          }
+        ],
+        "pairs_examined": 83886080,
+        "pairwise_max_abs_z": 2.6163083039810404,
+        "pairwise_threshold_z": 3.743024952750874,
+        "product_of_marginals": 0.000488185299148288,
+        "redundancy": [
+          {
+            "ci95": [
+              0.4971260526661712,
+              0.5039719657082904
+            ],
+            "condition": 0,
+            "implied": false,
+            "p_given_all_others": 0.5005490349186208
+          },
+          {
+            "ci95": [
+              0.49547616860289867,
+              0.5023107382909169
+            ],
+            "condition": 1,
+            "implied": false,
+            "p_given_all_others": 0.4988934017559647
+          },
+          {
+            "ci95": [
+              0.4965789191049564,
+              0.5034210808950436
+            ],
+            "condition": 2,
+            "implied": false,
+            "p_given_all_others": 0.5
+          },
+          {
+            "ci95": [
+              0.4970895395567069,
+              0.5039352025804109
+            ],
+            "condition": 3,
+            "implied": false,
+            "p_given_all_others": 0.5005123950810072
+          },
+          {
+            "ci95": [
+              0.4979856589008773,
+              0.504837444644227
+            ],
+            "condition": 4,
+            "implied": false,
+            "p_given_all_others": 0.5014116180442674
+          },
+          {
+            "ci95": [
+              0.49641501400396015,
+              0.5032560500147781
+            ],
+            "condition": 5,
+            "implied": false,
+            "p_given_all_others": 0.4998355243119434
+          },
+          {
+            "ci95": [
+              0.49641501400396015,
+              0.5032560500147781
+            ],
+            "condition": 6,
+            "implied": false,
+            "p_given_all_others": 0.4998355243119434
+          },
+          {
+            "ci95": [
+              0.49647570696884746,
+              0.5033171599564615
+            ],
+            "condition": 7,
+            "implied": false,
+            "p_given_all_others": 0.499896428614946
+          },
+          {
+            "ci95": [
+              0.4980956100720174,
+              0.504948145139157
+            ],
+            "condition": 8,
+            "implied": false,
+            "p_given_all_others": 0.5015219490727724
+          },
+          {
+            "ci95": [
+              0.49691921600103167,
+              0.5037637121486297
+            ],
+            "condition": 9,
+            "implied": false,
+            "p_given_all_others": 0.5003414800721987
+          },
+          {
+            "ci95": [
+              0.4972904281171364,
+              0.5041374661258984
+            ],
+            "condition": 10,
+            "implied": false,
+            "p_given_all_others": 0.5007139805943736
+          }
+        ]
+      },
+      "measured": {
+        "per_seed": [
+          {
+            "follow": {
+              "ci95": [
+                0.0004738737633313202,
+                0.0004949304612312747
+              ],
+              "count": 8125,
+              "log2_ci95": [
+                -11.043209593150838,
+                -10.980486541800175
+              ],
+              "log2_p": -11.011847902309459,
+              "of": 16777216,
+              "p": 0.00048428773880004883
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 7820381848274665195
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004840149725630824,
+                0.0005052932451074725
+              ],
+              "count": 8297,
+              "log2_ci95": [
+                -11.012660702899986,
+                -10.95059148579008
+              ],
+              "log2_p": -10.981625929178984,
+              "of": 16777216,
+              "p": 0.000494539737701416
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 2274071790655778127
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004821871109281608,
+                0.0005034256196124712
+              ],
+              "count": 8266,
+              "log2_ci95": [
+                -11.018119291961453,
+                -10.955933741621564
+              ],
+              "log2_p": -10.98702635162546,
+              "of": 16777216,
+              "p": 0.0004926919937133789
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 15531836144685419788
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004794159081802914,
+                0.0005005939870343283
+              ],
+              "count": 8219,
+              "log2_ci95": [
+                -11.026434597654534,
+                -10.964071417584043
+              ],
+              "log2_p": -10.995252842453239,
+              "of": 16777216,
+              "p": 0.0004898905754089355
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 10403642442846038867
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004735200213104403,
+                0.0004945689476786211
+              ],
+              "count": 8119,
+              "log2_ci95": [
+                -11.044286952726692,
+                -10.981540718949018
+              ],
+              "log2_p": -11.012913670671807,
+              "of": 16777216,
+              "p": 0.0004839301109313965
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 4247369346575939912
+          }
+        ],
+        "pooled": {
+          "ci95": [
+            0.00048435953898813403,
+            0.0004938222725970008
+          ],
+          "count": 41026,
+          "log2_ci95": [
+            -11.011634025126607,
+            -10.983720472512656
+          ],
+          "log2_p": -10.99767721578642,
+          "of": 83886080,
+          "p": 0.0004890680313110352
+        },
+        "prefix_pairs": 83886080,
+        "seed_homogeneity_p": 0.526251453970565,
+        "seeds_consistent": true
+      },
+      "target": {
+        "bit": 31,
+        "rounds": 10,
+        "word": 8
+      },
+      "template_rotation_vs_first_target": 0,
+      "trail_schedule_differences": [
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "00000000",
+        "80000000",
+        "00000000"
+      ],
+      "trail_state_differences": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "8000000000000000000000000000000080000000000000000000000000000000",
+        "2214024080000000000000000000000002100040800000000000000000000000"
+      ],
+      "verdict": "structural: exact signed-difference conditions explain the frequency; independent code and seeds agree"
+    },
+    {
+      "equivalence": {
+        "conditions_hold": 40926,
+        "conditions_hold_but_no_follow": 0,
+        "exact": true,
+        "follow_but_conditions_fail": 0
+      },
+      "estimates": {
+        "grouped_log2": -17.0,
+        "last_round_costs": {
+          "grouped": 17,
+          "sequential": 26,
+          "signed": 11
+        },
+        "sequential_log2": -26.0,
+        "signed_log2": -11.0
+      },
+      "exact_conditions": [
+        "Ch: f[31] = g[31]",
+        "Maj: b[31] = c[31]",
+        "a' = T1 + T2: a'[6] = Σ1(e)[6]",
+        "a' = T1 + T2: a'[20] = Σ1(e)[20]",
+        "a' = T1 + T2: a'[25] = Σ1(e)[25]",
+        "a' = T1 + T2: a'[9] = Σ0(a)[9]",
+        "a' = T1 + T2: a'[18] = Σ0(a)[18]",
+        "a' = T1 + T2: a'[29] = Σ0(a)[29]",
+        "e' = d + T1: e'[6] = Σ1(e)[6]",
+        "e' = d + T1: e'[20] = Σ1(e)[20]",
+        "e' = d + T1: e'[25] = Σ1(e)[25]"
+      ],
+      "independent_implementation": {
+        "agreement_p": 0.618672978575557,
+        "costs_match": true,
+        "follow": {
+          "ci95": [
+            0.00047708022403947,
+            0.0005070923202208404
+          ],
+          "count": 4126,
+          "log2_ci95": [
+            -11.033480494676624,
+            -10.945463954214526
+          ],
+          "log2_p": -10.989471894113516,
+          "of": 8388608,
+          "p": 0.0004918575286865234
+        },
+        "generator": "numpy PCG64",
+        "numpy": "2.5.3",
+        "pairs": 8388608,
+        "rates_agree": true,
+        "trail_matches": true
+      },
+      "joint_structure": {
+        "dependent_pairs": [],
+        "implied_conditions": 0,
+        "joint": 0.00048787593841552733,
+        "joint_vs_independent_chi_square": {
+          "df": 2047,
+          "p_value": 0.26997534119767497,
+          "statistic": 2085.7919616805902
+        },
+        "marginals": [
+          {
+            "ci95": [
+              0.4998861480881832,
+              0.5001001428441463
+            ],
+            "condition": "f[31] = g[31]",
+            "from": "Ch",
+            "p": 0.49999314546585083
+          },
+          {
+            "ci95": [
+              0.499931638351302,
+              0.5001456331066463
+            ],
+            "condition": "b[31] = c[31]",
+            "from": "Maj",
+            "p": 0.5000386357307434
+          },
+          {
+            "ci95": [
+              0.49991555701866747,
+              0.5001295517744329
+            ],
+            "condition": "a'[6] = Σ1(e)[6]",
+            "from": "a' = T1 + T2",
+            "p": 0.500022554397583
+          },
+          {
+            "ci95": [
+              0.49991984855294014,
+              0.5001338433086149
+            ],
+            "condition": "a'[20] = Σ1(e)[20]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000268459320069
+          },
+          {
+            "ci95": [
+              0.49988104593084465,
+              0.5000950406867666
+            ],
+            "condition": "a'[25] = Σ1(e)[25]",
+            "from": "a' = T1 + T2",
+            "p": 0.4999880433082581
+          },
+          {
+            "ci95": [
+              0.49981223833343214,
+              0.5000262330866235
+            ],
+            "condition": "a'[9] = Σ0(a)[9]",
+            "from": "a' = T1 + T2",
+            "p": 0.49991923570632935
+          },
+          {
+            "ci95": [
+              0.4998946834729147,
+              0.5001086782288966
+            ],
+            "condition": "a'[18] = Σ0(a)[18]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000016808509826
+          },
+          {
+            "ci95": [
+              0.4999120165028984,
+              0.5001260112587268
+            ],
+            "condition": "a'[29] = Σ0(a)[29]",
+            "from": "a' = T1 + T2",
+            "p": 0.5000190138816833
+          },
+          {
+            "ci95": [
+              0.4998465110016752,
+              0.5000605057567332
+            ],
+            "condition": "e'[6] = Σ1(e)[6]",
+            "from": "e' = d + T1",
+            "p": 0.4999535083770752
+          },
+          {
+            "ci95": [
+              0.4999390531689068,
+              0.5001530479239823
+            ],
+            "condition": "e'[20] = Σ1(e)[20]",
+            "from": "e' = d + T1",
+            "p": 0.5000460505485534
+          },
+          {
+            "ci95": [
+              0.49992427121743493,
+              0.5001382659729996
+            ],
+            "condition": "e'[25] = Σ1(e)[25]",
+            "from": "e' = d + T1",
+            "p": 0.5000312685966491
+          }
+        ],
+        "pairs_examined": 83886080,
+        "pairwise_max_abs_z": 3.116313066410292,
+        "pairwise_threshold_z": 3.743024952750874,
+        "product_of_marginals": 0.000488320282552238,
+        "redundancy": [
+          {
+            "ci95": [
+              0.49583926149662755,
+              0.5026847118860164
+            ],
+            "condition": 0,
+            "implied": false,
+            "p_given_all_others": 0.4992619521061813
+          },
+          {
+            "ci95": [
+              0.4985365165372709,
+              0.5054004507058938
+            ],
+            "condition": 1,
+            "implied": false,
+            "p_given_all_others": 0.5019685763697244
+          },
+          {
+            "ci95": [
+              0.4975384159332669,
+              0.5043955396912478
+            ],
+            "condition": 2,
+            "implied": false,
+            "p_given_all_others": 0.5009670232820036
+          },
+          {
+            "ci95": [
+              0.4984567663654713,
+              0.5053201576399977
+            ],
+            "condition": 3,
+            "implied": false,
+            "p_given_all_others": 0.5018885509663494
+          },
+          {
+            "ci95": [
+              0.4969829320641982,
+              0.5038362505871875
+            ],
+            "condition": 4,
+            "implied": false,
+            "p_given_all_others": 0.5004096105642845
+          },
+          {
+            "ci95": [
+              0.49722084449756443,
+              0.5040757941026878
+            ],
+            "condition": 5,
+            "implied": false,
+            "p_given_all_others": 0.5006483497663494
+          },
+          {
+            "ci95": [
+              0.4945860854162562,
+              0.5014228623990591
+            ],
+            "condition": 6,
+            "implied": false,
+            "p_given_all_others": 0.49800438062789
+          },
+          {
+            "ci95": [
+              0.49544506809087313,
+              0.5022877960587773
+            ],
+            "condition": 7,
+            "implied": false,
+            "p_given_all_others": 0.49886637899509984
+          },
+          {
+            "ci95": [
+              0.4977034689825261,
+              0.504561721343611
+            ],
+            "condition": 8,
+            "implied": false,
+            "p_given_all_others": 0.5011326484381696
+          },
+          {
+            "ci95": [
+              0.49619153370460145,
+              0.5030394124504213
+            ],
+            "condition": 9,
+            "implied": false,
+            "p_given_all_others": 0.4996154550448636
+          },
+          {
+            "ci95": [
+              0.49605177962945096,
+              0.5028986955067073
+            ],
+            "condition": 10,
+            "implied": false,
+            "p_given_all_others": 0.499475212965901
+          }
+        ]
+      },
+      "measured": {
+        "per_seed": [
+          {
+            "follow": {
+              "ci95": [
+                0.0004780008592931238,
+                0.0004991480136273618
+              ],
+              "count": 8195,
+              "log2_ci95": [
+                -11.030699167835445,
+                -10.968244694523008
+              ],
+              "log2_p": -10.999471766013178,
+              "of": 16777216,
+              "p": 0.0004884600639343262
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 7820381848274665195
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004811257890487399,
+                0.0005023411747712916
+              ],
+              "count": 8248,
+              "log2_ci95": [
+                -11.021298247484195,
+                -10.959044848111686
+              ],
+              "log2_p": -10.99017138263189,
+              "of": 16777216,
+              "p": 0.0004916191101074219
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 2274071790655778127
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.0004699826804550466,
+                0.0004909537327986799
+              ],
+              "count": 8059,
+              "log2_ci95": [
+                -11.055104787188982,
+                -10.992125307365932
+              ],
+              "log2_p": -11.023614882111408,
+              "of": 16777216,
+              "p": 0.00048035383224487305
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 15531836144685419788
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.00047758814097043393,
+                0.0004987262671142626
+              ],
+              "count": 8188,
+              "log2_ci95": [
+                -11.031945366178642,
+                -10.969464190106635
+              ],
+              "log2_p": -11.00070461297659,
+              "of": 16777216,
+              "p": 0.00048804283142089844
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 10403642442846038867
+          },
+          {
+            "follow": {
+              "ci95": [
+                0.00048041824814860353,
+                0.0005016182045243609
+              ],
+              "count": 8236,
+              "log2_ci95": [
+                -11.023421428311277,
+                -10.961122672756312
+              ],
+              "log2_p": -10.992271885367746,
+              "of": 16777216,
+              "p": 0.0004909038543701172
+            },
+            "pairs": 16777216,
+            "prefix": 16777216,
+            "seed": 4247369346575939912
+          }
+        ],
+        "pooled": {
+          "ci95": [
+            0.00048317321301495744,
+            0.0004926244128883425
+          ],
+          "count": 40926,
+          "log2_ci95": [
+            -11.015171905270787,
+            -10.987224254594778
+          ],
+          "log2_p": -11.00119804689957,
+          "of": 83886080,
+          "p": 0.00048787593841552733
+        },
+        "prefix_pairs": 83886080,
+        "seed_homogeneity_p": 0.599294530593425,
+        "seeds_consistent": true
+      },
+      "target": {
+        "bit": 31,
+        "rounds": 2,
+        "word": 0
+      },
+      "template_rotation_vs_first_target": 0,
+      "trail_schedule_differences": [
+        "80000000",
+        "00000000"
+      ],
+      "trail_state_differences": [
+        "0000000000000000000000000000000000000000000000000000000000000000",
+        "8000000000000000000000000000000080000000000000000000000000000000",
+        "2214024080000000000000000000000002100040800000000000000000000000"
+      ],
+      "verdict": "structural: exact signed-difference conditions explain the frequency; independent code and seeds agree"
+    }
+  ],
+  "params": {
+    "python_samples": 4194304,
+    "python_seeds": 2,
+    "reproduce": true,
+    "samples_per_seed": 16777216,
+    "seeds": 5,
+    "targets": [
+      {
+        "bit": 31,
+        "rounds": 17,
+        "word": 15
+      },
+      {
+        "bit": 0,
+        "rounds": 17,
+        "word": 15
+      },
+      {
+        "bit": 31,
+        "rounds": 10,
+        "word": 8
+      },
+      {
+        "bit": 31,
+        "rounds": 2,
+        "word": 0
+      }
+    ]
+  },
+  "primitive": "sha256-compression",
+  "reproduction": {
+    "digest": "86faf4abcb6737345fe629dda6a95e0315ea2fa752aeb21b5aaf590ab0c73a1b",
+    "matched": true,
+    "method": "full rerun with identical seed and parameters on a separate Rayon pool with a different thread count; SHA-256 of the canonical deterministic results compared",
+    "threads": 14
+  },
+  "reproduction_command": "bmr research characteristic-audit --seed 1112363596 --params '{\"python_samples\":4194304,\"python_seeds\":2,\"reproduce\":true,\"samples_per_seed\":16777216,\"seeds\":5,\"targets\":[{\"bit\":31,\"rounds\":17,\"word\":15},{\"bit\":0,\"rounds\":17,\"word\":15},{\"bit\":31,\"rounds\":10,\"word\":8},{\"bit\":31,\"rounds\":2,\"word\":0}]}'",
+  "result": "reduced-round-only",
+  "result_digest": "86faf4abcb6737345fe629dda6a95e0315ea2fa752aeb21b5aaf590ab0c73a1b",
+  "samples": null,
+  "scope": {
+    "full_round_claim": "none (full rounds not tested)",
+    "full_round_configurations": [],
+    "full_round_tested": false,
+    "primitive": "sha256-compression",
+    "reduced_round_configurations": [
+      {
+        "deviation_detected": true,
+        "rounds": 17
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 17
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 10
+      },
+      {
+        "deviation_detected": true,
+        "rounds": 2
+      }
+    ]
+  },
+  "seed": 1112363596,
+  "started_at": "2026-11-22T00:32:18Z",
+  "status": "completed",
+  "verification": {
+    "detail": "trail, costs and rates agree for every target",
+    "method": "independent Python/numpy implementation (PCG64 generator) rebuilds the trail and all three cost estimates from their definitions and measures the follow rate; Rust and Python must agree on trail and costs exactly, and on the rate by a two-proportion test (p > 0.001)",
+    "passed": true
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "all_accepted": true,
+  "backend": "cpu-avx2 x28",
+  "blocks_mined": 102,
+  "checks": [
+    {
+      "detail": "hash 2f5198948b0573e4b92dc02a6328753a94e7ab8fe602a9e4d260e1c8ffa28595",
+      "name": "block 1 accepted",
+      "passed": true
+    },
+    {
+      "detail": "coinbase 5000000000 sat",
+      "name": "subsidy",
+      "passed": true
+    },
+    {
+      "detail": "trusted 0, immature 5000000000",
+      "name": "reward immature at depth 1",
+      "passed": true
+    },
+    {
+      "detail": "height 100: trusted 0, immature 500000000000",
+      "name": "still immature at depth 100",
+      "passed": true
+    },
+    {
+      "detail": "height 101: trusted 5000000000, immature 500000000000",
+      "name": "matures at depth 101",
+      "passed": true
+    },
+    {
+      "detail": "tx 05462f7c19f8fe869f6fb73679848d431d34a2c1a15543c6570a4b923f94f40d in 65fd866f5d5151ddd507ebdd0c72595d5aa5ea02ba282217ddd1cb2c5556f4fb, fee 2820 sat collected by coinbase",
+      "name": "template transaction mined",
+      "passed": true
+    },
+    {
+      "detail": "102 blocks, all mined by cpu-avx2 x28",
+      "name": "final height",
+      "passed": true
+    }
+  ],
+  "created_at": "2026-11-22T00:14:26Z",
+  "datadir": null,
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "480c36fd4302c3f1cb81ec90156b6258e6fa5dfc",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5ab426012e480d5696c6d2c4463b8a0d3f7c666c7ac9c9e4dd1abc5093642a7e"
+  },
+  "first_block": {
+    "hash": "2f5198948b0573e4b92dc02a6328753a94e7ab8fe602a9e4d260e1c8ffa28595",
+    "hashes": 1048576,
+    "height": 1,
+    "nonce": 0,
+    "transactions": 1
+  },
+  "hashes": 106954752,
+  "id": "bench-regtest-0003",
+  "kind": "regtest",
+  "maturity_block": {
+    "hash": "403caf8539d706d435ce7714974611745f0d7b20e08c28eb8c340d1136496f01",
+    "hashes": 1048576,
+    "height": 101,
+    "nonce": 1,
+    "transactions": 1
+  },
+  "node": "/Satoshi:32.1.0/",
+  "seconds": 8.2705684,
+  "transaction_block": {
+    "hash": "65fd866f5d5151ddd507ebdd0c72595d5aa5ea02ba282217ddd1cb2c5556f4fb",
+    "hashes": 1048576,
+    "height": 102,
+    "nonce": 0,
+    "transactions": 2
+  }
+}

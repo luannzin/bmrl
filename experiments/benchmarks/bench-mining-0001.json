@@ -1,0 +1,99 @@
+{
+  "created_at": "2026-11-22T00:14:17Z",
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "480c36fd4302c3f1cb81ec90156b6258e6fa5dfc",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "5ab426012e480d5696c6d2c4463b8a0d3f7c666c7ac9c9e4dd1abc5093642a7e"
+  },
+  "gpu": "gpu-wgsl AMD Radeon RX 7600 (Vulkan)",
+  "id": "bench-mining-0001",
+  "kind": "mining",
+  "measurement_target_zero_bits": 24,
+  "node": "/Satoshi:32.1.0/",
+  "note": "raw = synthetic work, no template; end-to-end = live getblocktemplate, coinbase and merkle rebuild per extra nonce, full nonce space, every hit checked by the sha2 crate over the serialized header, one block submitted and accepted per backend; expected_work_per_block_factor 1.0",
+  "runs": [
+    {
+      "accepted": true,
+      "backend": "cpu-avx2 x28",
+      "end_to_end_hashes_per_second": 116676870.63247573,
+      "end_to_end_over_raw": 1.005735337645262,
+      "extra_nonce_rolls": 1,
+      "hashes": 2348810240,
+      "hit_rate_ci95_over_expected": [
+        0.7494546374238983,
+        1.0636986369013777
+      ],
+      "hit_rate_over_expected": 0.8928571428571429,
+      "hits": 125,
+      "hits_expected": 140.0,
+      "hits_verified_independently": 125,
+      "label": "cpu",
+      "raw_hashes_per_second": 116011505.47782525,
+      "seconds": 20.1308985,
+      "submitted_block": "000000e77969fc52494fd724971c51a94dcceebc304387aa6755e3f6128f0e14",
+      "submitted_nonce": 8202179,
+      "template_height": 1,
+      "valid_headers_per_second": 6.209360203172253
+    },
+    {
+      "accepted": true,
+      "backend": "gpu-wgsl AMD Radeon RX 7600 (Vulkan)",
+      "end_to_end_hashes_per_second": 508113007.4548084,
+      "end_to_end_over_raw": 1.0330937462631842,
+      "extra_nonce_rolls": 3,
+      "hashes": 10200547328,
+      "hit_rate_ci95_over_expected": [
+        0.9773397767435349,
+        1.1408205165717638
+      ],
+      "hit_rate_over_expected": 1.055921052631579,
+      "hits": 642,
+      "hits_expected": 608.0,
+      "hits_verified_independently": 642,
+      "label": "gpu",
+      "raw_hashes_per_second": 491836301.6838598,
+      "seconds": 20.0753517,
+      "submitted_block": "000000ff6e04a6985c40aeccea161b192a04118987542b6f8b5faeced98045f3",
+      "submitted_nonce": 6303014,
+      "template_height": 2,
+      "valid_headers_per_second": 31.97951446100942
+    },
+    {
+      "accepted": true,
+      "backend": "cpu-avx2 x27 + gpu-wgsl AMD Radeon RX 7600 (Vulkan)",
+      "end_to_end_hashes_per_second": 622086027.2912604,
+      "end_to_end_over_raw": 0.9888664116834261,
+      "extra_nonce_rolls": 3,
+      "hashes": 12482248704,
+      "hit_rate_ci95_over_expected": [
+        0.9216095085575822,
+        1.0647365376331204
+      ],
+      "hit_rate_over_expected": 0.9905913978494624,
+      "hits": 737,
+      "hits_expected": 744.0,
+      "hits_verified_independently": 737,
+      "label": "combined",
+      "raw_hashes_per_second": 629090056.9999478,
+      "seconds": 20.0651488,
+      "submitted_block": "000000d7700bf9c2e49ac1bfa6a8a6636e71a367ce8ee45d9f2d02efc34bd892",
+      "submitted_nonce": 5665697,
+      "template_height": 3,
+      "valid_headers_per_second": 36.73035307866743
+    }
+  ]
+}
