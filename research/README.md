@@ -1,219 +1,149 @@
-# Research findings
+# Research report
 
-Every number below comes from a verified, reproduced record in
-`experiments/results/` (ids in brackets). The seed is 1112363596 unless a
-record says otherwise. "Deviation" always means "distinguishable from the
-random baseline at the record's stated power". None of the results below
-reduces the expected work to find a Bitcoin block, and no full 64-round
-deviation was found.
+Every result below is a record in `experiments/results/`, cited by id in
+brackets, and comes from the final run on commit `480c36f`. `bmr research
+audit` confirms that every experiment and benchmark kind has a current record
+from that exact code, with earlier records kept as history. The default seed
+is 1112363596.
 
-## Summary
+"Deviation" means distinguishable from the random baseline at the record's
+stated power. A round count below 64 always means a reduced-round variant;
+those results are kept apart from full-round claims and never extrapolated.
 
-| Hypothesis | Primitive | Status | What the data says |
+**Bottom line: no result changes the expected work of Bitcoin mining.**
+Every optimisation measured lowers the cost per hash and leaves the number of
+hashes per block unchanged. Every structure found disappears long before
+64 rounds, and none raises the probability of SHA256d(header) ≤ target.
+
+## Confirmed findings
+
+Correctness and engineering, all at full rounds.
+
+| Finding | Evidence |
+| --- | --- |
+| SHA-256 and SHA-256d are correct | NIST vectors incl. one million `a`, FIPS 180-2 round states, three implementations agree on 10,000 random messages and on every round count 0 to 64 (`bmr verify sha256`) |
+| The header engine is correct | Mainnet blocks 0, 1, 100000 (from its txids) and 125552; 21 headers mined by Bitcoin Core 32.1 parsed, hashed and PoW-checked field by field (`bmr verify bitcoin-header`) |
+| CPU and GPU agree with the reference | 65,536 GPU digests and every hit over 2^22 nonces identical; CPU kernels identical at 1 and 4 threads [bench-gpu-0002] |
+| Regtest mining works | 102 blocks from each of CPU and GPU accepted; reward immature at depth 1 and 100, mature at 101; template transaction fee collected [bench-regtest-0003, bench-regtest-0004] |
+| The real mining path works end to end | Live template, coinbase and merkle rebuilt per extra nonce, full nonce space with the real target comparison; all 1,504 hits checked by the `sha2` crate over the serialized header; one block accepted per backend [bench-mining-0001] |
+
+Measured throughput (Xeon E5-2680 v4, RX 7600):
+
+| Backend | Raw SHA256d | End-to-end on a live template | Hits vs expected |
 | --- | --- | --- | --- |
-| H-AVAL-01 | sha256-compression | supported, reduced-round only | Avalanche deviations through 22 rounds; none at 24, 32 or 64 |
-| H-DIFF-01 | sha256-compression | supported, reduced-round only | Repeated output differences up to 2 rounds after a 1-bit difference enters |
-| H-STAT-01 | bitcoin-header-sha256d | not supported (one seed) | No deviation at 8, 12, 16, 20 or 64 rounds (4.2M hashes each) |
-| H-SMT-01 | bitcoin-header-sha256d | supported, reduced-round only | Z3 wins only at 4 rounds, where H7 is affine in the nonce (explained below) |
+| CPU AVX2, 28 threads | 116.0 MH/s | 116.7 MH/s | 125, 0.89x |
+| GPU (wgpu, Vulkan) | 491.8 MH/s | 508.1 MH/s | 642, 1.06x |
+| CPU + GPU | 629.1 MH/s | 622.1 MH/s | 737, 0.99x |
 
-| H-CHAR-01 | sha256-compression | supported, reduced-round only | XOR trails followed up to 2 rounds after entry; grouped estimator within 6 bits where measurable |
-| H-ALG-01 | sha256-compression | supported, reduced-round only | Zero-sum cubes up to 5 rounds after entry; carry-free agreement above chance up to 4 rounds |
-| H-SCHED-01 | sha256-message-schedule | not supported (one seed) | Schedule invertible and unbiased; only W16, W17 are nonce-free; folding saves 2.7% of a double compression |
-| H-SMT-02 | bitcoin-header-sha256d | supported, reduced-round only | Only 4 rounds beat brute force; heavy-tailed solve times make the scaling fits unreliable |
-| H-STAT-02 | sha256, sha256d, header | not supported (one master seed) | 32 seeds, all p-value distributions uniform; non-SHA control calibrated |
-| H-HW-01 | datapath | modelled | 6 pipeline variants exact in simulation; folding saves 11.6% adders |
+The template work (coinbase, merkle root, midstate, extra-nonce rolls) is
+too small to see. End-to-end and raw rates differ by run-to-run variation
+only. The hit counts match expectation for Poisson counts of that size.
+Single thread: reference 0.89 MH/s, midstate 1.34, scalar 1.41, AVX2 8.39
+[bench-cpu-0002]. Energy was not measured: Windows exposes no CPU energy
+counter and wgpu no GPU power counter.
 
-## Corrections
+## Negative findings
 
-Three records carry errata (`bmr research show <id>`, field `errata`). Each is
-superseded by a v2 rerun:
+Searched for and not found, at the stated power.
 
-- **schedule-0001**: the constant-folded outer schedule had a wrong constant,
-  σ0(256) = 0x04000022 instead of 0x00400022. It differed from the generic
-  schedule on all 1024 inputs, so its timing is invalid, and v1 verification
-  didn't check that. v2 builds the constants from calls on literals, and
-  verification fails unless the folded schedule matches the generic one.
-- **characteristic-0001**: the sequential estimator charged a lone difference
-  once per addition in a five-term sum. It was up to 15 bits too pessimistic.
-- **smt-scaling-0001**: the time budget ran out inside the first encoding, so
-  the encoding comparison never happened.
-- **hardware-0001 and hardware-0002**: register counts kept schedule words
-  W61..W63 alive in early-reject designs, though the outer block stops after
-  round 60. The two records got it wrong in different variants. hardware-0003
-  is correct, and a test now requires early reject to need fewer registers.
-- **smt-scaling-0002**: the measurements stand, but heavy-tailed solve times
-  make its frontiers and growth fits unreliable (see the SAT/SMT section). Not
-  superseded yet.
-
-## Reduced-round avalanche [reduced-round-0001]
-
-Strict avalanche criterion on the compression function, 16,384 random
-(chaining value, block) pairs per round count, all 512 x 256 bit pairs.
-
-| Rounds | Bonferroni-significant pairs | Max bias |
+| Question | Answer | Record |
 | --- | --- | --- |
-| 16 | 30,821 | 0.5 (deterministic pairs) |
-| 20 | 3,434 | 0.5 |
-| 21 | 853 | 0.438 |
-| 22 | 40 | 0.084 |
-| 24 | 0 | 0.0185 |
-| 32 | 0 | 0.0189 |
-| 64 | 0 | 0.0186 |
+| Is full-round header SHA256d biased over the nonce? | No: bit frequencies, leading zeros and consecutive-nonce agreement uniform at 8, 12, 16, 20 and 64 rounds, 4.2M hashes each; 8-bit hit rate 0.003883, expected 0.003906 (CI 0.003824 to 0.003943) | statistical-0002 |
+| Across 32 seeds? | No cell departs from uniform; the non-SHA control is calibrated. Full-round 8-bit hit ratios: SHA-256 of headers 0.990 (0.972 to 1.008), header SHA256d 1.004 (0.988 to 1.021), SHA256d of random inputs 1.007 (0.992 to 1.021) | multiseed-0002 |
+| Does any structure survive to 64 rounds? | Avalanche is clean from 24 rounds. No repeated output difference at 64 rounds among 131,072 pairs. No single-bit trail followed beyond 2 rounds after entry. Cube sums are random from 6 rounds after entry. | reduced-round-0002, differential-0002, characteristic-0003, algebraic-0002 |
+| Do neighbours of share hits find blocks more often? | No: A = 1.004 (0.983 to 1.026) at 64 rounds over 2^20 shares x 32 neighbours; work 0.9997x exhaustive | trail-search-0001 |
+| Does filtering by trail conditions help? | No: A_C = 1.010 (0.990 to 1.031); the filter makes search about 81x slower | trail-search-0001 |
+| Can an SMT solver beat brute force? | Only at 4 rounds (affine, below). From 8 rounds it is far slower; 16 rounds times out. | smt-0003, smt-scaling-0003 |
+| Is the message schedule biased or correlated? | No biased bits and no correlated neighbouring words in W16..W63 | schedule-0003 |
 
-From 24 rounds on, the largest |z| (about 4.8 over 131,072 cells) is what
-noise alone produces. Detectable single-cell bias at this sample size is
-about 0.023, so smaller biases are not excluded.
+## Reduced-round discoveries
 
-## Single-bit XOR differentials [differential-0001]
+Real structure, explained, and specific to the stated round counts. None of
+it applies to 64-round SHA-256.
 
-131,072 pairs per configuration. For differences in W15 (enters at round 15)
-and W0 (round 0), repeated 256-bit output differences appear only up to 2
-rounds after the difference enters. The weight distribution of output
-differences departs from Binomial(256, 1/2) up to 6 rounds after entry
-(21 rounds for W15). Nothing is detectable at 64 rounds.
+| Rounds | Structure | Record |
+| --- | --- | --- |
+| 4 per compression | H7 of the header hash is exactly K + bswap(nonce) mod 2^32, so the hash number's top byte depends only on the nonce's top byte. Z3 inverts it in 1.6 ms; neighbours of shares are target hits 192x as often; neighbour search needs 0.045x the work | smt-0003, trail-search-0001, unit test `four_round_h7_is_affine_in_the_nonce` |
+| 5 per compression | Neighbours of share hits are 31% *less* likely to be target hits (A = 0.691, z = −28); the neighbour strategy costs 3.5% more | trail-search-0001 |
+| 2 rounds after a 1-bit MSB difference enters | The pair follows the XOR trail with probability exactly 2^-11: 11 independent bit conditions from signed differences, 0 counterexamples in 83.9M pairs, the same template at every round | characteristic-audit-0001, [full report](differential-cryptanalysis/REPORT.md) |
+| Up to 22 | First-order avalanche deviations; clean from 24 | reduced-round-0002 |
+| Up to 5 after entry | Zero-sum cubes (algebraic degree below the cube dimension); proven degree bounds never contradicted | algebraic-0002 |
+| Up to 4 | Agreement with the carry-free (XOR) model above 1/2: 52.4% after 1 round, 50.4% after 4 | algebraic-0002 |
 
-## Statistical tests of header SHA-256d [statistical-0001]
+The message schedule's linear structure is exact but carries no
+reduced-round label. Every 16-word window of the linearized schedule has
+GF(2) rank 512. The lightest expansion of a 1-bit message difference over
+W16..W63 weighs 466 bits. The real and linearized schedules agree beyond
+chance only up to W19 [schedule-0003].
 
-64 random headers x 65,536 consecutive nonces per round count. Bit
-frequencies, leading-zero distribution and consecutive-nonce agreement show
-no deviation, even at 8 rounds. Full-round 8-bit target hit rate: 0.003883,
-expected 0.003906, 95% CI 0.003824 to 0.003943.
+## Corrected or invalidated findings
 
-The double hash hides reduced-round structure that the compression-level
-tests above expose: the outer compression re-randomises its input.
+Kept in the registry with errata (`bmr research show <id>`, field `errata`).
+None was deleted or overwritten.
 
-## Z3 on reduced-round header SHA-256d [smt-0001]
+| Record | What was wrong | Status |
+| --- | --- | --- |
+| schedule-0001 | Hand-written σ0(256) = 0x04000022 (correct: 0x00400022). The folded schedule was wrong on all inputs, so its timing is invalid; verification didn't check parity | Fixed: constants from calls, verification requires parity. schedule-0003: folding saves 19.6 ns of 116.8, 2.8% of one double compression on the generic path |
+| characteristic-0001 | Sequential estimator, up to 15.9 bits too pessimistic | Superseded |
+| characteristic-0002 | Grouped estimator, still up to 6.9 bits too pessimistic: it required intermediate XOR differences that don't need to hold | Superseded by the signed estimator, within 0.09 bits [characteristic-0003] |
+| smt-scaling-0001 | Time budget spent on one encoding, so no encoding comparison | Superseded |
+| smt-scaling-0002, -0003 | Solve times are heavy-tailed: an instance solves in 0.1 to 0.5 s or runs past a 2 to 4 s timeout. The adaptive timeout is too short, so frontiers and growth fits reflect the timeout | Interpretation withdrawn; measurements stand. "The encoding is the bottleneck" was never published |
+| hardware-0001, -0002 | Register counts kept unused W61..W63 alive in early-reject designs | Fixed in hardware-0003 and later |
+| Registry ids | `smt-%` matched `smt-scaling` ids, so `smt-0002` was skipped. The same bug could have overwritten a record once `characteristic-audit` existed | Fixed before any overwrite. 27 records, 27 identical files, start times monotonic |
+| Audit criterion | "95% intervals overlap" falsely failed once at small counts | Replaced by a two-proportion test (p > 0.001) |
 
-Target: 8 leading zero bits, 2 random headers per round count, 30 s timeout.
+## Hardware: estimates versus measurements
 
-- 4 rounds: Z3 finds a valid nonce in about 1.6 ms. Brute force from nonce 0
-  finds none in its 2^20-nonce cap.
-- 8 and 12 rounds: Z3 solves, but much slower than brute force.
-- 16 rounds: timeout.
+| Kind | What | Values |
+| --- | --- | --- |
+| Measured | CPU, GPU, combined throughput | 116.0, 491.8, 629.1 MH/s raw (above) |
+| Not measured | Power | Vendor ratings only: CPU 120 W TDP, GPU 165 W board power, giving at most 1.03 × 10^6 and 3.3 × 10^5 J/TH from the measured rates |
+| Simulated, exact | 6 pipeline variants as full pipelines and as iterative cores with 1 to 32 round units | Every output identical to the reference and to the independent SHA-256; one nonce per cycle, or one per ceil(stages / u) cycles |
+| Counted, exact | Midstate pipeline vs midstate + precompute + early reject + folding | 128 vs 122 stages, 1,201 vs 1,062 adders, 93,696 vs 81,824 register bits |
+| **Estimated, not synthesized** | Best FPGA configuration under assumed clocks | Artix-7 XC7A100T: no full pipeline fits, 31 iterative cores, 0.15 to 0.20 GH/s. Kintex-7 XC7K325T: 3 pipelines, 0.60 to 0.75 GH/s. Virtex UltraScale+ XCVU9P: 17 pipelines, 5.1 to 6.8 GH/s. 10,600 to 54,000 J/TH |
 
-The 4-round result has a closed form (pinned by the unit test
-`four_round_h7_is_affine_in_the_nonce`):
+The estimates rest on assumptions, all listed in the record
+[hardware-0004]: 32 LUTs per 32-bit operator, no block RAM, assumed clock
+ranges, 80% utilization, toggle energies of 0.3 to 1.5 pJ per LUT and
+0.05 to 0.3 per FF, assumed static power. No RTL has been written or
+synthesized, and no timing closed or board measured.
 
-- Inner rounds 0 to 2 do not see the nonce, so after 4 rounds
-  a = c + W3 and e = c' + W3, with W3 = bswap(nonce).
-- The outer compression's H7 = IV7 + e0 is then exactly K + bswap(nonce)
-  (mod 2^32).
-- The hash number's most significant byte is H7's low byte, so it depends only
-  on the nonce's most significant byte. Scanning from 0 never changes that
-  byte. The solver inverts the affine map.
+## Reproduction
 
-This is structure of the 4-round function only; at 5 rounds the relation
-already fails (same test).
+```powershell
+cargo build --release
+.\target\release\bmr verify sha256
+.\target\release\bmr verify bitcoin-header
+.\target\release\bmr benchmark cpu
+.\target\release\bmr benchmark gpu
+.\target\release\bmr benchmark compare
+.\target\release\bmr benchmark mining --search-seconds 20
+.\target\release\bmr mine regtest --backend gpu
+.\target\release\bmr research all
+.\target\release\bmr research structural
+.\target\release\bmr research characteristic-audit
+.\target\release\bmr research trail-search
+.\target\release\bmr research audit
+.\target\release\bmr research reproduce characteristic-audit-0001
+```
 
-## SAT/SMT scaling [smt-scaling-0002]
+`research all` runs reduced-round, differential, statistical and smt.
+`research structural` runs characteristic, algebraic, schedule, smt-scaling,
+multiseed and hardware. Every record carries its own `reproduction_command`.
+`research reproduce <id>` reruns a record from its seed and parameters and
+compares digests. Done out of process for characteristic-audit-0001,
+trail-search-0001 and reduced-round-0002: all three reproduced bit for bit.
+The final run also repeated every deterministic experiment of the first run
+on the same seed. Reduced-round, differential, statistical, smt, algebraic,
+multiseed, schedule and hardware all gave the identical result digest.
 
-Rounds 4 to 16, target sizes 2 to 16 bits, 3 random headers per point,
-adaptive timeouts up to 30 s, 900 s budget. Word-level QF_BV (`qfbv`) and
-bit-blasted SAT (`bitblast-sat`) alternate at every point. 129 solver runs,
-every answer verified.
+## Open hypotheses and the experiments they justify
 
-- **Only 4 rounds beat brute force**, for the affine reason above.
-- **Solve times are heavy-tailed, and that decides everything else here.**
-  At 6 and 8 rounds an instance either solves in 0.1 to 0.5 s with about 100
-  to 200 conflicts, or runs past its 2 to 4 s timeout with 15,000 to 40,000.
-  The target size barely changes which one happens.
-- **So this run can't compare the encodings or measure growth.** The
-  adaptive timeout (8x the previous solve time, at least 2 s) stopped
-  bitblast-sat at 8 rounds and 4 bits with a 3.2 s limit. At that same point
-  qfbv failed 2 of 3 instances and only went on because one solved. The
-  fitted growth rates (2^0.34 to 2^0.60 per target bit, against about 2^0.92
-  for brute force) mostly count the lucky fast solves. The record carries an
-  erratum saying so.
-- **Bit-blasted model size**, from Z3's CNF: 33 clauses at 4 rounds, 12,347 at
-  6, 62,340 at 8 and 172,574 at 10.
-
-Measuring scaling properly needs a fixed, generous timeout, at least ten
-instances per point, and the fraction solved next to the median time,
-with both encodings on the same instances.
-
-## Differential characteristics through 64 rounds [characteristic-0002]
-
-For each single-bit message difference, the carry-free XOR trail is built
-for all 64 rounds, and 1,048,576 random pairs are traced against it.
-
-| Difference | Followed (>= 2 pairs) through | Last biased state bit | Estimate at 64 rounds |
-| --- | --- | --- | --- |
-| W15 bit 31 | round 17 | round 22 | 2^-10537 |
-| W15 bit 0 | round 17 | round 22 | 2^-10475 |
-| W8 bit 31 | round 10 | round 15 | 2^-11682 |
-| W0 bit 31 | round 2 | round 7 | 2^-12860 |
-
-At round 17, 503 of 1,048,576 pairs follow the W15 bit 31 trail (2^-11.0).
-Two estimators are compared with every measurable round:
-
-- **Sequential**: every modular addition charged with Lipmaa–Moriai. Up to
-  15 bits too pessimistic.
-- **Grouped**: zero-difference operands of a multi-operand sum are added
-  first, and the difference is charged once. Within 6 bits everywhere it can
-  be measured, mean error +0.35 to +3.0 bits, still on the pessimistic side.
-
-The estimates at 64 rounds are extrapolations, not evidence. They are listed
-to show the scale: no single-bit XOR trail comes anywhere near 2^-256.
-
-## Algebraic degree and carries [algebraic-0001]
-
-- **Cube sums.** Cubes of 4 to 16 bits in W0 or W15 sum to zero on more
-  output bits than chance allows, up to 5 rounds after the word enters. The
-  proven degree bounds (exact ripple-carry propagation) were never
-  contradicted: 0 violations over every configuration. 79 zero-sum cubes are
-  stored as witnesses.
-- **Carries.** The real compression agrees with its carry-free (XOR) model on
-  52.4% of output bits after 1 round, 51.0% after 3 and 50.4% after 4. From
-  6 rounds on it is indistinguishable from 50%.
-
-## Message schedule [schedule-0002]
-
-- Linearized over GF(2), every window of 16 consecutive words has rank 512,
-  so the expansion is invertible. Forcing j expanded words to vanish leaves
-  exactly 512 - 32j free message bits.
-- Through W16..W63, the lightest expansion of a 1-bit message difference
-  weighs 466 bits and of a 2-bit difference 489. The longest run of zero
-  expanded words is 8.
-- The real schedule agrees with the linearized one beyond chance only up to
-  W19, and shows no biased bits or correlated neighbouring words.
-- For Bitcoin headers, only W16 and W17 of the second block are independent
-  of the nonce, and the CPU kernel already precomputes both. In the outer
-  block no word is independent of the inner digest. Folding its zero padding
-  terms leaves 125 additions and 86 σ evaluations per nonce instead of
-  144 and 96.
-- Measured on the generic path: folded 99.45 ns vs 118.25 ns, 18.81 ns or
-  2.7% of one double compression (704.1 ns). Whether the optimised kernels
-  already get this from the compiler hasn't been measured.
-
-## Multi-seed tests [multiseed-0001]
-
-32 independent seeds, 131,072 hashes per seed and cell, for SHA-256 and
-SHA-256d of headers over the nonce and SHA-256d of random inputs, at 16, 20,
-24 and 64 rounds. Under the null hypothesis each test's p-values are uniform
-across seeds. A KS test decides.
-
-- No cell departs from uniform. The non-SHA control doesn't either, so the
-  battery is calibrated at this size.
-- Full-round 8-bit target hit ratios (observed / expected): 0.990
-  (CI 0.972 to 1.008) for single SHA-256, 1.004 (0.988 to 1.021) for header
-  SHA-256d, 1.007 (0.992 to 1.021) for SHA-256d of random inputs.
-
-## Hardware datapaths [hardware-0003]
-
-Six fully pipelined variants are simulated cycle by cycle. Every output
-matches the software reference, and the independent SHA-256 on an unseen
-header. Each pipeline takes one nonce per cycle.
-
-| Variant | Stages | 32-bit adders | Register bits |
-| --- | --- | --- | --- |
-| midstate | 128 | 1,201 | 93,696 |
-| + precompute 3 rounds + early reject + constant folding | 122 | 1,062 | 81,824 |
-
-Constant folding on a design without midstate removes block 1 and the first
-three second-block rounds by itself. The result is exactly the midstate +
-precompute datapath, which the test suite checks.
-
-The FPGA mapping is a model with stated assumptions (32 LUTs per 32-bit
-operator, assumed clocks and toggle energies). Up to 6.8 GH/s on a Virtex
-UltraScale+ VU9P, against 115.8 MH/s measured on this lab's CPU and
-498.8 MH/s on its GPU. These are estimates until RTL is synthesized.
+| Hypothesis | Status | Next experiment |
+| --- | --- | --- |
+| H-STAT-01, H-STAT-02, H-SCHED-01 | not supported, one seed | Rerun with a second seed; two negative seeds move them to `not-supported` |
+| H-SMT-02 (solver scaling) | measurements stand, interpretation withdrawn | Fixed generous timeout, at least 10 instances per point, fraction solved with the median, the same instances for every encoding, a native SAT solver (CryptoMiniSat or kissat) |
+| 5-round anti-correlation | measured, not explained | Derive it as was done for 4 rounds: which nonce bits feed H7 at 5 rounds, and why neighbours lose share-level zeros |
+| W3[10] header trail 0.09 bits off | measured | Per-condition marginals with the padding fixed, to see which early-round state bit is not yet uniform |
+| H-HW-01 (FPGA) | model only | Emit RTL for one round stage from the stage list, simulate it against the Rust model, synthesize with Yosys/nextpnr or Vivado |
+| Energy | not measured | A wall-plug meter, or AMD ADLX telemetry for the GPU |

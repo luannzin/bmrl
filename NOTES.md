@@ -67,3 +67,36 @@ Done:
 
 Next: full-size trail-search and audit runs, hardware audit, mining path
 benchmark, ponytail review, final clean run, report.
+
+## 2026-11-21: Scientific closure done
+
+Done:
+- Hardware audit: iterative cores simulated as well as pipelines (all 6
+  variants, u = 1..32, exact); the record now has separate measured,
+  simulated and estimated sections plus an assumptions table.
+- `bmr benchmark mining`: live template to accepted block for CPU, GPU and
+  combined; raw vs end-to-end throughput; every hit checked by `sha2`.
+- Final clean run on `480c36f`; `bmr research audit` passes: 27 experiment
+  records, 11 benchmarks, 6 with errata, nothing overwritten.
+- Every deterministic experiment repeated its first-run digest; out-of-process
+  reproduce matched for characteristic-audit-0001, trail-search-0001,
+  reduced-round-0002.
+- Registry id bug (`smt-%` matched `smt-scaling-*`) fixed in `dc48dfb`
+  before it overwrote anything.
+- Reports: `research/README.md` (full), `research/STATUS.md` (short),
+  `research/differential-cryptanalysis/REPORT.md` (characteristic and the
+  mining question).
+
+Results that matter:
+- Round-17 characteristic: 2^-11.010 (CI 2^-11.024..2^-10.996), 11 exact
+  independent conditions, same template for all four trails.
+- No mining advantage at 64 rounds: neighbour strategy A = 1.004 (0.983 to
+  1.026), work 0.9997x; condition filter A = 1.010, about 81x slower.
+- Reduced-round only: 4 rounds affine (0.045x work), 5 rounds
+  anti-correlated (A = 0.69).
+
+Current state: MVP complete and verified; research run closed and reported.
+
+Next (see research/STATUS.md section 5): GPU kernel v2; derive the 5-round
+anti-correlation, SMT scaling v3, second seeds; RTL + synthesis and measured
+power.

@@ -20,10 +20,18 @@ cargo build --release
 .\target\release\bmr verify bitcoin-header
 .\target\release\bmr benchmark compare
 .\target\release\bmr mine regtest --backend gpu
+.\target\release\bmr benchmark mining
 .\target\release\bmr research all
 .\target\release\bmr research structural
+.\target\release\bmr research characteristic-audit
+.\target\release\bmr research trail-search
 .\target\release\bmr research hypotheses
+.\target\release\bmr research audit
 ```
+
+Where things stand: [research/STATUS.md](research/STATUS.md). Every result
+with its record id: [research/README.md](research/README.md). Progress log:
+[NOTES.md](NOTES.md).
 
 Add `--json` to any command for one machine-readable JSON document.
 Exit status is non-zero when any check fails.
