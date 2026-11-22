@@ -29,7 +29,7 @@ pub fn definition() -> Definition {
         hypothesis_id: "H-SHARE-01",
         primitive: crate::primitive::HEADER,
         name: "Work shared across batches of headers (AsicBoost and beyond), by exact DAG analysis",
-        version: 1,
+        version: 2,
         hypothesis: "Some way of batching headers that a miner can produce (version rolling, time rolling, extranonce changes or combinations) lets the batch share more of the per-nonce SHA256d work than overt AsicBoost's message-schedule sharing.",
         null_hypothesis: "Version rolling (shared second-block message) is the best sharing pattern; every other feasible pattern shares less of the per-nonce work.",
         assumptions: &[
@@ -40,14 +40,14 @@ pub fn definition() -> Definition {
             "Feasibility of each pattern follows Bitcoin consensus: version rolling has 16 free bits (BIP320), time a few thousand valid values, a merkle-tail change alone needs a 224-bit partial merkle-root collision.",
         ],
         baseline: "k = 1: every per-nonce node computed once per header (the v2 kernel's work).",
-        methodology: "Build the header SHA256d DAG once per pattern (sums re-associated by dependency class for that pattern), check it against the reference SHA-256 on random headers, keep the nodes the early reject needs, classify each node and count operations per header for k = 1, 2, 4, 8, 16.",
+        methodology: "Build the header SHA256d DAG once per pattern (sums re-associated by dependency class for that pattern), check it against the reference SHA-256 on random headers, keep the nodes the early reject needs, classify each node and count operations per header for k = 1, 2, 4, 8, 16. Version 2 adds the frontier: for each round count r, the per-nonce work of the target (H7 = IV7 + e(r-4)) against the whole r-round double hash, each target DAG checked against the reference.",
         implementation: &["experiment_engine::work_sharing"],
         dataset: "Random headers for the DAG check: SplitMix64::stream(seed, i).",
     }
 }
 
 pub fn default_params(_quick: bool) -> Value {
-    json!({ "batch_sizes": [1, 2, 4, 8, 16], "check_headers": 256, "reproduce": true })
+    json!({ "batch_sizes": [1, 2, 4, 8, 16], "check_headers": 256, "frontier_rounds": [4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 24, 32, 48, 64], "reproduce": true })
 }
 
 /// Input dependency bits.
@@ -240,8 +240,9 @@ fn compress(g: &mut Dag, mut s: [Val; 8], w: &mut Vec<Val>, rounds: usize) -> [V
     s
 }
 
-/// The header DAG up to outer round `outer_rounds - 1`; returns (dag, e of the last outer round, full outer state).
-fn header_dag(members: u8, outer_rounds: usize) -> (Dag, Val, [Val; 8]) {
+/// The header DAG with `rounds` inner rounds, up to outer round `outer_rounds - 1`; returns
+/// (dag, e of the last outer round, full outer state).
+fn header_dag(members: u8, rounds: usize, outer_rounds: usize) -> (Dag, Val, [Val; 8]) {
     let mut g = Dag::new(members);
     let mid: [Val; 8] = std::array::from_fn(|i| g.input(i, MID));
     let w0 = g.input(8, W0);
@@ -251,7 +252,7 @@ fn header_dag(members: u8, outer_rounds: usize) -> (Dag, Val, [Val; 8]) {
     let mut w = vec![w0, w1, w2, w3, Val::Const(0x8000_0000)];
     w.resize(15, Val::Const(0));
     w.push(Val::Const(640));
-    let s = compress(&mut g, mid, &mut w, 64);
+    let s = compress(&mut g, mid, &mut w, rounds);
     let mut w2v: Vec<Val> = (0..8).map(|i| g.sum(&[mid[i], s[i]])).collect();
     w2v.push(Val::Const(0x8000_0000));
     w2v.resize(15, Val::Const(0));
@@ -260,11 +261,13 @@ fn header_dag(members: u8, outer_rounds: usize) -> (Dag, Val, [Val; 8]) {
     (g, s2[4], s2)
 }
 
-/// Nodes reachable from `out`.
-fn live(g: &Dag, out: Val) -> Vec<bool> {
+/// Nodes reachable from `outs`.
+fn live(g: &Dag, outs: &[Val]) -> Vec<bool> {
     let mut keep = vec![false; g.nodes.len()];
-    if let Val::Node(i) = out {
-        keep[i] = true;
+    for out in outs {
+        if let Val::Node(i) = *out {
+            keep[i] = true;
+        }
     }
     for i in (0..g.nodes.len()).rev() {
         if keep[i]
@@ -299,8 +302,8 @@ const PATTERNS: [Pattern; 7] = [
 /// Per-nonce op counts of one pattern: (shared per batch, per member) as (primitive, rdna3, by op).
 fn analyse(p: &Pattern) -> (Dag, Val, Value, (u64, u64), (u64, u64)) {
     let m = p.members_differ_in;
-    let (g, e60, _) = header_dag(m, 61);
-    let keep = live(&g, e60);
+    let (g, e60, _) = header_dag(m, 64, 61);
+    let keep = live(&g, &[e60]);
     let mut shared = (0u64, 0u64);
     let mut member = (0u64, 0u64);
     let mut by_op: HashMap<(&str, &str), u64> = HashMap::new();
@@ -322,20 +325,56 @@ fn analyse(p: &Pattern) -> (Dag, Val, Value, (u64, u64), (u64, u64)) {
     (g, e60, json!(ops), shared, member)
 }
 
-/// e60 of the outer compression by the reference implementation.
-fn reference_e60(x: &[u32; N_INPUTS]) -> u32 {
+/// The target's e: e of outer round `rounds - 4` with every compression cut to `rounds`, by the
+/// reference implementation (H7 = IV7 + that e).
+fn reference_target(x: &[u32; N_INPUTS], rounds: usize) -> u32 {
     let mid: [u32; 8] = x[..8].try_into().expect("8 words");
     let mut m = [0u32; 16];
     m[..4].copy_from_slice(&x[8..12]);
     m[4] = 0x8000_0000;
     m[15] = 640;
     // compress_words includes the feed-forward.
-    let inner = sha256_core::compress_words(&mid, &m, 64);
+    let inner = sha256_core::compress_words(&mid, &m, rounds);
     let mut m2 = [0u32; 16];
     m2[..8].copy_from_slice(&inner);
     m2[8] = 0x8000_0000;
     m2[15] = 256;
-    sha256_core::compress_words(&IV, &m2, 61)[4].wrapping_sub(IV[4])
+    sha256_core::compress_words(&IV, &m2, rounds - 3)[4].wrapping_sub(IV[4])
+}
+
+/// Per-nonce cost (primitive, RDNA3) of the nodes reachable from `outs` that depend on the nonce.
+fn nonce_cost(g: &Dag, outs: &[Val]) -> (u64, u64) {
+    let keep = live(g, outs);
+    g.nodes.iter().enumerate().fold((0, 0), |acc, (i, n)| match n {
+        Node::Op(op, _) if keep[i] && g.deps[i] & W3 != 0 => (acc.0 + op.cost().0, acc.1 + op.cost().1),
+        _ => acc,
+    })
+}
+
+/// Why reduced-round shortcuts exist and where they end: the work needed to decide the target
+/// against the work of the whole r-round double hash, per round count, checked against the reference.
+fn frontier(rounds: &[usize], checks: u64, seed: u64) -> (Vec<Value>, u64) {
+    let mut mismatches = 0;
+    let rows = rounds
+        .iter()
+        .map(|&r| {
+            let (g, target, _) = header_dag(0, r, r - 3);
+            let (gf, _, full) = header_dag(0, r, r);
+            let need = nonce_cost(&g, &[target]);
+            let all = nonce_cost(&gf, &full);
+            let mut rng = SplitMix64::stream(seed ^ 0xf207, r as u64);
+            mismatches += (0..checks)
+                .filter(|_| {
+                    let x: [u32; N_INPUTS] = rng.words();
+                    g.eval(target, &x) != reference_target(&x, r)
+                })
+                .count() as u64;
+            // Outer message words (inner digest words) the target reads: W0..W(r-4), at most all eight.
+            json!({ "rounds": r, "target_ops": { "primitive": need.0, "rdna3": need.1 }, "full_ops": { "primitive": all.0, "rdna3": all.1 },
+                    "target_fraction": need.1 as f64 / all.1 as f64, "inner_digest_words_read": (r - 3).min(8) })
+        })
+        .collect();
+    (rows, mismatches)
 }
 
 pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
@@ -351,7 +390,7 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
         let mismatches = (0..checks)
             .filter(|_| {
                 let x: [u32; N_INPUTS] = rng.words();
-                g.eval(e60, &x) != reference_e60(&x)
+                g.eval(e60, &x) != reference_target(&x, 64)
             })
             .count();
         let per_header = |k: u64| ((shared.0 as f64 / k as f64 + member.0 as f64), (shared.1 as f64 / k as f64 + member.1 as f64));
@@ -384,7 +423,14 @@ pub fn execute(params: &Value, seed: u64) -> Result<Outcome> {
     let mut summary = vec![format!("Per-nonce work of one header with early reject: {:.0} primitive ops, {:.0} RDNA3 ops (exact DAG count, constants folded).", base.0, base.1)];
     summary.extend(rows.iter().map(line));
     summary.push(format!("Best feasible pattern at k = {}: {best_name}, {:.1}% of the per-nonce work saved (RDNA3 weights). Every saving is cost per hash; the number of hashes per block is unchanged.", ks.iter().max().unwrap_or(&1), 100.0 * best_saving));
-    let obs = json!({ "baseline_per_header": { "primitive": base.0, "rdna3": base.1 }, "patterns": rows, "best_feasible": { "pattern": best_name, "saving_rdna3_at_max_k": best_saving } });
+    let rounds: Vec<usize> = params["frontier_rounds"].as_array().map(|a| a.iter().filter_map(|x| x.as_u64().map(|x| x as usize)).filter(|&r| (4..=64).contains(&r)).collect()).unwrap_or_default();
+    let (front, front_bad) = frontier(&rounds, checks, seed);
+    summary.push(format!(
+        "Deciding the target needs this share of the r-round double hash's per-nonce work (the rest is dead code once H7 = IV7 + e(r-4) is all that matters): {}. The outer target reads inner digest words W0..W(r-4), so from 11 rounds on every inner word matters and the saving is only the early reject.",
+        front.iter().map(|f| format!("{} rounds {:.1}%", f["rounds"], 100.0 * f["target_fraction"].as_f64().unwrap_or(0.0))).collect::<Vec<_>>().join(", ")
+    ));
+    let obs = json!({ "baseline_per_header": { "primitive": base.0, "rdna3": base.1 }, "patterns": rows, "best_feasible": { "pattern": best_name, "saving_rdna3_at_max_k": best_saving },
+                      "frontier": front, "frontier_check": { "headers_per_round_count": checks, "mismatches": front_bad } });
     let mut o = Outcome::new(obs.clone(), obs, vec![], summary);
     o.result = Some("exact-analysis");
     Ok(o)
@@ -400,7 +446,10 @@ pub fn verify(_params: &Value, seed: u64, outcome: &Outcome) -> Result<Verificat
         .filter(|r| r["dag_check"]["e60_mismatches"] != 0)
         .map(|r| format!("{}: {} e60 mismatches", r["pattern"], r["dag_check"]["e60_mismatches"]))
         .collect();
-    let (g, _, full) = header_dag(0, 64);
+    if outcome.observations["frontier_check"]["mismatches"] != 0 {
+        problems.push(format!("frontier: {} target mismatches", outcome.observations["frontier_check"]["mismatches"]));
+    }
+    let (g, _, full) = header_dag(0, 64, 64);
     let mut rng = SplitMix64::stream(seed ^ 0xf011, 0);
     for _ in 0..64 {
         let nonce = rng.next_u32();
@@ -430,6 +479,15 @@ pub fn verify(_params: &Value, seed: u64, outcome: &Outcome) -> Result<Verificat
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn frontier_matches_reference_and_grows() {
+        let (rows, bad) = frontier(&[4, 5, 8, 11, 64], 64, 3);
+        assert_eq!(bad, 0);
+        let f: Vec<f64> = rows.iter().map(|r| r["target_fraction"].as_f64().unwrap()).collect();
+        assert!(f.windows(2).all(|w| w[0] <= w[1]), "{f:?}");
+        assert!(f[0] < 0.2 && f[4] > 0.9, "{f:?}");
+    }
 
     #[test]
     fn version_rolling_shares_the_inner_schedule() {

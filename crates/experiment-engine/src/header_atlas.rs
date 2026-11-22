@@ -33,7 +33,7 @@ pub fn definition() -> Definition {
         hypothesis_id: "H-MAINNET-01",
         primitive: crate::primitive::HEADER,
         name: "Mainnet header atlas: chain validation, hash/target uniformity, miner behaviour, economics",
-        version: 1,
+        version: 2,
         hypothesis: "Over every main-chain block, the winning hash divided by its target departs from Uniform(0, 1), i.e. real-world SHA256d mining shows structure below the target.",
         null_hypothesis: "hash / target is uniform on [0, 1] in every halving era, as for a random function.",
         assumptions: &[
@@ -44,7 +44,7 @@ pub fn definition() -> Definition {
             "Economics: subsidy only (fees are not in headers); device rates are this project's measurements except the Bitaxe-class figure, a vendor specification.",
         ],
         baseline: "Uniform(0, 1) for hash / target; 1/2 for each nonce bit.",
-        methodology: "Load headers 0..=height, validate every consensus rule on headers, compute u = hash / target per block, test u with Kolmogorov-Smirnov over all blocks and per halving era and with a 20-bin chi-square (Bonferroni over these tests at 0.001); describe nonce bits per era, version bits per year, timestamps; estimate hashrate from the last 2016 blocks.",
+        methodology: "Load headers 0..=height, validate every consensus rule on headers, compute u = hash / target per block, test u with Kolmogorov-Smirnov over all blocks and per halving era and with a 20-bin chi-square; version 2 adds luck tests: the mean of u split by every nonce bit, BIP320 version bit and low time bit, and by the previous block's luck (Bonferroni over all tests at 0.001); describe nonce bits per era, version bits per year, timestamps; estimate hashrate from the last 2016 blocks.",
         implementation: &["experiment_engine::header_atlas", "mining_engine::p2p (download)", "bitcoin_header::{next_work_required, median_time_past, check_proof_of_work}"],
         dataset: "experiments/data/mainnet-headers.bin, heights 0..=params.height.",
     }
@@ -187,6 +187,33 @@ pub fn execute(params: &Value, _seed: u64) -> Result<Outcome> {
     }
     let chi = chi_square_gof(&bins, &[0.05; 20]);
     tests.push(json!({ "test": "chi-square 20 bins", "n": u.len(), "statistic": chi.statistic, "df": chi.df, "p": chi.p_value }));
+    // Luck against what miners choose: if any nonce, version-rolling or time bit, or the previous
+    // block's luck, shifted hash / target, the hash would depend on inputs in a way miners could use.
+    let mean_z = |pick: &dyn Fn(usize) -> Option<bool>| {
+        let (mut s, mut n) = ([0.0f64; 2], [0u64; 2]);
+        for h in 1..=height {
+            if let Some(b) = pick(h) {
+                s[b as usize] += u[h - 1];
+                n[b as usize] += 1;
+            }
+        }
+        let z = if n[0] > 0 && n[1] > 0 { (s[1] / n[1] as f64 - s[0] / n[0] as f64) / ((1.0 / n[0] as f64 + 1.0 / n[1] as f64) / 12.0).sqrt() } else { 0.0 };
+        (z, n)
+    };
+    for b in 0..32 {
+        let (z, n) = mean_z(&|h| Some(chain[h].nonce >> b & 1 == 1));
+        tests.push(json!({ "test": format!("luck vs nonce bit {b}"), "n": n, "z": z, "p": statistical_engine::two_sided_p(z) }));
+    }
+    for b in 13..29 {
+        let (z, n) = mean_z(&|h| (chain[h].version as u32 >> 29 == 1).then_some(chain[h].version as u32 >> b & 1 == 1));
+        tests.push(json!({ "test": format!("luck vs version bit {b} (BIP9 blocks)"), "n": n, "z": z, "p": statistical_engine::two_sided_p(z) }));
+    }
+    for b in 0..4 {
+        let (z, n) = mean_z(&|h| Some(chain[h].time >> b & 1 == 1));
+        tests.push(json!({ "test": format!("luck vs time bit {b}"), "n": n, "z": z, "p": statistical_engine::two_sided_p(z) }));
+    }
+    let (z, n) = mean_z(&|h| (h >= 2).then(|| u[h - 2] < 0.5));
+    tests.push(json!({ "test": "luck vs the previous block's luck", "n": n, "z": z, "p": statistical_engine::two_sided_p(z) }));
     let threshold = 0.001 / tests.len() as f64;
     let deviation = tests.iter().any(|t| t["p"].as_f64().unwrap_or(1.0) < threshold);
     let (luck_h, luck_u) = u.iter().enumerate().min_by(|a, b| a.1.total_cmp(b.1)).map(|(i, &x)| (i + 1, x)).unwrap_or((0, 1.0));
@@ -254,9 +281,13 @@ pub fn execute(params: &Value, _seed: u64) -> Result<Outcome> {
     let mut summary = vec![
         format!("{} main-chain headers (heights 0..={height}, data sha256 {}), validated here: {} link, {} proof-of-work, {} difficulty and {} median-time-past failures; known hashes {}; total work 2^{:.2}.",
             height + 1, &data_sha256[..16], val.link, val.pow, val.bits, val.mtp, if known_ok { "match" } else { "MISMATCH" }, total_work.log2()),
-        format!("hash / target over {} blocks: KS p = {:.3}, 20-bin chi-square p = {:.3}; per-era KS p {}; Bonferroni threshold {threshold:.1e}: {}.",
+        format!("hash / target over {} blocks: KS p = {:.3}, 20-bin chi-square p = {:.3}; per-era KS p {}; luck against {} miner-chosen bits and the previous block: smallest p {:.2e} ({}); Bonferroni threshold {threshold:.1e} over {} tests: {}.",
             u.len(), tests[0]["p"].as_f64().unwrap_or(1.0), chi.p_value,
             tests[1..eras + 1].iter().map(|t| format!("{:.3}", t["p"].as_f64().unwrap_or(1.0))).collect::<Vec<_>>().join(", "),
+            tests.len() - eras - 3,
+            tests[eras + 2..].iter().map(|t| t["p"].as_f64().unwrap_or(1.0)).fold(1.0, f64::min),
+            tests[eras + 2..].iter().min_by(|a, b| a["p"].as_f64().unwrap_or(1.0).total_cmp(&b["p"].as_f64().unwrap_or(1.0))).and_then(|t| t["test"].as_str()).unwrap_or(""),
+            tests.len(),
             if deviation { "DEVIATION" } else { "consistent with a random function" }),
         format!("Luckiest block: height {luck_h}, hash = {:.3e} x target ({:.1} extra zero bits).", luck_u, -luck_u.log2()),
         format!("Miner behaviour (not SHA-256): nonce-bit max |z| per era {}; BIP320 version-rolling bits in {:.1}% of the last year's blocks; {backwards} blocks earlier than their parent; mean interval {mean_interval:.1} s.",
