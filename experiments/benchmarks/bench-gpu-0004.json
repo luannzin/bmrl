@@ -1,0 +1,52 @@
+{
+  "adapter": {
+    "api": "Vulkan",
+    "device_id": "0x7480",
+    "driver": "AMD proprietary driver",
+    "driver_info": "26.8.1 (LLPC)",
+    "name": "AMD Radeon RX 7600",
+    "type": "DiscreteGpu",
+    "vendor_id": "0x1002"
+  },
+  "batch_nonces": 113621504,
+  "created_at": "2026-11-22T14:15:26Z",
+  "energy": {
+    "note": "no GPU power counter exposed through wgpu; energy not measured",
+    "source": null
+  },
+  "environment": {
+    "arch": "x86_64",
+    "binary_matches_commit": true,
+    "bmr_version": "0.1.0",
+    "cpu": "Intel(R) Xeon(R) CPU E5-2680 v4 @ 2.40GHz",
+    "cpu_features": {
+      "avx2": true,
+      "avx512f": false,
+      "sha_ni": false,
+      "sse4.1": true
+    },
+    "git_commit": "751b4558017446c0128bf98cc29aefefdf004c17",
+    "logical_cpus": 28,
+    "os": "windows",
+    "profile": "release",
+    "rayon_threads": 28,
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+    "source_fingerprint": "16e41cc22a28ebb1579cc8caadd2d64ad6d61dad24b8bb2291fe6f70c92d7450"
+  },
+  "expected_work_per_block_factor": 1.0,
+  "hashes": 1590701056,
+  "hashes_per_second": 499838835.6260954,
+  "id": "bench-gpu-0004",
+  "kernel": "gpu/wgsl/sha256d.wgsl (straightforward midstate kernel, no early reject)",
+  "kind": "gpu",
+  "parity": {
+    "digest_lanes": 65536,
+    "digest_mismatches": 0,
+    "passed": true,
+    "search_hits_cpu": 978,
+    "search_hits_gpu": 978,
+    "search_identical": true,
+    "search_nonces": 4194304
+  },
+  "seconds": 3.1824279
+}
