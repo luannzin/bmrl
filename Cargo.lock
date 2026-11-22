@@ -1434,6 +1434,7 @@ dependencies = [
  "research-storage",
  "serde_json",
  "sha256-core",
+ "statistical-engine",
  "verification",
 ]
 
