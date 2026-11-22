@@ -34,6 +34,7 @@ pub mod schedule;
 pub mod smt;
 pub mod smt_scaling;
 pub mod statistical;
+pub mod template_luck;
 pub mod trail_sat;
 pub mod trail_search;
 pub mod work_sharing;
@@ -70,6 +71,7 @@ pub enum Kind {
     HeaderAtlas,
     EvolvedRules,
     GroverCircuit,
+    TemplateLuck,
 }
 
 /// What exactly an experiment measures. Results never transfer between these.
@@ -141,7 +143,7 @@ pub struct Verification {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 19] = [
+    pub const ALL: [Kind; 20] = [
         Kind::ReducedRound,
         Kind::Differential,
         Kind::Statistical,
@@ -161,6 +163,7 @@ impl Kind {
         Kind::HeaderAtlas,
         Kind::EvolvedRules,
         Kind::GroverCircuit,
+        Kind::TemplateLuck,
     ];
     /// The MVP experiment set (`bmr research all`).
     pub const MVP: [Kind; 4] = [Kind::ReducedRound, Kind::Differential, Kind::Statistical, Kind::Smt];
@@ -218,7 +221,7 @@ macro_rules! module {
 }
 
 /// Indexed by `Kind as usize`, in declaration order.
-const MODULES: [Module; 19] = [
+const MODULES: [Module; 20] = [
     module!("reduced-round", reduced_round),
     module!("differential", differential),
     module!("statistical", statistical),
@@ -238,6 +241,7 @@ const MODULES: [Module; 19] = [
     module!("header-atlas", header_atlas),
     module!("evolved-rules", evolved_rules),
     module!("grover-circuit", grover_circuit),
+    module!("template-luck", template_luck),
 ];
 
 /// Parameter helpers shared by the kinds.
@@ -561,7 +565,7 @@ mod tests {
     #[test]
     fn module_table_matches_kind_order() {
         let ids: Vec<&str> = Kind::ALL.iter().map(|k| k.id()).collect();
-        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing", "header-atlas", "evolved-rules", "grover-circuit"]);
+        assert_eq!(ids, ["reduced-round", "differential", "statistical", "smt", "characteristic", "algebraic", "schedule", "smt-scaling", "multiseed", "hardware", "characteristic-audit", "trail-search", "nonce-atlas", "trail-sat", "quantum-model", "work-sharing", "header-atlas", "evolved-rules", "grover-circuit", "template-luck"]);
         assert!(Kind::ALL.iter().enumerate().all(|(i, k)| *k as usize == i));
     }
 

@@ -187,7 +187,7 @@ impl ChunkAcc {
 }
 
 /// Leading zero bits of Bitcoin's hash number (capped at 64) from output state words.
-fn leading_zeros(h: &Words) -> u32 {
+pub(crate) fn leading_zeros(h: &Words) -> u32 {
     let (w0, w1) = (h[7].swap_bytes(), h[6].swap_bytes());
     if w0 != 0 {
         w0.leading_zeros()
@@ -310,7 +310,7 @@ fn poisson_sf(k: u64, lambda: f64) -> f64 {
 }
 
 /// Two-sided Poisson p-value of observing k.
-fn poisson_p(k: u64, lambda: f64) -> f64 {
+pub(crate) fn poisson_p(k: u64, lambda: f64) -> f64 {
     let lower = gamma_q(k as f64 + 1.0, lambda);
     (2.0 * poisson_sf(k, lambda).min(lower)).min(1.0)
 }

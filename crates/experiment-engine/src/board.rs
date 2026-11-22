@@ -151,6 +151,12 @@ pub const ENTRIES: &[Entry] = &[
         kinds: &["evolved-rules"], derivation: None, speculative: false,
         design: Some("Differential-linear: for the nonce MSB difference (2^-11 per round) and each output bit of H7 at 6-8 rounds, measure the correlation of the output difference over 2^30 pairs; then ask whether any correlation changes single-input hit rates (the atlas's linear family is the single-input test)."),
     },
+    Entry {
+        id: "B-18", family: "template choice", title: "Lucky templates",
+        hypothesis: "Some block templates (merkle root, version: free for the miner) hit the target more often over their whole nonce space, persistently, so choosing templates raises the hit rate per hash.",
+        basis: "The miner can produce new templates for one SHA-256 of the coinbase. If the hit rate varied between templates and the variation persisted from even to odd nonces, the top templates would carry an amplification A at no hashing cost. template-luck scans every nonce of thousands of templates on the GPU and bounds the template-to-template spread.",
+        kinds: &["template-luck"], derivation: None, speculative: false, design: None,
+    },
 ];
 
 fn latest<'a>(recs: &'a [Value], kind: &str) -> Option<&'a Value> {

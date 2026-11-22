@@ -13,6 +13,7 @@ hardware-model.workspace = true
 anyhow = "1.0.104"
 bitcoin-header.workspace = true
 cpu-backend.workspace = true
+gpu-backend.workspace = true
 mining-engine.workspace = true
 differential-engine.workspace = true
 rayon = "1.12.0"
