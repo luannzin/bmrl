@@ -678,3 +678,26 @@ business (earns from other people's cards via a fee; BUSINESS-MINER.md) — set
 aside by the user. Honest recommendation: stop building miners-for-own-profit
 (proven dead) and decide between the dev-fee business or redirecting. Not
 continuing to build against the evidence without the user's call.
+
+## 2026-11-23: Pivot decided — dev-fee miner; plan + kickoff prompt written
+
+The user chose the dev-fee miner, wants best-possible UX / speed / a true
+differentiator, and asked for a self-contained prompt to start in a NEW
+private repo + chat. Wrote two docs (committed to bmrl):
+- [research/altcoins/MINER-PLAN.md](research/altcoins/MINER-PLAN.md): strategy
+  + product + tech spec. Differentiator = fastest/only miner for underserved
+  coins, AMD-first, great local dashboard, honest low fee. Coin #1 = Quantus
+  (official miner has no AMD path; the validated `crates/quantus-pow` reference
+  is the correctness oracle), coin #2 = Spectre (first-ever GPU miner).
+  Stack = Rust + wgpu, parity-tested against the CPU reference; check
+  `wgpu::Features::SHADER_INT64` on RDNA3 to mirror the CPU reduce128 in WGSL.
+  Monetization honest (modest on coin #1, grows with breadth). Risks: fee
+  circumvention, trust lag, AV, coin risk, tax.
+- [research/altcoins/MINER-KICKOFF-PROMPT.md](research/altcoins/MINER-KICKOFF-PROMPT.md):
+  the paste-ready cold-start prompt for the new repo, with the pinned Quantus
+  spec, the parity discipline, the MVP milestone and acceptance, and the UX
+  requirements.
+
+The new repo should copy `crates/quantus-pow` from bmrl as the oracle. This
+bmrl session's mining/break program is closed; the build continues in the new
+repo.
