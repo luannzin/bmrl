@@ -157,6 +157,7 @@ mod tests {
     fn permute_zero_state() {
         let mut s = [0u64; 12];
         permute(&mut s);
+        let s: [u64; 12] = std::array::from_fn(|i| crate::field::canonicalize(s[i]));
         assert_eq!(
             s,
             [
@@ -171,6 +172,7 @@ mod tests {
     fn permute_seq_state() {
         let mut s: [u64; 12] = std::array::from_fn(|i| (i + 1) as u64);
         permute(&mut s);
+        let s: [u64; 12] = std::array::from_fn(|i| crate::field::canonicalize(s[i]));
         assert_eq!(
             s,
             [

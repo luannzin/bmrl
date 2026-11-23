@@ -15,6 +15,7 @@
 
 pub mod attack;
 pub mod field;
+pub mod miner;
 pub mod poseidon2;
 
 use field::canonicalize;
