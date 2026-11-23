@@ -66,3 +66,36 @@ is low (published attacks like eprint 2026/1254 reach only reduced rounds),
 and Quantus's pot is small regardless. So this is a decision point, not an
 automatic next build: the validated reference stands as the first weapon
 component, reusable for any future Goldilocks-Poseidon2 target.
+
+## Mining economics verdict (honest, 2026-11-23)
+
+A working CPU miner was built on the validated reference (`miner.rs`,
+`bin/mine.rs`): the exact node rule (`target = U512::MAX / difficulty`, strict
+big-endian compare), a nonce search, and a benchmark. It solves real blocks
+(a difficulty-2^24 block found in 9.8M hashes / 7.9s, independently
+re-verified) and measures **1.217 MH/s on the Xeon E5-2680 v4 (28 threads)**.
+
+Live Quantus economics (herominers API / Kryptex / CMC, 2026-11-23): network
+difficulty ~3.253e14, reward 0.30 QTC/block, ~12-14.5 s blocks, price ~$30.6,
+24h volume ~$0.1-0.7M. Daily yield = `hashrate * 86400 / difficulty * 0.30`.
+User tariff R$1.029/kWh ≈ $0.175/kWh.
+
+| Setup | hashrate | gross $/day | power $/day | net $/day |
+| --- | --- | --- | --- | --- |
+| CPU (measured) | 1.22 MH/s | $0.003 | ~0.63-0.93 | **~ -0.7** |
+| RX 7600 GPU (est., tuned) | ~200-250 MH/s | $0.49-0.61 | ~0.69-0.93 | **~ -0.3 to -0.1** |
+| break-even | ~310-420 MH/s | = power | = power | 0 |
+
+- **Quantus does not pay on this hardware at this tariff.** CPU is a dead loss.
+  Even a best-case RX 7600 kernel (no public AMD miner exists; ~200 MH/s
+  expected, scaling from NVIDIA ~1.3 GH/s on a 4090) lands below break-even,
+  which sits at ~310-420 MH/s. And at ~$0.1-0.7M daily volume the order book
+  could not absorb selling anyway.
+- **Conclusion: the GPU kernel is not worth building for Quantus** — it cannot
+  turn negative economics positive. The miner's value is as a validated
+  capability and as the measurement that settles this, not as income.
+
+This closes the Quantus line on both axes: no break (statistical null; full
+rounds), and no profit (negative even optimally). Consistent with the
+program's structural law — the exploitable/young coins are also the small,
+unprofitable ones.

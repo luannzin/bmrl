@@ -648,3 +648,33 @@ build with low expected payoff on full rounds, and Quantus's pot is small
 regardless. The validated reference stands as the first reusable weapon
 component. No break; decision point on whether the algebraic build is worth it
 vs the Zcash k-tree moonshot or a pivot.
+
+## 2026-11-23: Working Quantus miner + economics verdict (does not pay)
+
+Built a working CPU miner on the validated reference (`miner.rs`,
+`bin/mine.rs`): exact node rule, nonce search, benchmark. Solves real blocks
+(difficulty-2^24 found in 9.8M hashes / 7.9s, re-verified) at **1.217 MH/s**
+on the Xeon (28 threads). Committed `b6e0fe1`.
+
+Live Quantus economics (herominers/Kryptex/CMC): difficulty ~3.253e14, reward
+0.30 QTC, ~12-14.5s blocks, price ~$30.6, 24h volume ~$0.1-0.7M. Yield =
+hashrate*86400/difficulty*0.30. At R$1.029/kWh (~$0.175):
+- CPU 1.22 MH/s: $0.003/day gross, ~ -$0.7/day net. Dead.
+- RX 7600 GPU, tuned, est. ~200-250 MH/s (no public AMD miner exists): ~$0.5-0.6/day
+  gross, net ~ -$0.3 to -$0.1/day. Break-even ~310-420 MH/s. Below reach.
+So Quantus does not pay on this hardware at this tariff even with a perfect
+kernel, and the thin order book can't absorb selling. **The GPU kernel is not
+worth building for Quantus.** Verdict written in QUANTUS-ATLAS.md.
+
+Program bottom line (evidence, not pessimism): across this session every lens
+is negative for the money goal. No break (Pearl closed; Quantus statistical
+null; full-round primitives out of reach; Kaspa/Ergo math-inert). No profit
+(every coin negative at $0.175/kWh; Quantus negative even optimally). Big pots
+hardened; exploitable coins tiny and unprofitable — the structural law. On one
+RX 7600, expensive power, no capital and no break, there is no path to real
+money in GPU PoW mining now. The one money path that fits the lab's real asset
+(fast kernels) without a break/capital/cheap-power is the dev-fee miner
+business (earns from other people's cards via a fee; BUSINESS-MINER.md) — set
+aside by the user. Honest recommendation: stop building miners-for-own-profit
+(proven dead) and decide between the dev-fee business or redirecting. Not
+continuing to build against the evidence without the user's call.
