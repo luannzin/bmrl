@@ -308,3 +308,32 @@ Side note, not significant: dispersion sits below 1 at 5, 6, 8 and 64
 rounds (0.90, 0.88, 0.77, 0.96; 8 rounds p 0.006 against a Bonferroni
 threshold of 5e-4). Under-dispersion means templates are more alike, never
 luckier, so it cannot help mining. A new seed at 8 rounds would settle it.
+
+## 2026-11-23: Pivot to altcoin PoW breaks (plan only)
+
+The user's point: the lab did everything right but looked the wrong way.
+Pandemic GPU miners mined Ethereum (Ethash, often through NiceHash paying in
+BTC), never Bitcoin, and every historical mining "magic" (Equihash solvers,
+Cuckoo Cycle TMTO, the ProgPoW small seed, Poseidon CICO bounties) happened
+in altcoins. The lab never looked at them.
+
+Done (no code, no experiments):
+- Stock GPU mining checked against the user's tariff: R$1.03/kWh
+  (R$232.57 for 226 kWh), about $0.175/kWh. Every coin on Kryptex's RX 7600
+  list loses money; the best, Tari C29, needs 1.10x to break even, Pearl
+  1.27x, Quantus 1.30x.
+- Goal set by the user: an edge worth $300k/yr or more, not dollars a day.
+  With one card, no capital and reinvestment up to about 40 cards at home,
+  that means k of about 50 over the best public miner ($300k), 175 ($1M),
+  1,700 ($10M), on a coin whose yearly emission is at least about $3M, $10M
+  and $100M.
+- Choices: break or shortcut over a miner business (business only as a
+  low-effort fallback); mine quietly with share at most 10%, sell daily,
+  report at the goal or an exit trigger; faster valid PoW only, node or
+  consensus bugs go to bounties.
+- Full plan, candidates (Quantus/Poseidon2, Tari C29, Pearl), breakability
+  filter, kill rule (k < 50 dies), phases 0 to 4 and sources:
+  [research/altcoins/PLAN.md](research/altcoins/PLAN.md).
+
+Current state: plan written, nothing built. Next: phase 0, the atlas of PoW
+coins (desk research), when the user says go.
