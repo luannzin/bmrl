@@ -41,6 +41,40 @@ Honesty is part of the product: the fee is disclosed in the UI and the docs,
 no hidden mining, no bundled junk. Trust is the whole game for a binary that
 is, by shape, indistinguishable from malware.
 
+## Identity and design — follow the luannzin presence (non-negotiable)
+
+The miner is part of Luan's public presence, so it carries the same identity as
+his other work. Read first: `luannzin-online-presence/CLAUDE.md` and `VOICE.md`,
+luannzin.com's `DESIGN.md` + `IDENTITY.md` + its `luan-writing-way` skill
+(`luannzin.com/.claude/skills/luan-writing-way/SKILL.md`), and the `lines`
+repo's `DESIGN.md` (all under `C:\Users\luannzin\Documents`).
+
+- **Visual family (the pixel look).** Join the family aesthetic of the Lines
+  and siblings (Deskline, Sightline, PartyLine, Hostline, LanPet): a 32x32
+  pixel-art mark in the **dusk palette** (`#3a2a6b`, `#7a3361`, `#e0703f`,
+  `#ffd180` on `#110d24`) with a **4x4 Bayer dither**, drawn by a
+  `tools/logo.py` (the family convention). The product name renders in the
+  **5x7 pixel face**. One source per palette.
+- **Dashboard = a "line" page in spirit.** Night field of dusk dots, the mark
+  in its glow, the name in the pixel face, calm **ink tiers** for text (art
+  leads, text stays quiet). Built with **coss UI (Base UI + Tailwind)**,
+  dark/dusk. Not a generic admin template.
+- **Native miner: Rust** (already the stack).
+- **Design process:** every interface pass through the **`impeccable`** skill
+  and the **`better-*`** skills (typography, layout, colours, ui, accessibility,
+  writing, interface), motion through **`emil-design-eng`**. No AI-slop design.
+  Think in magic, not in time.
+- **Every user-facing word** (dashboard, README, errors, the fee notice, docs,
+  any landing page) goes through **`VOICE.md`** then the **`luan-writing-way`**
+  skill: first person, numbers not adjectives, no em dashes, no
+  "powerful/seamless/blazing fast", no emoji in prose, British-leaning
+  spelling. Public copy gets a Brazilian Portuguese twin. Never invent a
+  reason, feeling or metric for him — ask one specific question.
+- **Commits:** Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`),
+  **no `Co-Authored-By` line** (his rule).
+- **Name:** his call — family-consistent (a sibling of the pixel family like
+  LanPet, not necessarily a "-line"). Propose options; he decides.
+
 ## First coin: Quantus (QTC)
 
 Chosen for execution, not for income size:

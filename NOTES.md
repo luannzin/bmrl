@@ -701,3 +701,14 @@ private repo + chat. Wrote two docs (committed to bmrl):
 The new repo should copy `crates/quantus-pow` from bmrl as the oracle. This
 bmrl session's mining/break program is closed; the build continues in the new
 repo.
+
+Added the luannzin presence identity as a non-negotiable requirement to both
+MINER-PLAN.md and MINER-KICKOFF-PROMPT.md (read from
+`luannzin-online-presence/CLAUDE.md` + `VOICE.md`, luannzin.com `DESIGN.md`/
+`IDENTITY.md` + the `luan-writing-way` skill, and the `lines` repo `DESIGN.md`):
+pixel-art family look (32x32 marks, dusk palette #3a2a6b/#7a3361/#e0703f/#ffd180
+on #110d24, 4x4 Bayer dither via `tools/logo.py`, 5x7 pixel name face);
+dashboard in coss UI (Base UI + Tailwind), night-field + ink tiers; native in
+Rust; design via `impeccable`/`better-*`/`emil-design-eng`; all copy via
+VOICE.md + luan-writing-way (PT twin for public); Conventional Commits with no
+`Co-Authored-By`; name is Luan's call (family-consistent).

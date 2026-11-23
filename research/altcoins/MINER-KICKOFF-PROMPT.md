@@ -28,6 +28,30 @@ you go, but keep moving.
 4. **Honesty.** The fee is shown in the UI and docs; no hidden mining, no
    bundled junk. Trust is everything for a binary shaped like malware.
 
+**Identity & design (non-negotiable — this is my public presence).** Read
+first, all under `C:\Users\luannzin\Documents`: `luannzin-online-presence/CLAUDE.md`
+and `VOICE.md`; `luannzin.com/DESIGN.md`, `IDENTITY.md`, and its
+`.claude/skills/luan-writing-way/SKILL.md`; the `lines` repo's `DESIGN.md`.
+Then follow them:
+- Join my pixel-art family (Deskline, Sightline, PartyLine, Hostline, LanPet):
+  a 32x32 pixel-art mark in the **dusk palette** (`#3a2a6b`, `#7a3361`,
+  `#e0703f`, `#ffd180` on `#110d24`) with a **4x4 Bayer dither**, drawn by a
+  `tools/logo.py`; the name in the **5x7 pixel face**. One source per palette.
+- Dashboard in **coss UI (Base UI + Tailwind)**, dusk/dark: a night field of
+  dusk dots, the mark in its glow, calm ink tiers (art leads, text stays
+  quiet). Not a generic admin template.
+- Every interface pass through the **`impeccable`** skill, the **`better-*`**
+  skills (typography, layout, colours, ui, accessibility, writing, interface),
+  and **`emil-design-eng`** for motion. No AI-slop.
+- Every user-facing word (dashboard, README, errors, the fee notice, docs)
+  through **`VOICE.md`** then the **`luan-writing-way`** skill: first person,
+  numbers not adjectives, no em dashes, no "powerful/seamless/blazing fast", no
+  emoji in prose, British-leaning spelling, and a Brazilian Portuguese twin for
+  public copy. Never invent a reason or metric for me — ask one question.
+- Commits: **Conventional Commits, NO `Co-Authored-By` line.**
+- Name: my call — propose family-consistent options (a sibling of the pixel
+  family, not necessarily a "-line").
+
 **The big asset — use it as the correctness oracle.** I already have a
 **bit-exact, test-validated Quantus QPoW reference in Rust**, in my other
 private repo `bmrl` at `crates/quantus-pow`. Copy that crate into this repo as
@@ -103,9 +127,11 @@ profit-switching across algos (the lolMiner endgame).
 anything; ship an unvalidated kernel; or over-build — MVP is one coin, one
 pool, one clean dashboard, real accepted shares.
 
-Start by confirming the plan in one or two lines, then scaffold the repo and
-copy in / re-create and re-validate the `quantus-pow` reference. Keep me posted
-with short status lines as you go.
+Start by reading the identity sources above and confirming the plan in one or
+two lines (with 2-3 family-consistent name options and a one-line mark idea in
+the dusk/Bayer look). Then scaffold the repo and copy in / re-create and
+re-validate the `quantus-pow` reference. Keep me posted with short status lines
+as you go.
 
 ---
 
