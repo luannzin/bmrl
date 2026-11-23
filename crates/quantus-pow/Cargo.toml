@@ -1,0 +1,10 @@
+[package]
+name = "quantus-pow"
+description = "Quantus QPoW (Poseidon2 over Goldilocks) reference and output-bias attack harness"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+statistical-engine.workspace = true

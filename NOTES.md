@@ -615,3 +615,36 @@ CICO, k-tree solver, class-group) and aim it at the best young-exploitable
 coin, mining+accumulating quietly so a break compounds with the coin's growth.
 Decision pending from the user: Group 1, the Zcash moonshot, or both. Nothing
 built.
+
+## 2026-11-23: First build — Quantus QPoW reference + output-bias atlas (NULL)
+
+First code of the altcoin program, in `crates/quantus-pow`. Committed.
+
+Built and VALIDATED a bit-exact Rust reference of the live Quantus QPoW
+(Goldilocks field, Poseidon2 width-12 with the literal qp-poseidon round
+constants, `hash_squeeze_twice` sponge, the `block_hash||nonce` PoW hash).
+13 tests pass, including qp-poseidon's own known-answer vectors (permutation
+on zero and `[1..12]`, apply_mat4, external linear layer, exp7, and 9
+`hash_bytes` digests). The harness runs on the real function.
+
+Ran the output-bias atlas (the header-atlas method pointed at Quantus;
+`attack.rs`, parallel): over sequential nonces, does any nonce bit predict the
+512-bit output's smallness? Three lenses (top-bit uniformity, per-bit median
+split with Bonferroni, held-out tail amplification), with a reduced-round
+positive control.
+
+Result: **null at full rounds.** 30M sequential nonces, full 8+22 schedule:
+uniform chi2 p=0.711, min bit p=5.5e-2 (above Bonferroni 1.56e-3), held-out
+tail A=0.999 CI[0.976,1.022] — any statistical mining edge above ~2.2% is
+excluded. The 0-round pure-linear control is correctly flagged (chi2 p=0), so
+the harness has power; statistical structure collapses after one external
+round. Full write-up: [research/altcoins/QUANTUS-ATLAS.md](research/altcoins/QUANTUS-ATLAS.md).
+
+Honest meaning: the cheap statistical lens finds nothing on Quantus, as it did
+on SHA256d. "Young/unaudited" did not mean weak rounds — Quantus runs full,
+believed-secure Poseidon2. The only remaining C3 surface is algebraic
+(degree/CICO/Groebner over GF(p)), a heavy `algebraic-engine` prime-field
+build with low expected payoff on full rounds, and Quantus's pot is small
+regardless. The validated reference stands as the first reusable weapon
+component. No break; decision point on whether the algebraic build is worth it
+vs the Zcash k-tree moonshot or a pivot.
