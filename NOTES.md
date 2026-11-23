@@ -672,12 +672,8 @@ null; full-round primitives out of reach; Kaspa/Ergo math-inert). No profit
 (every coin negative at $0.175/kWh; Quantus negative even optimally). Big pots
 hardened; exploitable coins tiny and unprofitable — the structural law. On one
 RX 7600, expensive power, no capital and no break, there is no path to real
-money in GPU PoW mining now. The one money path that fits the lab's real asset
-(fast kernels) without a break/capital/cheap-power is the dev-fee miner
-business (earns from other people's cards via a fee; BUSINESS-MINER.md) — set
-aside by the user. Honest recommendation: stop building miners-for-own-profit
-(proven dead) and decide between the dev-fee business or redirecting. Not
-continuing to build against the evidence without the user's call.
+money in GPU PoW mining now. Follow-on product directions are tracked off this public repo (kept local /
+in a separate private repo).
 
 ## 2026-11-23: Pivot decided — dev-fee miner; plan + kickoff prompt written
 

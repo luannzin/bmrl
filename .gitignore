@@ -2,3 +2,8 @@
 /tools/bitcoin-core/
 /experiments/data/
 __pycache__/
+
+# Miner product work — kept local only, not on this public repo (see private repo)
+/research/altcoins/BUSINESS-MINER.md
+/research/altcoins/MINER-PLAN.md
+/research/altcoins/MINER-KICKOFF-PROMPT.md
