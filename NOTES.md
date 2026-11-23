@@ -337,3 +337,281 @@ Done (no code, no experiments):
 
 Current state: plan written, nothing built. Next: phase 0, the atlas of PoW
 coins (desk research), when the user says go.
+
+## 2026-11-23: Altcoin plan v2 (Pearl-first, plan only)
+
+Desk research on the v1 candidates (web + the coins' own source and papers)
+flipped the ranking. Written up in
+[research/altcoins/PLAN-v2.md](research/altcoins/PLAN-v2.md); v1's economics,
+kill rule and ethics rules still hold.
+
+Done (no code, no experiments):
+- Read the PoW of all three v1 candidates. Quantus (QTC) is double Poseidon2
+  over Goldilocks, 64-byte (U512) nonce below a target; cap ~$23-27M, volume
+  ~$237k/day across one or two thin markets. Tari C29 is Cuckaroo29, 25% of a
+  four-algorithm split on a smaller coin. Both fail v1's pot filter for the
+  $300k goal; kept only as bounty/science targets.
+- Pearl (PRL) is the one candidate with a real pot: ~24 EH/s network, about
+  $1.63M/day emission (study price $0.76; PRL now ~$2.04). Its PoW is
+  NoisyGEMM, int8 (INT7 operands, INT32 accumulate) matrix multiply where the
+  miner chooses A and B; the transcript (XOR-reduced, rotl-13 partial sums,
+  blake3 keyed compress) is hashed against target. Security is an explicit
+  open conjecture (cuPOW, arXiv:2504.09971: hardness reduced to "a batch of
+  low-rank random linear equations").
+- Three facts make Pearl the plan: real pot; the RX 7600 (RDNA3 WMMA int8,
+  ~43.5 TOPS) is good at the exact work and AMD public miners barely exist
+  (the cuPOW study reports 41 shares as "the first ever mined on non-NVIDIA
+  hardware"); and the young conjecture fits v1's breakable profile.
+
+Plan v2 structure:
+- Track A (floor): an RDNA3 WMMA int8 NoisyGEMM miner + cert path, mined
+  directly, no dev fee. Rough day-0 net ~+$1.2/day on one card *if* the
+  kernel reaches full efficiency and PRL holds. Kill gate G0: if stock-
+  efficient AMD mining is net-negative at a conservative price after the real
+  ZK-certificate cost, there is no floor on this coin at this tariff.
+- Track B (upside): test the cuPOW conjecture for a structured-A,B shortcut
+  in the transcript, using the work-sharing DAG, parameter-frontier and GP
+  tooling the lab already has. Low odds, high payoff; a null still leaves
+  Track A paying.
+- Track C (fallback): node/consensus bugs to bounties (Pearl pays only
+  acknowledgement; the paid Poseidon bounty pivoted to Poseidon1/KoalaBear,
+  not Quantus's Poseidon2, so opportunistic only).
+
+Biggest open unknowns flagged for phase 0: whether `vulkaninfo` exposes int8
+cooperative-matrix on this gfx1102 driver; the real NoisyGEMM mainnet dims;
+and the ZK-certificate cost per block/share, which may dominate the matmul
+and change the whole economics.
+
+Reused from the lab: experiment-engine, statistical-engine, the work-sharing
+DAG, header-atlas, GP evolved-rules. Missing and to build: a Vulkan/HIP WMMA
+int8 kernel (WGSL cannot express it), a NoisyGEMM reference with a reduced-
+dim knob, the blake3/transcript verifier, the ZK cert path, and (only if
+Quantus/Track C is pursued) Goldilocks prime-field support plus a Poseidon2
+CICO solver.
+
+Current state: v2 plan written, nothing built. Next: phase 0 Pearl atlas and
+the G0 economics gate, when the user says go.
+
+## 2026-11-23: Plan v2 reweighted to break-first, then the break refuted (desk only)
+
+The user set the objective: win the most, soonest, max effort, time and
+effort no object; day-0 cash flow not required. Reweighted
+[research/altcoins/PLAN-v2.md](research/altcoins/PLAN-v2.md) to break-first
+(the honest miner demoted to a test harness), then did the phase-0 source
+read that the headline bet needed. The bet lost.
+
+Done (no code; deep read of pearl-research-labs/pearl and /pips source):
+- Pinned Pearl's PoW from source. NoisyGEMM: miner-chosen int8 A (M x K),
+  B (N x K); deterministic rank-R noise (R in {64..1024}, dense factor on
+  [-32,32) times a sparse one-+1/-1-per-row factor); the transcript is a
+  running int32 prefix sum XOR-reduced over the whole tile every R columns,
+  folded `rotl_xor<13>`, final keyed blake3 vs a work-scaled target
+  (`pow_utils.hpp`, `collective_mainloop.hpp`, `check_jackpot_against_nbits`).
+- Confirmed the headline low-rank-through-transcript attack is dead on the
+  live INT protocol: the per-chunk reduction materializes the full bM x bN
+  int32 tile at each of K/R checkpoints, so a rank-R product still costs
+  O(M x N x K); XOR of int32 prefix sums is non-linear, no shortcut. The ZK
+  cert (Starky STARK + 2 Plonky2 layers, constraint "matmul + reduction of
+  noised slices equal JACKPOT_MSG", matrices Merkle-bound to
+  `JOB_KEY = Blake3(BlockHeader || MiningConfiguration)`) pins the honest
+  accumulation. Devs already shipped a rank penalty (`RankPenaltyForkHeight
+  96251`, `PENALTY_BASE_RANK 128`) against this class.
+- Chain params: target block time 194 s, hyperbolic emission (constant
+  650226, ~half of 2.1e9 PRL in ~4 years, subsidy ~3,229.6 PRL at height 1),
+  WTEMA difficulty (half-life 168 h). M/N/K/rank are miner-chosen within
+  `sanity_checks.rs` bounds, not fixed by consensus.
+- De-risked the harness: pool shares use PLAIN proofs (raw strips, verified
+  in plaintext); only the per-block ZK certificate needs the Starky+Plonky2
+  prover, which is the pool's job. A pool miner needs no ZK prover.
+
+Surviving edges (all smaller than a break): (1) FP-protocol watch — PIP-3
+(Draft, not live) drops the transcript, checks C' only, Jackpot Policy TBD;
+if it forks in weak, low-rank C' grinding is a live break; (2) mining-config
+optimization within the sanity box (bounded single-card edge); (3) AMD WMMA
+kernel efficiency (does not multiply single-card revenue under global
+difficulty; pays only at scale or as a dev-fee miner); (4) chip-constraint
+soundness audit -> bounty only, Pearl pays acknowledgement.
+
+Honest verdict: on one RX 7600, no scale, no business, no live crypto break,
+there is no path to large money on Pearl. Large money needs the FP fork
+landing weak (uncertain), a bounty-class soundness bug (low pay here), or
+re-opening scale / a dev-fee miner business. Recorded in PLAN-v2.md under
+"Phase 0 finding". Decision on direction is with the user; nothing built.
+
+## 2026-11-23: Widened the program beyond Pearl (hypotheses + atlas, desk only)
+
+The user's direction: forget bounties as a target (self-mine any shortcut,
+validate, bounty only later); think out of the box, generate many hypotheses;
+resources are one RX 7600 + effectively unlimited AI time + patience, no
+capital. Also park a note on the dev-fee miner business for later thought.
+
+Done (no code; web research + two new docs):
+- [research/altcoins/HYPOTHESES.md](research/altcoins/HYPOTHESES.md): the wide
+  search. Five reframes (PoW security << crypto security, so output-bias or a
+  cheap below-target predicate is a break; our asymmetry is hypothesis
+  throughput via a coin-agnostic pipeline; a 1.2-2x efficiency edge already
+  pays and compounds; new-launch sniping is a timing edge; credited-vs-real
+  work gap in flexible PoW). Seven break classes C1-C7 with the lab tool and
+  kill signal for each.
+- [research/altcoins/BUSINESS-MINER.md](research/altcoins/BUSINESS-MINER.md):
+  notes on the dev-fee RDNA3 miner business (the only found path where the
+  AMD-kernel strength becomes money without scale capital, by charging a fee
+  on other people's cards), with its costs, risks and an open question, for
+  the user to decide later.
+- Atlas of young/exotic-PoW coins (subagent, sourced). Key reclassification:
+  Quantus QPoW is not just double Poseidon2 — the detailed spec is an RSA-like
+  group `g(h,s) = m^(h+s) mod n` (m 256-bit, n 512-bit composite) with
+  acceptance on the XOR-distance of `Poseidon2_512(g)` to a fixed target. So
+  the per-nonce bottleneck is a 512-bit modular multiply, and consecutive
+  nonces differ by one multiply (`v_next = v_prev * m mod n`, already public).
+  This opened a new taxonomy class, C7 (number-theoretic / group structure in
+  modexp PoW).
+
+Candidate shortlist (full table in the atlas):
+- Tier 1 break rig: **Quantus (QTC)** — exposes C-impl (512-bit modmul kernel),
+  C3 (Poseidon2 near-target bias), C7 (group). Youngest, unaudited (3
+  conflicting specs), no published cryptanalysis, open AMD miner. Pot small
+  (MC ~$14-27M, ~2,232 QTC/day, thin), so a self-mined win is capped; its real
+  value is as the break rig whose C3 prime-field + C7 bignum tooling transfers
+  to a future young big-pot algebraic/group coin.
+- Tier 2 cash leg: **Spectre (SPR)** — SpectreX CPU-only, no public GPU miner;
+  first RDNA3 kernel = clean efficiency win (micro-cap). **Kaspa-fork family**
+  (Karlsen/Pyrin/Nexellia) — young HeavyHash tweaks, AMD tuning lags. Plus a
+  GPU fair-launch watch (Quinvium, Doomsday, Colossus-X).
+- Watch/study: Pearl (FP fork + noise/verify), PHICOIN (FP32 grinding, $59k
+  pot = study only). Dead for edge: Ergo, Iron Fish, Kaspa, Alephium, Grin,
+  Beam, Quai, Nexa, Radiant, Nimiq, Dynex, Dero.
+
+Structural bind, recorded: young-and-breakable coins are all small/micro-cap;
+the big pots are mature or ASIC-dominated with no lone-researcher edge. The
+two do not yet coincide, so the plan is a break leg (Quantus rig, transferable
+tooling) plus a cash leg (efficiency + launch edges that pay this card now),
+waiting for a young big-pot algebraic/group coin.
+
+Current state: three analysis docs written (HYPOTHESES, BUSINESS-MINER,
+PLAN-v2 updated), nothing built. Pinning the authoritative current Quantus
+mainnet spec from source (the (a) double-Poseidon2 vs (b) RSA-group vs (c)
+migration ambiguity) before any Quantus work; it decides C3-heavy vs C7-heavy.
+
+## 2026-11-23: Quantus spec pinned — RSA-group refuted, it is plain Poseidon2 (C3 + C-impl)
+
+Pinned the live QPoW from source (Quantus-Network/chain `qpow-math/src/lib.rs`,
+the qpow pallet, runtime configs, and Quantus-Network/qp-poseidon). The
+RSA-group `m^(h+s) mod n` / XOR-distance scheme in the hackmd note is NOT in
+the code (stale/aspirational); the SHA3->Poseidon2 migration is already done.
+Live rule: `Poseidon2_sponge(block_hash[32] || nonce[64]) < U512::MAX /
+difficulty`, one sponge with two squeezes (512-bit, big-endian), strict
+compare. Poseidon2 over Goldilocks (2^64-2^32+1), width 12, rate 8, capacity
+4, S-box x^7, 8 external + 22 internal rounds, constants seed
+0x3141592653589793, MDS 4x4 [2 3 1 1;1 2 3 1;1 1 2 3;3 1 1 2]. Ethereum-style
+retarget, genesis difficulty 99,999,999,999 (~2^36.5 work/block), floor 2^17.
+Nonce 64 bytes, +1 increment, zero rejected. Bottleneck = the Poseidon2
+permutation (118 x^7 S-boxes/perm; 5 perms/nonce, 3 with the midstate cache),
+no modexp anywhere. Official miner is wgpu/WGSL + a native CUDA crate; no
+AMD/ROCm path.
+
+Correction to the prior entry: **C7 (number-theoretic/group) does NOT apply to
+Quantus.** Fixed in HYPOTHESES.md (C7 kept in the taxonomy for a future
+VDF/RSA/lattice coin; no live candidate). Quantus is now scored as C3
+(algebraic output-bias vs nonce-choosable bits — the cheap nonce-atlas test,
+the first kill/confirm of the whole break leg; full-round Poseidon2 is
+believed secure so odds are modest, but it is the first low-degree GF(p)
+target for tools that were null on SHA256d) plus C-impl (bounded AMD-kernel
+edge). Caveat: the `main` branch ties to the Planck testnet; a live mainnet
+deployment version and the current on-chain difficulty were not confirmed.
+
+Cheapest first experiment identified: a Rust Poseidon2-Goldilocks reference
+(from the pinned parameters, CPU-verified) plus the lab's nonce-atlas output-
+bias battery over the top bits of the 512-bit output against nonce-choosable
+bits, with the statistical-engine kill rules. Reuses the atlas machinery, no
+GPU, no prime-field solver yet; confirms or kills the C3 hope fast. Not
+started — awaiting the user's go to build.
+
+## 2026-11-23: Objective reset to expected value; Pearl reopened by a ZK-cert audit
+
+The user's steer: stop optimizing for cheap/fast; rank by `P(break) x
+realizable payoff` and invest deep effort in high-EV targets even if hard and
+slow. The bar is real returns ("a GPU every ~12 days", k ~ 53), not dollars a
+day. Consequence recorded in HYPOTHESES.md ("Selection criterion"): the big
+pots dismissed as mature/ASIC (Kaspa, Ergo, Alephium, Pearl) are back in
+scope, because a mathematical shortcut beats ASICs too; Spectre/Kaspa-fork
+efficiency and the dev-fee miner are demoted to fallback.
+
+Launched a deep big-pot-structured-PoW hunt (Autolykos2/Ergo and kHeavyHash/
+Kaspa deep-dives, plus a sweep for big-pot algebraic/matmul/lattice PoW) —
+running.
+
+Deep audit of Pearl's ZK certificate circuit (the previously-unread
+zk-pow/src/circuit/chip/* constraints). The circuit is largely sound: matmul
+reads are bound to the committed+hashed matrix dwords (MAT_ID, RAM logup);
+noise is fully constrained and bound to job_key; the per-r-chunk K-sum and
+jackpot schedule are complete (no chunk skippable, preprocessed+digest-checked
+control bits); no grinding tolerance. But it surfaced two potential edges at
+the node/consensus layer, OUTSIDE the AIR, both unconfirmed pending the node
+code:
+- **Rank penalty possibly not on the ZK-cert path.** check_rank_penalty
+  (factor tile*(dot/rank)*128) is called by verify_plain_proof but NOT by
+  prepare_verification, which verify_block uses. If block-cert validation uses
+  that path, rank 1024 gives up to an 8x difficulty discount with no
+  cryptanalysis — a flat consensus-gap edge on Pearl's huge pot. Highest-EV
+  open thread.
+- **A,B not bound to the job in-circuit** (only HASH_A/HASH_B commitments);
+  miner picks A,B freely. The audit claimed a low-rank/A=0 cheapening, but on
+  reconciliation the ZK trace still forces filling CUMSUM_TILE (bM*bN int32 at
+  each of K/r checkpoints) = O(M*N*K) regardless of A's rank, and the jackpot
+  XOR is nonlinear, so the prover's trace-fill cost is probably NOT reduced.
+  The earlier "Pearl closed for honest computation" verdict (PLAN-v2) stands;
+  unbound A,B is a latent weakness only if the node fails to re-derive/bind
+  them — being checked.
+- MoE certs may pass the ZK/verify_block path while a dense-only softfork
+  (DenseOnlyForkHeight 91630) is active (verify_plain_proof rejects MoE,
+  prepare_verification does not).
+
+AIR-internal unknowns remain (blake3_air round constraints; Evaluator
+constraint-vs-transition semantics). Reading the Pearl node consensus path now
+to confirm/refute the three node-level items. Nothing built.
+
+## 2026-11-23: Pearl closed for good; the structural law; EV-ranked targets
+
+Both deep-dives returned. Results:
+
+Pearl node audit — all three node-level items are CLOSED on mainnet:
+- Rank penalty IS enforced, in Go (`CheckCertificateRules` ->
+  `zkpow.CheckRankPenalty`), separate from the ZK verifier. Post
+  `RankPenaltyForkHeight` 96251 the penalized bound applies; the ZK-path
+  omission is covered by the Go check. The up-to-8x discount existed only below
+  the fork height (moot on mainnet).
+- MoE dense-only rule enforced in Go (`CheckCertificateRules`, past
+  `DenseOnlyForkHeight` 91630).
+- scale() saturation is a regtest/pool-side corner only; mainnet inputs are
+  bounded by powLimit in Go.
+So Pearl is fully closed (circuit sound, consensus closes the ZK-verifier
+omissions). Unbound A,B is a non-issue for prover cost. Only the FP fork
+(PIP-3, not live) is left to watch.
+
+Big-pot structured-PoW hunt — the hard law: **exploitable structure and a big
+pot do not coincide.** Findings:
+- Kaspa kHeavyHash: math-inert (fixed linear map between two Keccak-f1600,
+  nonce only in the first; the "broken" blogs are entropy/hardware, not
+  sub-brute-force). Ergo Autolykos2: PRF-forced 32-index sum, not a free k-sum,
+  Wagner inapplicable; now ~$17-26M. Both: hardware/memory edge only, no math
+  break.
+- The one giant pot with genuinely exploitable math is **Zcash (ZEC)**:
+  Equihash 200,9 = generalized-birthday / Wagner k-tree, MC ~$20-24B,
+  ~$700-900M/yr pot, solver frontier still moving (eprint 2025/2141,
+  Alcock-Ren). But ASIC-dominated since 2018 and the most-studied GBP — beating
+  ASICs needs a fundamental algorithmic leap. Lowest-p, highest-payoff
+  moonshot. Horizen (ZEN, ~$93-137M) = same math, cheaper validation.
+- Genuinely exploitable but small: Quantus (Poseidon2, $14-27M), Aleo
+  (Poseidon/R1CS, ~$23M, could re-rate), Chia (class-group VDF = the one live
+  C7, ~$17-20M), Neptune Cash (Tip5, unconfirmed). These are where a lone
+  researcher's edge is real; money caps unless they re-rate.
+
+Reframed the HYPOTHESES.md ranking around EV (Group 1 young-exploitable-upside:
+Quantus/Aleo/Chia/Neptune; Group 2 moonshot: Zcash/Horizen; Group 3 fallback
+cash; the confirmed negatives). The EV play is to build one coin-agnostic
+algebraic/number-theory/GBP weapon (prime-field algebraic-engine, Poseidon/Tip5
+CICO, k-tree solver, class-group) and aim it at the best young-exploitable
+coin, mining+accumulating quietly so a break compounds with the coin's growth.
+Decision pending from the user: Group 1, the Zcash moonshot, or both. Nothing
+built.
